@@ -1,0 +1,270 @@
+// RoadKill 1.1 MEL script
+// Written in a rush by Andy Swann, with massive assistance from Dave Smith and Jason Williams
+//
+// What goes on in here is easy, just like boom, just like pow!
+
+
+
+//global proc DoExport()
+global proc RoadKill()
+{
+	window -widthHeight 190 120 -title "RoadKill v1.1" RoadKill;
+	columnLayout ColumnLayout;
+	frameLayout -labelVisible false -marginWidth 5 -marginHeight 5;
+	columnLayout;
+
+	global string $RKcheckLSCM; 
+	global string $RKcheckHoles; 
+	global string $RKcheckLive; 
+
+
+	// Mesh Filename
+	text -height 5 -label " ";			
+
+	$RKcheckLSCM= `checkBox -label "Use LSCM"`;
+	separator -width 160;
+
+	// Anim Filename
+	text -height 5 -label " ";			
+	$RKcheckHoles= `checkBox -label "Don't Fill Holes"`;
+	separator -width 160;
+
+	// Text Filename
+	text -height 5 -label " ";			
+	$RKcheckLive= `checkBox -label "Live Unwrap"`;
+	separator -width 160;
+
+	text -height 5 -label " ";
+	string $button = `button -label "Unwrap"`;
+	button -edit -command ("DoUnwrap") $button;
+	
+	setParent ..;
+
+	showWindow;
+}
+
+
+global proc string GetLSCM()
+{
+	global string $RKcheckLSCM;
+	string $temp;
+	
+	if (!`checkBox -q -v $RKcheckLSCM`)
+	{
+		$temp     = ",-abf";
+	}
+	else
+	{
+		$temp     = ",-lscm";
+	}
+	return $temp;
+}
+
+
+
+global proc string GetHoles()
+{
+	global string $RKcheckHoles;
+	string $temp;
+	
+	if (!`checkBox -q -v $RKcheckHoles`)
+	{
+		$temp     = ",-nofillholes";
+	}
+	else
+	{
+		$temp     = ",-fillholes";
+	}
+	return $temp;
+}
+
+
+
+global proc string GetLive()
+{
+	global string $RKcheckLive;
+	string $temp;
+	
+	if (!`checkBox -q -v $RKcheckLive`)
+	{
+		$temp     = ",-notlive";
+	}
+	else
+	{
+		$temp     = ",-live";
+	}
+	return $temp;
+}
+
+
+
+
+
+global proc DoUnwrap()
+{
+	global string $RKselectedMesh[];
+	global string $RKoldDAG[];
+	global int $FailedOBJExport;
+	string $filename = `workspace -q -dir`;
+	string $edgefilename;
+
+	string $LSCMText = GetLSCM();
+	string $holesText = GetHoles();
+	string $liveText = GetLive();
+
+	string $selectedEdges[] = `filterExpand -sm 32 -fp 1 -ex 1`;
+	$RKoldDAG = `ls`;
+
+	$edgefilename = $filename + "1234Edges.edg";
+	$filename = $filename + "1234Temp.obj";
+
+
+	if (!`pluginInfo -query -l objExport`) 
+	{
+		loadPlugin objExport;
+		pluginInfo -edit -autoload true objExport;
+	}
+	
+
+	$FailedOBJExport = false;
+	getSelectedEdges($edgefilename);
+	dsSafeObjExport($filename);																// export the mesh as a .OBJ
+
+	if($FailedOBJExport == false)
+	{
+		//print("RoadKill1_1.exe " + "\"" + $filename + "," + $edgefilename + $LSCMText + $holesText + $liveText + "\"" + "\n");
+		system("RoadKill1_1.exe " + "\"" + $filename + "," + $edgefilename + $LSCMText + $holesText + $liveText + "\"");
+
+		undoInfo -stateWithoutFlush off;												// this 'undo off' does not work.  Thanks Maya!!  :^(
+		goGoObjImport($filename, "arse");												// import the mesh with new UV's
+		undoInfo -stateWithoutFlush on;
+
+		TransferNewUVs();
+		sysFile -del $filename;
+
+		select -cl;
+		select $RKselectedMesh;
+		selectMode -co;
+		select $selectedEdges;
+	}
+	
+	sysFile -del $edgefilename;
+}
+
+
+
+global proc TransferNewUVs()
+{
+	global string $RKselectedMesh[];
+	global string $RKoldDAG[];
+	string $newDAG[];
+	
+	$newDAG = `ls`;
+	
+	string $newMesh[] = stringArrayRemove($RKoldDAG, $newDAG);
+	
+	select $newMesh; 
+	select -add $RKselectedMesh;
+
+	polyTransfer -vc 0 -uv 1 -v 0 -ao $newMesh $RKselectedMesh;
+
+	undoInfo -stateWithoutFlush off;	
+	delete $newMesh;
+	undoInfo -stateWithoutFlush on;
+}
+
+
+
+global proc goGoObjImport(string $result, string $type)
+{
+	file -import -type "OBJ" -options "mo=0" $result;
+}
+
+
+
+global proc goGoObjExport(string $result, string $type)
+{
+	file -op "groups=0;ptgroups=0;materials=0;smoothing=1;normals=1" -es -typ "OBJexport" -pr -es ($result + ".obj");
+}
+
+
+
+global proc dsSafeObjExport(string $filename)
+{
+	global string $RKselectedMesh[];
+	global string $RKshapeNode[];
+	global int $FailedOBJExport;
+	string $meshCheck[];
+	int $cleanUpOut;
+
+	$RKshapeNode = `ls -sl -l -o`;
+	if (`nodeType $RKshapeNode` == "shape")
+	{
+		$RKselectedMesh[0] = `listRelatives -p $RKshapeNode[0]`;
+	}
+	else
+	{
+		$RKselectedMesh[0] = $RKshapeNode[0];
+	}
+	
+	$meshCheck = `listRelatives -s $RKselectedMesh[0]`;
+	if (`size ($RKselectedMesh)` != 1 && `nodeType $meshCheck[0]` != "mesh")
+	{
+		error "Incorrect selection. Select one mesh.\n";
+		$FailedOBJExport = true;
+	}
+	else 
+	{
+		int $cleanUpOut = size (`polyCleanupArgList 3 { "0","2","1","0","0","0","0","0","0","1e-005","0","1e-005","0","1e-005","0","1","1" }`);
+		if ($cleanUpOut != 0)
+		{
+			error "Mesh requires cleanup";
+			$FailedOBJExport = true;
+		}
+		else
+		{
+//			print "Mesh meets export requirements - proceeding with export.\n";
+			selectMode -o;
+			select -cl;
+			select $RKselectedMesh[0];
+			
+			goGoObjExport($filename, "Arse");
+		}
+	}
+}
+
+
+
+global proc getSelectedEdges(string $edgefilename)
+{
+	string $selectedEdges[]=`filterExpand -sm 32 -fp 1 -ex 1`;
+		
+	int $size = `size $selectedEdges`;
+	int $iter=0;
+	
+	if($size == 0)
+	{
+		return;
+	}
+	
+	
+	int $fileId = `fopen $edgefilename "w"`;
+	int $edgecount = $size;
+	
+	fwrite $fileId $edgecount; 
+	
+	while ($iter<$size)
+	{	
+		string $vertices[] = `polyInfo -ev $selectedEdges[$iter]`;
+		
+		string $buffer[];
+		int $numTokens = tokenize($vertices[0], $buffer);
+		
+		fwrite $fileId $buffer[2];
+		fwrite $fileId $buffer[3];
+		
+		$iter++;
+	}
+	
+	fclose $fileId; 
+}

@@ -1,0 +1,1410 @@
+//finding the module
+string $module="";
+for($i in `ls -type network`)
+{
+    if((`getAttr ($i+".type")`=="module") && (`attributeQuery -node $i -exists "system"`) && (`getAttr ($i+".system")`=="template") && (`getAttr ($i+".component")`=="leg"))
+    {
+        $module=$i;
+    }
+}
+
+//finding the joints
+string $thigh;
+string $knee;
+string $foot;
+string $toe;
+string $toeTip;
+string $heel;
+string $l_bank;
+string $r_bank;
+string $upperTwist;
+string $lowerTwist;
+
+for($i in `listConnections -type network ($module+".message")`)
+{
+    if((`getAttr ($i+".component")`=="thigh") && (`getAttr ($i+".type")`=="control"))
+    {
+        $thigh=$i;
+    }
+    if((`getAttr ($i+".component")`=="knee") && (`getAttr ($i+".type")`=="control"))
+    {
+        $knee=$i;
+    }
+    if((`getAttr ($i+".component")`=="foot") && (`getAttr ($i+".type")`=="control"))
+    {
+        $foot=$i;
+    }
+    if((`getAttr ($i+".component")`=="toe") && (`getAttr ($i+".type")`=="control"))
+    {
+        $toe=$i;
+    }
+    if((`getAttr ($i+".component")`=="toetip") && (`getAttr ($i+".type")`=="control"))
+    {
+        $toeTip=$i;
+    }
+    if((`getAttr ($i+".component")`=="heel") && (`getAttr ($i+".type")`=="control"))
+    {
+        $heel=$i;
+    }
+    if((`getAttr ($i+".component")`=="leftbank") && (`getAttr ($i+".type")`=="control"))
+    {
+        $l_bank=$i;
+    }
+    if((`getAttr ($i+".component")`=="rightbank") && (`getAttr ($i+".type")`=="control"))
+    {
+        $r_bank=$i;
+    }
+    if((`getAttr ($i+".component")`=="uppertwistjoints") && (`getAttr ($i+".type")`=="control"))
+    {
+        $upperTwist=$i;
+    }
+    if((`getAttr ($i+".component")`=="lowertwistjoints") && (`getAttr ($i+".type")`=="control"))
+    {
+        $lowerTwist=$i;
+    }
+}
+
+//getting position data
+string $temp[]=`listConnections -type joint ($thigh+".message")`;
+$thighPOS=`xform -worldSpace -query -translation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($knee+".message")`;
+$kneePOS=`xform -worldSpace -query -translation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($foot+".message")`;
+$footPOS=`xform -worldSpace -query -translation $temp[0]`;
+$footROT=`xform -objectSpace -query -rotation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($toe+".message")`;
+$ballPOS=`xform -worldSpace -query -translation $temp[0]`;
+$ballROT=`xform -worldSpace-query -rotation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($toeTip+".message")`;
+$toePOS=`xform -worldSpace -query -translation $temp[0]`;
+$toeROT=`xform -worldSpace-query -rotation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($heel+".message")`;
+$heelPOS=`xform -worldSpace -query -translation $temp[0]`;
+$heelROT=`xform -worldSpace-query -rotation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($l_bank+".message")`;
+$l_bankPOS=`xform -worldSpace -query -translation $temp[0]`;
+$l_bankROT=`xform -worldSpace-query -rotation $temp[0]`;
+
+string $temp[]=`listConnections -type joint ($r_bank+".message")`;
+$r_bankPOS=`xform -worldSpace -query -translation $temp[0]`;
+$r_bankROT=`xform -worldSpace -query -rotation $temp[0]`;
+
+//getting twist counts
+int $upperTwistCount=`getAttr ($upperTwist+".numberOfUpperTwistJoints")`;
+int $lowerTwistCount=`getAttr ($lowerTwist+".numberOfLowerTwistJoints")`;
+
+//establish side
+string $side="c";
+
+if($footPOS[0] > 1.0)
+{
+    $side="l";
+}
+if($footPOS[0] < -1.0)
+{
+    $side="r";
+}
+
+//establish index
+int $index=`getAttr ($module+".index")`;
+if(size(`ls -type network`)!=0)
+{
+    for($i in `ls -type network`)
+    {
+        if((`getAttr ($i+".type")`=="module") && (`attributeQuery -node $i -exists "index"`) && (`getAttr ($i+".component")`=="leg") && (`attributeQuery -node $i -exists "side"`) && (`getAttr ($i+".side")`==$side) && (`getAttr ($i+".index")`==$index))
+        {
+            $index=`getAttr ($i+".index")`+1;
+        }
+    }
+}
+
+//deleting module template
+string $root="";
+for($i in `listConnections ($module+".message")`)
+{
+    if((`attributeQuery -node $i -exists "component"`) && (`getAttr ($i+".component")`=="root"))
+    {
+        for($node in `listConnections ($i+".message")`)
+        {
+            if(`nodeType($node)`=="transform")
+            {
+                $root=$node;
+            }
+        }
+    }
+}
+
+delete $root;
+
+//establish prefix and suffix
+string $prefix=($side+"_leg"+$index+"_");
+string $suffix=("_"+$side+"_leg"+$index);
+
+//create module
+string $module=`shadingNode -asUtility -n ("meta"+$suffix) network`;
+
+addAttr -ln "type" -dt "string" $module;
+setAttr ($module+".type") -type "string" "module";
+addAttr -ln "component" -dt "string" $module;
+setAttr ($module+".component") -type "string" "leg";
+addAttr -ln "metaParent" -at message $module;
+addAttr -ln "index" -at long $module;
+setAttr ($module+".index") $index;
+addAttr -ln "side" -dt "string" $module;
+setAttr ($module+".side") -type "string" $side;
+
+// create leg jnts
+string $thighJNT =`joint -p ($thighPOS[0]) ($thighPOS[1]) ($thighPOS[2]) -n ($prefix+"jnt01")`;
+string $kneeBLD =`joint -p ($kneePOS[0]) ($kneePOS[1]) ($kneePOS[2]) -n ($prefix+"jnt02")`;
+string $footBLD =`joint -p ($footPOS[0]) ($footPOS[1]) ($footPOS[2]) -n ($prefix+"jnt03")`;
+select -cl;
+string $footJNT =`joint -p ($footPOS[0]) ($footPOS[1]) ($footPOS[2]) -o ($footROT[0]) ($footROT[1]) ($footROT[2]) -n ($prefix+"jnt04")`;
+select -cl;
+string $toeJNT=`joint -p ($ballPOS[0]) ($ballPOS[1]) ($ballPOS[2]) -n ($prefix+"jnt05")`;
+select -cl;
+string $kneeJNT =`joint -p ($kneePOS[0]) ($kneePOS[1]) ($kneePOS[2]) -n ($prefix+"jnt06")`;
+
+string $footMETA=`shadingNode -asUtility -n ("meta_"+$footJNT) network`;
+addAttr -ln "type" -dt "string" $footMETA;
+setAttr ($footMETA+".type") -type "string" "joint";
+addAttr -ln "component" -dt "string" $footMETA;
+setAttr ($footMETA+".component") -type "string" "foot";
+addAttr -ln "system" -dt "string" $footMETA;
+setAttr ($footMETA+".system") -type "string" "skin";
+addAttr -ln "metaParent" -at message $footMETA;
+connectAttr -f ($module+".message") ($footMETA+".metaParent");
+
+addAttr -ln "metaParent" -at message $footJNT;
+connectAttr ($footMETA+".message") ($footJNT+".metaParent");
+
+string $toeMETA=`shadingNode -asUtility -n ("meta_"+$toeJNT) network`;
+addAttr -ln "type" -dt "string" $toeMETA;
+setAttr ($toeMETA+".type") -type "string" "joint";
+addAttr -ln "component" -dt "string" $toeMETA;
+setAttr ($toeMETA+".component") -type "string" "toe";
+addAttr -ln "system" -dt "string" $toeMETA;
+setAttr ($toeMETA+".system") -type "string" "skin";
+addAttr -ln "metaParent" -at message $toeMETA;
+connectAttr -f ($module+".message") ($toeMETA+".metaParent");
+
+addAttr -ln "metaParent" -at message $toeJNT;
+connectAttr ($toeMETA+".message") ($toeJNT+".metaParent");
+
+//create plug
+string $helper_loc[] = `spaceLocator -n ($prefix+"plug")`;
+string $plug=$helper_loc[0];
+
+delete `pointConstraint -offset 0 0 0 -weight 1 $thighJNT $plug`;
+string $plugMETA=`shadingNode -asUtility -n ("meta_"+$plug) network`;
+addAttr -ln "type" -dt "string" $plugMETA;
+setAttr ($plugMETA+".type") -type "string" "plug";
+addAttr -ln "component" -dt "string" $plugMETA;
+setAttr ($plugMETA+".component") -type "string" "leg";
+addAttr -ln "metaParent" -at message $plugMETA;
+connectAttr -f ($module+".message") ($plugMETA+".metaParent");
+
+addAttr -ln "metaParent" -at message $plug;
+connectAttr -f ($plugMETA+".message") ($plug+".metaParent");
+
+//create sockets
+string $helper_loc[] = `spaceLocator -n ($prefix+"socket01")`;
+string $socket01=$helper_loc[0];
+
+delete `parentConstraint -weight 1 $footJNT $socket01`;
+parent $socket01 $footJNT;
+
+string $socket01META=`shadingNode -asUtility -n ("meta_"+$socket01) network`;
+addAttr -ln "type" -dt "string" $socket01META;
+setAttr ($socket01META+".type") -type "string" "socket";
+addAttr -ln "component" -dt "string" $socket01META;
+setAttr ($socket01META+".component") -type "string" "leg";
+addAttr -ln "metaParent" -at message $socket01META;
+connectAttr -f ($module+".message") ($socket01META+".metaParent");
+
+addAttr -ln "metaParent" -at message $socket01;
+connectAttr -f ($socket01META+".message") ($socket01+".metaParent");
+
+string $helper_loc[] = `spaceLocator -n ($prefix+"socket02")`;
+string $socket02=$helper_loc[0];
+
+delete `parentConstraint -weight 1 $toeJNT $socket02`;
+parent $socket02 $toeJNT;
+
+string $socket02META=`shadingNode -asUtility -n ("meta_"+$socket02) network`;
+addAttr -ln "type" -dt "string" $socket02META;
+setAttr ($socket02META+".type") -type "string" "socket";
+addAttr -ln "component" -dt "string" $socket02META;
+setAttr ($socket02META+".component") -type "string" "leg";
+addAttr -ln "metaParent" -at message $socket02META;
+connectAttr -f ($module+".message") ($socket02META+".metaParent");
+
+addAttr -ln "metaParent" -at message $socket02;
+connectAttr -f ($socket02META+".message") ($socket02+".metaParent");
+
+//finding the worldUpVector for the leg jnts
+float $vectorA[];
+float $vectorB[];
+float $cross[];
+
+float $posA[] = `xform -q -ws -rp $thighJNT`;
+float $posB[] = `xform -q -ws -rp $kneeBLD`;
+float $posC[] = `xform -q -ws -rp $footBLD`;
+
+$vectorA[0] = $posA[0]-$posB[0];
+$vectorA[1] = $posA[1]-$posB[1];
+$vectorA[2] = $posA[2]-$posB[2];
+
+$vectorB[0] = $posC[0]-$posB[0];
+$vectorB[1] = $posC[1]-$posB[1];
+$vectorB[2] = $posC[2]-$posB[2];
+
+$cross = `crossProduct $vectorA $vectorB 1 1`;
+
+//setup thigh jnt
+string $helper_loc[] = `spaceLocator`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $thighJNT $helper_loc[0]`;
+aimConstraint -worldUpType "vector" -worldUpVector $cross[0] $cross[1] $cross[2] $kneeBLD $helper_loc[0];
+parent -w $kneeBLD;
+parent $thighJNT $helper_loc;
+
+setAttr ($thighJNT+".jointOrientX") 0;
+setAttr ($thighJNT+".jointOrientY") 0;
+setAttr ($thighJNT+".jointOrientZ") 0;
+
+delete `parentConstraint -weight 1 $thighJNT $plug`;
+
+parent $thighJNT $plug;
+parent $kneeBLD $thighJNT;
+
+delete $helper_loc;
+
+//create root jnt
+string $legRootJNT[]=`duplicate -po -name ($prefix+"root_jnt") $thighJNT`;
+
+//setup knee jnt
+string $helper_loc[] = `spaceLocator`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $kneeBLD $helper_loc[0]`;
+aimConstraint -worldUpType "vector" 
+-worldUpVector $cross[0] $cross[1] $cross[2] 
+$footBLD $helper_loc[0];
+parent -w $footBLD;
+parent $kneeBLD $helper_loc;
+
+setAttr ($kneeBLD+".jointOrientX") 0;
+setAttr ($kneeBLD+".jointOrientY") 0;
+setAttr ($kneeBLD+".jointOrientZ") 0;
+
+parent $kneeBLD $thighJNT;
+parent $footBLD $kneeBLD;
+
+delete $helper_loc;
+
+//setup foot bld
+string $helper_loc[] = `spaceLocator`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $kneeBLD $helper_loc[0]`;
+
+parent $footBLD $helper_loc;
+
+setAttr ($footBLD+".jointOrientX") 0;
+setAttr ($footBLD+".jointOrientY") 0;
+setAttr ($footBLD+".jointOrientZ") 0;
+
+parent $footBLD $kneeBLD;
+
+rotate -r -os 0 0 -90 $footBLD;
+rotate -r -os 90 0 0 $footBLD;
+rotate -r -os 90 0 0 $footBLD;
+
+makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $footBLD;
+
+delete $helper_loc;
+
+//setup foot jnt
+delete `parentConstraint -weight 1 $footBLD $footJNT`;
+
+makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 $footJNT;
+
+parent $toeJNT $footJNT;
+
+scaleConstraint -offset 1 1 1 -weight 1 $plug $footJNT;
+
+//setup toe jnt
+delete `orientConstraint -weight 1 $footJNT $toeJNT`;
+
+//create ik chain
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ik01") $thighJNT`;
+string $ikthigh=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ik02") $kneeBLD`;
+string $ikknee=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ik03") $footBLD`;
+string $ikfoot=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ik04") $toeJNT`;
+string $iktoe=$helper_loc[0];
+
+string $ballGRP=`createNode "transform" -ss -n ($prefix+"ball_grp")`;
+move -a ($ballPOS[0]) ($ballPOS[1]) ($ballPOS[2]) $ballGRP;
+rotate -a ($ballROT[0]) ($ballROT[1]) ($ballROT[2]) $ballGRP;
+string $toetipGRP=`createNode "transform" -ss -n ($prefix+"toetip_grp")`;
+move -a ($toePOS[0]) ($toePOS[1]) ($toePOS[2]) $toetipGRP;
+rotate -a ($toeROT[0]) ($toeROT[1]) ($toeROT[2]) $toetipGRP;
+string $heelGRP=`createNode "transform" -ss -n ($prefix+"heel_grp")`;
+move -a ($heelPOS[0]) ($heelPOS[1]) ($heelPOS[2]) $heelGRP;
+rotate -a ($heelROT[0]) ($heelROT[1]) ($heelROT[2]) $heelGRP;
+string $l_bankGRP=`createNode "transform" -ss -n ($prefix+"l_bank_grp")`;
+move -a ($l_bankPOS[0]) ($l_bankPOS[1]) ($l_bankPOS[2]) $l_bankGRP;
+rotate -a ($l_bankROT[0]) ($l_bankROT[1]) ($l_bankROT[2]) $l_bankGRP;
+string $l_bankinvGRP=`createNode "transform" -ss -n ($prefix+"l_bankInv_grp")`;
+move -a ($l_bankPOS[0]) ($l_bankPOS[1]) ($l_bankPOS[2]) $l_bankinvGRP;
+rotate -a ($l_bankROT[0]) ($l_bankROT[1]) ($l_bankROT[2]) $l_bankinvGRP;
+string $r_bankGRP=`createNode "transform" -ss -n ($prefix+"r_bank_grp")`;
+move -a ($r_bankPOS[0]) ($r_bankPOS[1]) ($r_bankPOS[2]) $r_bankGRP;
+rotate -a ($r_bankROT[0]) ($r_bankROT[1]) ($r_bankROT[2]) $r_bankGRP;
+
+parent $ikknee $ikthigh;
+parent $ikfoot $ikknee;
+parent $iktoe $ikfoot;
+
+connectAttr -f ($ikthigh+".scale") ($ikknee+".inverseScale");
+connectAttr -f ($ikknee+".scale") ($ikfoot+".inverseScale");
+connectAttr -f ($ikfoot+".scale") ($iktoe+".inverseScale");
+
+//create ik_poleVector
+string $helper_loc[]=`spaceLocator`;
+string $polevector=`rename $helper_loc[0] ($prefix+"polevector")`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $kneeBLD $polevector`;
+delete `orientConstraint -offset 0 0 0 -weight 1 $kneeBLD $polevector`;
+move -r -os -wd (-`getAttr ($kneeBLD+".tx")`) 0 (-(`getAttr ($kneeBLD+".tx")`)) $polevector;
+
+//create ik_handle
+string $helper_loc[]=`ikHandle -sj $ikthigh -ee $ikfoot -sol ikRPsolver -n ($prefix+"ikHandle")`;
+string $ikHandle=$helper_loc[0];
+
+rename $helper_loc[1] ($prefix+"effector");
+
+poleVectorConstraint -weight 1 $polevector $ikHandle;
+
+//create fk chain
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"fk01") $thighJNT`;
+string $fkthigh=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"fk02") $kneeBLD`;
+string $fkknee=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"fk03") $footBLD`;
+string $fkfoot=$helper_loc[0];
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"fk04") $toeJNT`;
+string $fktoe=$helper_loc[0];
+
+delete `orientConstraint -offset 0 0 0 -weight 1 $footJNT $fkfoot`;
+
+parent $fkknee $fkthigh;
+parent $fkfoot $fkknee;
+parent $fktoe $fkfoot;
+
+connectAttr -f ($fkthigh+".scale") ($fkknee+".inverseScale");
+connectAttr -f ($fkknee+".scale") ($fkfoot+".inverseScale");
+connectAttr -f ($fkfoot+".scale") ($fktoe+".inverseScale");
+
+//setup ik stretching
+string $stretch01=`createNode "transform" -ss -n ($prefix+"stretch01")`;
+string $stretch02=`createNode "transform" -ss -n ($prefix+"stretch02")`;
+string $stretchDIST=`shadingNode -asUtility -n ($prefix+"stretchDIST") distanceBetween`;
+string $stretch01MD=`shadingNode -asUtility -n ($prefix+"stretch01MD") multiplyDivide`;
+string $stretch02MD=`shadingNode -asUtility -n ($prefix+"stretch02MD") multiplyDivide`;
+string $stretchBLD=`shadingNode -asUtility -n ($prefix+"stretchBLD") blendColors`;
+
+transformLimits -sx 1 1 -esx 1 0 $ikthigh;
+transformLimits -sx 1 1 -esx 1 0 $ikknee;
+
+$temp1=`getAttr ($kneeBLD+".tx")`;
+$temp2=`getAttr ($footBLD+".tx")`;
+
+setAttr ($stretchBLD+".color2R") 1;
+
+setAttr ($stretch02MD+".input2X") ($temp1+$temp2);
+
+setAttr ($stretch01MD+".operation") 2;
+
+pointConstraint -offset 0 0 0 -weight 1 $ikthigh $stretch01;
+delete `parentConstraint -weight 1 $footJNT $stretch02`;
+
+parent $ikHandle $stretch02;
+
+connectAttr -f ($stretch01+".translate") ($stretchDIST+".point1");
+connectAttr -f ($stretch02+".translate") ($stretchDIST+".point2");
+
+connectAttr -f ($plug+".sx") ($stretch02MD+".input1X");
+
+connectAttr -f ($stretchDIST+".distance") ($stretch01MD+".input1X");
+connectAttr -f ($stretch02MD+".outputX") ($stretch01MD+".input2X");
+
+connectAttr -f ($stretch01MD+".outputX") ($stretchBLD+".color1R");
+
+connectAttr -f ($stretchBLD+".outputR") ($ikthigh+".sx");
+connectAttr -f ($stretchBLD+".outputR") ($ikknee+".sx");
+
+//create controls
+string $zeroCNT=`createNode "transform" -ss -n ($prefix+"zero_cnt")`;
+
+string $polevectorCNT=`curve -d 1 -p 0.5 0.5 -0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p -0.5 -0.5 0.5 -p -0.5 -0.5 -0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -k 0 -k 0.1 -k 0.2 -k 0.3 -k 0.4 -k 0.5 -k 0.6 -k 0.7 -k 0.8 -k 0.9 -k 1 -k 1.1 -k 1.2 -k 1.3 -k 1.4 -k 1.5 -k 1.6 -k 1.7 -k 1.8
+-n ($prefix+"polevector_cnt")`;
+string $helper_loc[]=`circle -radius 0 -ch 0 -n ($prefix+"ikFoot_cnt")`;
+string $ikfootCNT=$helper_loc[0];
+string $helper_loc[]=`circle -ch 0 -radius 1 -n ($prefix+"ball_cnt")`;
+string $ballCNT=$helper_loc[0];
+string $helper_loc[]=`circle -ch 0 -radius 1 -n ($prefix+"toeTip_cnt")`;
+string $toetipCNT=$helper_loc[0];
+string $helper_loc[]=`circle -ch 0 -radius 1 -n ($prefix+"heel_cnt")`;
+string $heelCNT=$helper_loc[0];
+string $footCNT=`curve -d 1 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 -0.382683 0 -p -0.707107 -0.707107 0 -p -0.382683 -0.92388 0 -p 0 -1 0 -p 0.382683 -0.92388 0 -p 0.707107 -0.707107 0 -p 0.92388 -0.382683 0 -p 1 0 0 -p 0.92388 0.382683 0 -p 0.707107 0.707107 0 -p 0.382683 0.92388 0 -p 0 1 0 -p 0 0.92388 0.382683 -p 0 0.707107 0.707107 -p 0 0.382683 0.92388 -p 0 0 1 -p 0 -0.382683 0.92388 -p 0 -0.707107 0.707107 -p 0 -0.92388 0.382683 -p 0 -1 0 -p 0 -0.92388 -0.382683 -p 0 -0.707107 -0.707107 -p 0 -0.382683 -0.92388 -p 0 0 -1 -p 0 0.382683 -0.92388 -p 0 0.707107 -0.707107 -p 0 0.92388 -0.382683 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 0 0.382683 -p -0.707107 0 0.707107 -p -0.382683 0 0.92388 -p 0 0 1 -p 0.382683 0 0.92388 -p 0.707107 0 0.707107 -p 0.92388 0 0.382683 -p 1 0 0 -p 0.92388 0 -0.382683 -p 0.707107 0 -0.707107 -p 0.382683 0 -0.92388 -p 0 0 -1 -p -0.382683 0 -0.92388 -p -0.707107 0 -0.707107 -p -0.92388 0 -0.382683 -p -1 0 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 -k 51 -k 52 
+-n ($prefix+"footRoll_cnt")`;
+string $fkthighCNT=`curve -d 1 -p 0.5 0.5 -0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p -0.5 -0.5 0.5 -p -0.5 -0.5 -0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -k 0 -k 0.1 -k 0.2 -k 0.3 -k 0.4 -k 0.5 -k 0.6 -k 0.7 -k 0.8 -k 0.9 -k 1 -k 1.1 -k 1.2 -k 1.3 -k 1.4 -k 1.5 -k 1.6 -k 1.7 -k 1.8
+-n ($prefix+"thigh_cnt")`;
+string $fkkneeCNT=`curve -d 1 -p 0.5 0.5 -0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 -0.5 -0.5 -p -0.5 -0.5 0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 -0.5 0.5 -p -0.5 -0.5 0.5 -p -0.5 -0.5 -0.5 -p 0.5 -0.5 -0.5 -p 0.5 0.5 -0.5 -p -0.5 0.5 -0.5 -p -0.5 0.5 0.5 -p 0.5 0.5 0.5 -p 0.5 0.5 -0.5 -k 0 -k 0.1 -k 0.2 -k 0.3 -k 0.4 -k 0.5 -k 0.6 -k 0.7 -k 0.8 -k 0.9 -k 1 -k 1.1 -k 1.2 -k 1.3 -k 1.4 -k 1.5 -k 1.6 -k 1.7 -k 1.8
+-n ($prefix+"knee_cnt")`;
+string $fkfootCNT=`curve -d 1 -p ($l_bankPOS[0]-$footPOS[0]) ($heelPOS[1]-$footPOS[1]) ($heelPOS[2]-$footPOS[2]) -p ($l_bankPOS[0]-$footPOS[0]) ($toePOS[1]-$footPOS[1]) ($toePOS[2]-$footPOS[2]) -p ($r_bankPOS[0]-$footPOS[0]) ($toePOS[1]-$footPOS[1]) ($toePOS[2]-$footPOS[2]) -p ($r_bankPOS[0]-$footPOS[0]) ($heelPOS[1]-$footPOS[1]) ($heelPOS[2]-$footPOS[2]) -p ($l_bankPOS[0]-$footPOS[0]) ($heelPOS[1]-$footPOS[1]) ($heelPOS[2]-$footPOS[2]) 
+-n ($prefix+"fkFoot_cnt")`;
+string $fktoeCNT=`curve -d 1 -p 0.5 0 -0.5 -p 0.5 0 0.5 -p -0.5 0 0.5 -p -0.5 0 -0.5 -p 0.5 0 -0.5 -n ($prefix+"fkToe_cnt")`;
+string $extraCNT=`curve -d 1 -p 0 0 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11
+-n ($prefix+"extra_cnt")`;
+string $rootCNT=`curve -d 1 -p 0 0 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11
+-n ($prefix+"root_cnt")`;
+string $helper_loc[]=`circle -ch 0 -radius 0.5 -n ($prefix+"ikToe_cnt")`;
+string $iktoeCNT=$helper_loc[0];
+
+string $extraMETA=`shadingNode -asUtility -n ("meta_"+$extraCNT) network`;
+
+addAttr -ln "type" -dt "string" $extraMETA;
+setAttr ($extraMETA+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $extraMETA;
+setAttr ($extraMETA+".component") -type "string" "extra";
+addAttr -ln "metaParent" -at message $extraMETA;
+connectAttr -f ($module+".message") ($extraMETA+".metaParent");
+addAttr -ln "metaParent" -at message $extraCNT;
+connectAttr -f ($extraMETA+".message") ($extraCNT+".metaParent");
+addAttr -ln "FKIK" -at "float" -keyable true -min 0 -max 1 $extraCNT;
+addAttr -ln "ikTwistControls" -at "float" -keyable true -min 0 -max 1 $extraCNT;
+addAttr -ln "stretch" -at "float" -keyable true -min 0 -max 1 $extraCNT;
+connectAttr -f ($extraCNT+".stretch") ($stretchBLD+".blender");
+
+string $temp[]=`duplicate $extraMETA`;
+string $thighMETA=`rename $temp[0] ("meta_"+$fkthighCNT)`;
+setAttr ($thighMETA+".component") -type "string" "thigh";
+connectAttr -f ($module+".message") ($thighMETA+".metaParent");
+addAttr -ln "system" -dt "string" $thighMETA;
+setAttr ($thighMETA+".system") -type "string" "fk";
+addAttr -ln "metaParent" -at message $fkthighCNT;
+connectAttr -f ($thighMETA+".message") ($fkthighCNT+".metaParent");
+addAttr -ln "switch" -at message $thighMETA;
+addAttr -ln "index" -at long $thighMETA;
+setAttr ($thighMETA+".index") 1;
+
+string $temp[]=`duplicate $extraMETA`;
+string $kneeMETA=`rename $temp[0] ("meta_"+$fkkneeCNT)`;
+setAttr ($kneeMETA+".component") -type "string" "knee";
+connectAttr -f ($module+".message") ($kneeMETA+".metaParent");
+addAttr -ln "system" -dt "string" $kneeMETA;
+setAttr ($kneeMETA+".system") -type "string" "fk";
+addAttr -ln "metaParent" -at message $fkkneeCNT;
+connectAttr -f ($kneeMETA+".message") ($fkkneeCNT+".metaParent");
+addAttr -ln "switch" -at message $kneeMETA;
+addAttr -ln "index" -at long $kneeMETA;
+setAttr ($kneeMETA+".index") 2;
+
+string $temp[]=`duplicate $extraMETA`;
+string $fkfootMETA=`rename $temp[0] ("meta_"+$fkfootCNT)`;
+setAttr ($fkfootMETA+".component") -type "string" "foot";
+connectAttr -f ($module+".message") ($fkfootMETA+".metaParent");
+addAttr -ln "system" -dt "string" $fkfootMETA;
+setAttr ($fkfootMETA+".system") -type "string" "fk";
+addAttr -ln "metaParent" -at message $fkfootCNT;
+connectAttr -f ($fkfootMETA+".message") ($fkfootCNT+".metaParent");
+addAttr -ln "switch" -at message $fkfootMETA;
+connectAttr -f ($stretch02+".message") ($fkfootMETA+".switch");
+addAttr -ln "index" -at long $fkfootMETA;
+setAttr ($fkfootMETA+".index") 3;
+
+string $temp[]=`duplicate $extraMETA`;
+string $fktoeMETA=`rename $temp[0] ("meta_"+$fktoeCNT)`;
+setAttr ($fktoeMETA+".component") -type "string" "toe";
+connectAttr -f ($module+".message") ($fktoeMETA+".metaParent");
+addAttr -ln "system" -dt "string" $fktoeMETA;
+setAttr ($fktoeMETA+".system") -type "string" "fk";
+addAttr -ln "metaParent" -at message $fktoeCNT;
+connectAttr -f ($fktoeMETA+".message") ($fktoeCNT+".metaParent");
+addAttr -ln "switch" -at message $fktoeMETA;
+connectAttr -f ($iktoe+".message") ($fktoeMETA+".switch");
+addAttr -ln "index" -at long $fktoeMETA;
+setAttr ($fktoeMETA+".index") 4;
+
+string $temp[]=`duplicate $extraMETA`;
+string $polevectorMETA=`rename $temp[0] ("meta_"+$polevectorCNT)`;
+setAttr ($polevectorMETA+".component") -type "string" "polevector";
+connectAttr -f ($module+".message") ($polevectorMETA+".metaParent");
+addAttr -ln "system" -dt "string" $polevectorMETA;
+setAttr ($polevectorMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $polevectorCNT;
+connectAttr -f ($polevectorMETA+".message") ($polevectorCNT+".metaParent");
+addAttr -ln "switch" -at message $polevectorMETA;
+connectAttr -f ($fkknee+".message") ($polevectorMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $polevectorMETA;
+setAttr ($polevectorMETA+".worldspace") -type "string" "false";
+
+string $temp[]=`duplicate $extraMETA`;
+string $ikfootMETA=`rename $temp[0] ("meta_"+$ikfootCNT)`;
+setAttr ($ikfootMETA+".component") -type "string" "foot";
+connectAttr -f ($module+".message") ($ikfootMETA+".metaParent");
+addAttr -ln "system" -dt "string" $ikfootMETA;
+setAttr ($ikfootMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $ikfootCNT;
+connectAttr -f ($ikfootMETA+".message") ($ikfootCNT+".metaParent");
+addAttr -ln "switch" -at message $ikfootMETA;
+connectAttr -f ($fkfoot+".message") ($ikfootMETA+".switch");
+addAttr -ln "index" -at long $ikfootMETA;
+setAttr ($ikfootMETA+".index") 1;
+
+string $temp[]=`duplicate $extraMETA`;
+string $ballMETA=`rename $temp[0] ("meta_"+$ballCNT)`;
+setAttr ($ballMETA+".component") -type "string" "ball";
+connectAttr -f ($module+".message") ($ballMETA+".metaParent");
+addAttr -ln "system" -dt "string" $ballMETA;
+setAttr ($ballMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $ballCNT;
+connectAttr -f ($ballMETA+".message") ($ballCNT+".metaParent");
+addAttr -ln "switch" -at message $ballMETA;
+connectAttr -f ($zeroCNT+".message") ($ballMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $ballMETA;
+setAttr ($ballMETA+".worldspace") -type "string" "false";
+addAttr -ln "zero" -dt "string" $ballMETA;
+setAttr ($ballMETA+".zero") -type "string" "true";
+
+string $temp[]=`duplicate $extraMETA`;
+string $toetipMETA=`rename $temp[0] ("meta_"+$toetipCNT)`;
+setAttr ($toetipMETA+".component") -type "string" "toetip";
+connectAttr -f ($module+".message") ($toetipMETA+".metaParent");
+addAttr -ln "system" -dt "string" $toetipMETA;
+setAttr ($toetipMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $toetipCNT;
+connectAttr -f ($toetipMETA+".message") ($toetipCNT+".metaParent");
+addAttr -ln "switch" -at message $toetipMETA;
+connectAttr -f ($zeroCNT+".message") ($toetipMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $toetipMETA;
+setAttr ($toetipMETA+".worldspace") -type "string" "false";
+addAttr -ln "zero" -dt "string" $toetipMETA;
+setAttr ($toetipMETA+".zero") -type "string" "true";
+
+string $temp[]=`duplicate $extraMETA`;
+string $heelMETA=`rename $temp[0] ("meta_"+$heelCNT)`;
+setAttr ($heelMETA+".component") -type "string" "heel";
+connectAttr -f ($module+".message") ($heelMETA+".metaParent");
+addAttr -ln "system" -dt "string" $heelMETA;
+setAttr ($heelMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $heelCNT;
+connectAttr -f ($heelMETA+".message") ($heelCNT+".metaParent");
+addAttr -ln "switch" -at message $heelMETA;
+connectAttr -f ($zeroCNT+".message") ($heelMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $heelMETA;
+setAttr ($heelMETA+".worldspace") -type "string" "false";
+addAttr -ln "zero" -dt "string" $heelMETA;
+setAttr ($heelMETA+".zero") -type "string" "true";
+
+string $temp[]=`duplicate $extraMETA`;
+string $footMETA=`rename $temp[0] ("meta_"+$footCNT)`;
+setAttr ($footMETA+".component") -type "string" "footroll";
+connectAttr -f ($module+".message") ($footMETA+".metaParent");
+addAttr -ln "system" -dt "string" $footMETA;
+setAttr ($footMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $footCNT;
+connectAttr -f ($footMETA+".message") ($footCNT+".metaParent");
+addAttr -ln "switch" -at message $footMETA;
+connectAttr -f ($zeroCNT+".message") ($footMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $footMETA;
+setAttr ($footMETA+".worldspace") -type "string" "false";
+addAttr -ln "zero" -dt "string" $footMETA;
+setAttr ($footMETA+".zero") -type "string" "true";
+addAttr -ln "index" -at long $footMETA;
+setAttr ($footMETA+".index") 1;
+
+string $temp[]=`duplicate $extraMETA`;
+string $iktoeMETA=`rename $temp[0] ("meta_"+$iktoeCNT)`;
+setAttr ($iktoeMETA+".component") -type "string" "toe";
+connectAttr -f ($module+".message") ($iktoeMETA+".metaParent");
+addAttr -ln "system" -dt "string" $iktoeMETA;
+setAttr ($iktoeMETA+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $iktoeCNT;
+connectAttr -f ($iktoeMETA+".message") ($iktoeCNT+".metaParent");
+addAttr -ln "switch" -at message $iktoeMETA;
+connectAttr -f ($fktoe+".message") ($iktoeMETA+".switch");
+addAttr -ln "worldspace" -dt "string" $iktoeMETA;
+setAttr ($iktoeMETA+".worldspace") -type "string" "false";
+addAttr -ln "index" -at long $iktoeMETA;
+setAttr ($iktoeMETA+".index") 1;
+
+string $temp[]=`duplicate $extraMETA`;
+string $meta=`rename $temp[0] ("meta_"+$rootCNT)`;
+setAttr ($meta+".component") -type "string" "root";
+connectAttr -f ($module+".message") ($meta+".metaParent");
+addAttr -ln "metaParent" -at message $rootCNT;
+connectAttr -f ($meta+".message") ($rootCNT+".metaParent");
+
+string $polevectorGRP=`createNode "transform" -ss -n ($prefix+"polevector_grp")`;
+string $ikfootGRP=`createNode "transform" -ss -n ($prefix+"ikFoot_grp")`;
+string $thighGRP=`createNode "transform" -ss -n ($prefix+"thigh_grp")`;
+string $kneeGRP=`createNode "transform" -ss -n ($prefix+"knee_grp")`;
+string $fkfootGRP=`createNode "transform" -ss -n ($prefix+"fkFoot_grp")`;
+string $fktoeGRP=`createNode "transform" -ss -n ($prefix+"fkToe_grp")`;
+string $iktoeGRP=`createNode "transform" -ss -n ($prefix+"ikToe_grp")`;
+string $footGRP=`createNode "transform" -ss -n ($prefix+"foot_grp")`;
+string $footHeelGRP=`createNode "transform" -ss -n ($prefix+"footHeel_grp")`;
+
+delete `parentConstraint -weight 1 $ballGRP $ballCNT`;
+delete `parentConstraint -weight 1 $toetipGRP $toetipCNT`;
+delete `parentConstraint -weight 1 $heelGRP $heelCNT`;
+
+parent $polevectorCNT $polevectorGRP;
+parent $ikfootCNT $ikfootGRP;
+parent $fkthighCNT $thighGRP;
+parent $fkkneeCNT $kneeGRP;
+parent $fkfootCNT $fkfootGRP;
+parent $fktoeCNT $fktoeGRP;
+parent $iktoeCNT $iktoeGRP;
+parent $ballCNT $ballGRP;
+parent $toetipCNT $toetipGRP;
+parent $heelCNT $heelGRP;
+parent $footCNT $footGRP;
+
+rotate 0 0 -90 $ballGRP;
+rotate 0 0 -90 $toetipGRP;
+rotate 0 0 -90 $heelGRP;
+rotate 0 180 90 $footGRP;
+
+parent $ballGRP $toetipGRP;
+parent $toetipGRP $heelGRP;
+parent $heelGRP $l_bankGRP;
+parent $l_bankGRP $l_bankinvGRP;
+parent $l_bankinvGRP $r_bankGRP;
+
+parent $iktoeGRP $toetipGRP;
+
+delete `pointConstraint -offset 0 0 0 -weight 1 $polevector $polevectorGRP`;
+delete `parentConstraint -weight 1 $footJNT $ikfootGRP`;
+delete `parentConstraint -weight 1 $thighJNT $thighGRP`;
+delete `parentConstraint -weight 1 $kneeBLD $kneeGRP`;
+delete `parentConstraint -weight 1 $footJNT $fkfootGRP`;
+delete `parentConstraint -weight 1 $footJNT $extraCNT`;
+delete `parentConstraint -weight 1 $toeJNT $fktoeGRP`;
+delete `parentConstraint -weight 1 $toeJNT $iktoeGRP`;
+delete `parentConstraint -weight 1 $heelGRP $footGRP`;
+delete `parentConstraint -weight 1 $plug $rootCNT`;
+
+parent $thighGRP $rootCNT;
+parent $kneeGRP $fkthighCNT;
+parent $fkfootGRP $fkkneeCNT;
+parent $footGRP $ikfootCNT;
+parent $rootCNT $plug;
+parent $thighJNT $rootCNT;
+parent $ikthigh $rootCNT;
+parent $legRootJNT $rootCNT;
+
+rotate 180 0 0 $footGRP;
+
+rotate -r -os 90 0 0 ($extraCNT+".cv[0:11]");
+
+select -r ($fkthighCNT+".cv[0:4]") ($fkthighCNT+".cv[9:10]") ($fkthighCNT+".cv[13:14]") ($fkthighCNT+".cv[17:18]");
+move -r -os -wd -0.5 0 0;
+move -r -os -wd `getAttr ($kneeBLD+".tx")` 0 0;
+select -r ($fkthighCNT+".cv[5:8]") ($fkthighCNT+".cv[11:12]") ($fkthighCNT+".cv[15:16]");
+move -r -os -wd 0.5 0 0;
+
+select -r ($fkkneeCNT+".cv[0:4]") ($fkkneeCNT+".cv[9:10]") ($fkkneeCNT+".cv[13:14]") ($fkkneeCNT+".cv[17:18]");
+move -r -os -wd -0.5 0 0;
+move -r -os -wd `getAttr ($footBLD+".tx")` 0 0;
+select -r ($fkkneeCNT+".cv[5:8]") ($fkkneeCNT+".cv[11:12]") ($fkkneeCNT+".cv[15:16]");
+move -r -os -wd 0.5 0 0;
+select -cl;
+
+rotate -r -os -90 0 0 ($ikfootCNT+".cv[0:7]");
+move -r -os 0 ($l_bankPOS[1]-$footPOS[1]) ($l_bankPOS[2]-$footPOS[2]) ($ikfootCNT+".cv[0:7]");
+move -r 0 ($heelPOS[1]-$l_bankPOS[1]) ($heelPOS[2]-$l_bankPOS[2]) ($ikfootCNT+".cv[0:2]");
+move -r 0 ($toePOS[1]-$l_bankPOS[1]) ($toePOS[2]-$l_bankPOS[2]) ($ikfootCNT+".cv[4:6]");
+move -r 0 ($l_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[2]");
+move -r 0 ($l_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[3]");
+move -r 0 ($l_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[4]");
+move -r 0 ($r_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[0]");
+move -r 0 ($r_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[6]");
+move -r 0 ($r_bankPOS[0]-$footPOS[0]) 0 ($ikfootCNT+".cv[7]");
+rotate -r -os 0 0 90 ($ikfootCNT+".cv[0:7]");
+rotate -r -os 180 0 0 ($ikfootCNT+".cv[0:7]");
+select -cl;
+
+rotate -r -os 0 0 90 ($fkfootCNT+".cv[0:4]");
+rotate -r -os 180 0 0 ($fkfootCNT+".cv[0:4]");
+
+scale -r 0.5 0.5 0.5 ($footCNT+".cv[0:52]");
+move -r -os 0 0 ($heelPOS[2]-$footPOS[2]) $footGRP;
+
+rotate -r -os 0 -90 0 ($ballCNT+".cv[0:7]");
+
+rotate -r -os 0 -90 0 ($toetipCNT+".cv[0:7]");
+
+rotate -r -os 0 -90 0 ($heelCNT+".cv[0:7]");
+
+rotate -r -os 90 0 0 ($rootCNT+".cv[0:11]");
+
+delete `parentConstraint -weight 1 $heelGRP $footHeelGRP`;
+
+parent $heelGRP $footHeelGRP;
+parent $footHeelGRP $l_bankGRP;
+
+//setup foot controls
+transformLimits -ry -90 90 -ery 1 1 $footCNT;
+transformLimits -rz -90 90 -erz 1 1 $footCNT;
+
+if ($side=="l")
+{
+    transformLimits -rz 0 45 -erz 1 0 $r_bankGRP;
+    transformLimits -rz -90 0 -erz 0 1 $l_bankGRP;
+}else
+{
+    transformLimits -rz 0 0 -erz 0 1 $r_bankGRP;
+    transformLimits -rz 0 0 -erz 1 0 $l_bankGRP;
+    
+    parent -w $l_bankGRP;
+    setAttr ($l_bankinvGRP+".ry") 0;
+    parent $l_bankGRP $l_bankinvGRP;
+}
+
+transformLimits -ry 0 0 -ery 0 1 $heelGRP;
+
+transformLimits -ry 0 0 -ery 1 0 $ballGRP;
+
+connectAttr -f ($footCNT+".rz") ($r_bankGRP+".rz");
+connectAttr -f ($footCNT+".rz") ($l_bankGRP+".rz");
+
+connectAttr -f ($footCNT+".ry") ($heelGRP+".ry");
+
+string $unit01=`shadingNode -asUtility unitConversion`;
+string $unit02=`shadingNode -asUtility unitConversion`;
+string $unit03=`shadingNode -asUtility unitConversion`;
+string $foot01REMAP=`shadingNode -asUtility -n ($prefix+"foot01_remap") remapValue`;
+string $foot02REMAP=`shadingNode -asUtility -n ($prefix+"foot02_remap") remapValue`;
+string $footPMS=`shadingNode -asUtility -n ($prefix+"foot_pms") plusMinusAverage`;
+
+addAttr -ln "footLift" -at "float" -min 0 -max 90 -k 1 $footCNT;
+
+setAttr ($footCNT+".footLift") 33;
+setAttr ($unit01+".conversionFactor") 57.29578;
+setAttr ($unit02+".conversionFactor") 0.0174533;
+setAttr ($unit03+".conversionFactor") 0.0174533;
+setAttr ($foot01REMAP+".inputMax") 90;
+setAttr ($foot01REMAP+".outputMin") 0;
+setAttr ($foot01REMAP+".outputMax") 90;
+setAttr ($foot02REMAP+".inputMax") 90;
+setAttr ($foot02REMAP+".outputMin") 0;
+setAttr ($foot02REMAP+".outputMax") -90;
+setAttr ($footPMS+".operation") 1;
+
+connectAttr -f ($footCNT+".ry") ($unit01+".input");
+connectAttr -f ($footCNT+".footLift") ($foot01REMAP+".inputMin");
+connectAttr -f ($footCNT+".footLift") ($foot02REMAP+".inputMin");
+connectAttr -f ($unit01+".output") ($foot01REMAP+".inputValue");
+connectAttr -f ($unit01+".output") ($foot02REMAP+".inputValue");
+connectAttr -f ($unit01+".output") ($footPMS+".input1D[0]");
+connectAttr -f ($foot01REMAP+".outColorR") ($unit02+".input");
+connectAttr -f ($unit02+".output") ($toetipGRP+".ry");
+connectAttr -f ($foot02REMAP+".outColorR") ($footPMS+".input1D[1]");
+connectAttr -f ($footPMS+".output1D") ($unit03+".input");
+connectAttr -f ($unit03+".output") ($ballGRP+".ry");
+
+parent $toetipGRP $heelCNT;
+parent $ballGRP $toetipCNT;
+parent $iktoeGRP $toetipCNT;
+
+//create twist controls
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ikTwist01") $thighJNT`;
+string $ikthighTwist=$helper_loc[0];
+
+string $helper_loc[]=`circle -n ($prefix+"ikTwist01_cnt")`;
+string $ikthighCNT=$helper_loc[0];
+
+delete `parentConstraint -weight 1 $ikthigh $ikthighCNT`;
+
+parent $ikthighTwist $ikthighCNT;
+
+rotate -r -os 0 -90 0 ($ikthighCNT+".cv[0:7]");
+select $ikthighCNT;
+DeleteHistory;
+select -cl;
+
+parent $ikthighCNT $ikthigh;
+
+string $helper_loc[]=`duplicate -st -po -n ($prefix+"ikTwist02") $kneeBLD`;
+string $ikkneeTwist=$helper_loc[0];
+
+string $helper_loc[]=`circle -n ($prefix+"ikTwist02_cnt")`;
+string $ikkneeCNT=$helper_loc[0];
+
+delete `parentConstraint -weight 1 $ikknee $ikkneeCNT`;
+
+parent $ikkneeTwist $ikkneeCNT;
+
+rotate -r -os 0 -90 0 ($ikkneeCNT+".cv[0:7]");
+select $ikkneeCNT;
+DeleteHistory;
+select -cl;
+
+parent $ikkneeCNT $ikknee;
+
+//setup twist controls
+string $ikthighMETA=`shadingNode -asUtility -n ("meta_"+$ikthighCNT) network`;
+
+addAttr -ln "type" -dt "string" $ikthighMETA;
+setAttr ($ikthighMETA+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $ikthighMETA;
+setAttr ($ikthighMETA+".component") -type "string" "iktwist";
+addAttr -ln "metaParent" -at message $ikthighMETA;
+connectAttr -f ($module+".message") ($ikthighMETA+".metaParent");
+addAttr -ln "metaParent" -at message $ikthighCNT;
+connectAttr -f ($ikthighMETA+".message") ($ikthighCNT+".metaParent");
+addAttr -ln "switch" -at message $ikthighMETA;
+connectAttr -f ($fkthigh+".message") ($ikthighMETA+".switch");
+addAttr -ln "system" -dt "string" $ikthighMETA;
+setAttr ($ikthighMETA+".system") -type "string" "ik";
+addAttr -ln "worldspace" -dt "string" $ikthighMETA;
+setAttr ($ikthighMETA+".worldspace") -type "string" "false";
+addAttr -ln "index" -at long $ikthighMETA;
+setAttr ($ikthighMETA+".index") 1;
+
+string $ikkneeMETA=`shadingNode -asUtility -n ("meta_"+$ikkneeCNT) network`;
+
+addAttr -ln "type" -dt "string" $ikkneeMETA;
+setAttr ($ikkneeMETA+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $ikkneeMETA;
+setAttr ($ikkneeMETA+".component") -type "string" "iktwist";
+addAttr -ln "metaParent" -at message $ikkneeMETA;
+connectAttr -f ($module+".message") ($ikkneeMETA+".metaParent");
+addAttr -ln "metaParent" -at message $ikkneeCNT;
+connectAttr -f ($ikkneeMETA+".message") ($ikkneeCNT+".metaParent");
+addAttr -ln "switch" -at message $ikkneeMETA;
+connectAttr -f ($fkknee+".message") ($ikkneeMETA+".switch");
+addAttr -ln "system" -dt "string" $ikkneeMETA;
+setAttr ($ikkneeMETA+".system") -type "string" "ik";
+addAttr -ln "worldspace" -dt "string" $ikkneeMETA;
+setAttr ($ikkneeMETA+".worldspace") -type "string" "false";
+addAttr -ln "index" -at long $ikkneeMETA;
+setAttr ($ikkneeMETA+".index") 2;
+
+connectAttr -f ($ikthighCNT+".message") ($thighMETA+".switch");
+connectAttr -f ($ikkneeCNT+".message") ($kneeMETA+".switch");
+
+//setup blending
+string $fkikREV=`shadingNode -asUtility -n ($prefix+"fkikREV") reverse`;
+
+connectAttr ($extraCNT+".FKIK") ($fkikREV+".inputX");
+
+string $thighOrientCon[]=`orientConstraint -offset 0 0 0 -weight 1 $ikthighTwist $fkthigh $thighJNT`;
+string $kneeOrientCon[]=`orientConstraint -offset 0 0 0 -weight 1 $ikkneeTwist $fkknee $kneeBLD`;
+string $footOrientCon[]=`orientConstraint -offset 0 0 0 -weight 1 $stretch02 $fkfoot $footJNT`;
+string $toeOrientCon[]=`orientConstraint -offset 0 0 0 -weight 1 $iktoe $fktoe $toeJNT`;
+pointConstraint -offset 0 0 0 -weight 1 $footBLD $footJNT;
+string $thighScaleCon[]=`scaleConstraint -offset 1 1 1 -weight 1 $ikthigh $fkthigh $thighJNT`;
+
+connectAttr -f ($fkikREV+".outputX") ($thighOrientCon[0]+"."+$fkthigh+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($thighOrientCon[0]+"."+$ikthighTwist+"W0");
+
+connectAttr -f ($fkikREV+".outputX") ($kneeOrientCon[0]+"."+$fkknee+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($kneeOrientCon[0]+"."+$ikkneeTwist+"W0");
+
+connectAttr -f ($fkikREV+".outputX") ($footOrientCon[0]+"."+$fkfoot+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($footOrientCon[0]+"."+$stretch02+"W0");
+connectAttr -f ($fkikREV+".outputX") ($thighScaleCon[0]+"."+$fkthigh+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($thighScaleCon[0]+"."+$ikthigh+"W0");
+connectAttr -f ($fkikREV+".outputX") ($toeOrientCon[0]+"."+$fktoe+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($toeOrientCon[0]+"."+$iktoe+"W0");
+
+connectAttr -f ($thighJNT+".sx") ($kneeBLD+".sx");
+
+setAttr ($thighOrientCon[0]+".interpType") 2;
+setAttr ($kneeOrientCon[0]+".interpType") 2;
+
+//setup controls
+parent $polevector $polevectorCNT;
+parent $fkthigh $fkthighCNT;
+parent $fkknee $fkkneeCNT;
+parent $fkfoot $fkfootCNT;
+parent $extraCNT $footJNT;
+
+parentConstraint -weight 1 -maintainOffset $ballCNT $stretch02;
+
+parent $iktoe $iktoeCNT;
+parent $fktoeGRP $fkfootCNT;
+parent $fktoe $fktoeCNT;
+
+string $footNull=`createNode "transform" -ss -n ($prefix+"footNull")`;
+parent $r_bankGRP $footNull;
+parent $footNull $ikfootCNT;
+
+connectAttr -f ($fkikREV+".outputX") ($fkthighCNT+".visibility");
+connectAttr -f ($fkikREV+".outputX") ($fkkneeCNT+".visibility");
+connectAttr -f ($fkikREV+".outputX") ($fkfootCNT+".visibility");
+connectAttr -f ($fkikREV+".outputX") ($fktoeCNT+".visibility");
+
+connectAttr -f ($extraCNT+".FKIK") ($ikfootCNT+".visibility");
+connectAttr -f ($extraCNT+".FKIK") ($polevectorCNT+".visibility");
+connectAttr -f ($extraCNT+".FKIK") ($iktoeCNT+".visibility");
+connectAttr -f ($extraCNT+".FKIK") ($footCNT+".visibility");
+
+connectAttr -f ($extraCNT+".ikTwistControls") ($ikthighCNT+".visibility");
+connectAttr -f ($extraCNT+".ikTwistControls") ($ikkneeCNT+".visibility");
+
+//channelbox cleanup
+setAttr -lock true -keyable false -channelBox false ($polevectorCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($polevectorCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($polevectorCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($polevectorCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($ikfootCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ikfootCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ikfootCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($ikfootCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($fkthighCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($fkkneeCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($fkfootCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($fktoeCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".rx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".ry");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".rz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".ry");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".rz");
+setAttr -lock true -keyable false -channelBox false ($ikthighCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".ry");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".rz");
+setAttr -lock true -keyable false -channelBox false ($ikkneeCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($ballCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($toetipCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($heelCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($footCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($footCNT+".v");
+
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($iktoeCNT+".v");
+
+//bendy/twist setup-------------------------------------------------------------
+//create average jnt
+$averageJNT=`joint -p $kneePOS[0] $kneePOS[1] $kneePOS[2] -n ($prefix+"average_jnt")`;
+
+parent $averageJNT $kneeBLD;
+
+string $orientCon[]=`orientConstraint -weight 1 -offset 0 0 0 $thighJNT $kneeBLD $averageJNT`;
+
+setAttr ($orientCon[0]+".interpType") 2;
+
+//calculate length of upper leg
+float $distX=$thighPOS[0]-$kneePOS[0];
+float $distY=$thighPOS[1]-$kneePOS[1];
+float $distZ=$thighPOS[2]-$kneePOS[2];
+
+float $upperLength=`mag <<$distX,$distY,$distZ>>`;
+
+//calculate length of lower leg
+float $distX=$kneePOS[0]-$footPOS[0];
+float $distY=$kneePOS[1]-$footPOS[1];
+float $distZ=$kneePOS[2]-$footPOS[2];
+
+float $lowerLength=`mag <<$distX,$distY,$distZ>>`;
+
+//adding control to extra cnt
+addAttr -ln "bendy" -at "float" -min 0 -max 1 -k 1 $extraCNT;
+setAttr ($extraCNT+".bendy") 0.0001;
+
+addAttr -ln "fineTuneControl" -at "float" -min 0 -max 1 -k 1 $extraCNT;
+
+//create jnts
+string $upperDRV[]={};
+string $lowerDRV[]={};
+select -cl;
+for($o = 0; $o < ($upperTwistCount+1); $o++)
+{
+    $jnt=`joint -p (($upperLength/$upperTwistCount)*$o) 0 0 -n ($prefix+"upperTwist_drv"+$o)`;
+    
+    $upperDRV[size($upperDRV)]=$jnt;
+}
+select -cl;
+for($o = 0; $o < ($lowerTwistCount+1); $o++)
+{
+    $jnt=`joint -p (($lowerLength/$lowerTwistCount)*$o) 0 0 -n ($prefix+"lowerTwist_drv"+$o)`;
+    
+    $lowerDRV[size($lowerDRV)]=$jnt;
+}
+
+//setup upper jnts
+delete `parentConstraint -weight 1 $thighJNT $upperDRV[0]`;
+
+string $upperIkHandle[]=`ikHandle -sol ikSplineSolver -createCurve 1 -sj $upperDRV[0] -endEffector $upperDRV[$upperTwistCount]`;
+
+select -cl;
+float $upperCurve01POS[]=`xform -q -ws -translation ($upperIkHandle[2]+".cv[1]")`;
+string $upperBend01JNT=`joint -p $upperCurve01POS[0] $upperCurve01POS[1] $upperCurve01POS[2] -n ($prefix+"upperBend01_jnt")`;
+
+select -cl;
+float $upperCurve02POS[]=`xform -q -ws -translation ($upperIkHandle[2]+".cv[2]")`;
+string $upperBend02JNT=`joint -p $upperCurve02POS[0] $upperCurve02POS[1] $upperCurve02POS[2] -n ($prefix+"upperBend02_jnt")`;
+
+string $skin[]=`skinCluster -tsb $thighJNT $upperBend01JNT $upperBend02JNT $upperIkHandle[2]`;
+
+skinPercent -tv $thighJNT 1 $skin[0] ($upperIkHandle[2]+".cv[0]");
+skinPercent -tv $upperBend01JNT 1 $skin[0] ($upperIkHandle[2]+".cv[1]");
+skinPercent -tv $upperBend02JNT 1 $skin[0] ($upperIkHandle[2]+".cv[2]");
+skinPercent -tv $thighJNT 1 $skin[0] ($upperIkHandle[2]+".cv[3]");
+
+delete `parentConstraint -weight 1 $averageJNT $upperBend01JNT`;
+delete `parentConstraint -weight 1 $averageJNT $upperBend02JNT`;
+
+string $upperBend01GRP=`createNode "transform" -ss -n ($prefix+"upperBend01_grp")`;
+string $upperBend02GRP=`createNode "transform" -ss -n ($prefix+"upperBend02_grp")`;
+
+delete `parentConstraint -weight 1 $averageJNT $upperBend01GRP`;
+delete `parentConstraint -weight 1 $averageJNT $upperBend02GRP`;
+
+parent $upperBend01JNT $upperBend01GRP;
+parent $upperBend02JNT $upperBend02GRP;
+parent $upperBend01GRP $averageJNT;
+parent $upperBend02GRP $averageJNT;
+
+orientConstraint -weight 1 -offset 0 0 0 $thighJNT $upperBend01GRP;
+
+string $upperBend01MD=`shadingNode -asUtility -n ($prefix+"upperBend01_md") multiplyDivide`;
+string $upperBend02MD=`shadingNode -asUtility -n ($prefix+"upperBend02_md") multiplyDivide`;
+string $upperBend01PMS=`shadingNode -asUtility -n ($prefix+"upperBend01_pms") plusMinusAverage`;
+setAttr ($upperBend01MD+".input2X") (-$upperLength);
+setAttr ($upperBend02MD+".input1Y") ($upperLength/1000);
+connectAttr -f ($upperBend02MD+".outputY") ($upperBend01PMS+".input1D[0]");
+connectAttr -f ($extraCNT+".bendy") ($upperBend01PMS+".input1D[1]");
+connectAttr -f ($upperBend01PMS+".output1D") ($upperBend01MD+".input1X");
+
+connectAttr -f ($upperBend01MD+".outputX") ($upperBend01JNT+".tx");
+connectAttr -f ($upperBend01MD+".outputX") ($upperBend02JNT+".tx");
+
+setAttr ($upperIkHandle[0]+".dTwistControlEnable") 1;
+setAttr ($upperIkHandle[0]+".dWorldUpType") 4;
+connectAttr -f ($plug+".worldMatrix[0]") ($upperIkHandle[0]+".dWorldUpMatrix");
+connectAttr -f ($kneeBLD+".worldMatrix[0]") ($upperIkHandle[0]+".dWorldUpMatrixEnd");
+
+//making twist jnts stretchy
+string $upperBendStretch01MD=`shadingNode -asUtility -n ($prefix+"upperBendStretch01_md") multiplyDivide`;
+setAttr ($upperBendStretch01MD+".operation") 2;
+setAttr ($upperBendStretch01MD+".input2X") ($upperLength);
+
+string $upperBendStretch02MD=`shadingNode -asUtility -n ($prefix+"upperBendStretch02_md") multiplyDivide`;
+setAttr ($upperBendStretch02MD+".operation") 2;
+connectAttr -f ($plug+".sx") ($upperBendStretch02MD+".input2X");
+
+string $temp[]=`listRelatives -s $upperIkHandle[2]`;
+string $temp01=`arclen -ch 1 $temp[0]`;
+string $upperBendStretch01INFO=`rename $temp01 ($prefix+"upperBendStretch01_info")`;
+
+connectAttr -f ($upperBendStretch01INFO+".arcLength") ($upperBendStretch01MD+".input1X");
+
+connectAttr -f ($upperBendStretch01MD+".outputX") ($upperBendStretch02MD+".input1X");
+
+for($o = 0; $o < ($upperTwistCount); $o++)
+{
+    connectAttr -f ($upperBendStretch02MD+".outputX") ($upperDRV[$o]+".sx");
+    
+    
+}
+
+parent $upperDRV[0] $thighJNT;
+
+//rename curves and ikHandles
+rename $upperIkHandle[0] ($prefix+"upperBend01_ikHandle");
+rename $upperIkHandle[1] ($prefix+"upperBend01_eff");
+rename $upperIkHandle[2] ($prefix+"upperBend01_crv");
+
+//create bend controls
+for($o = 0; $o < ($upperTwistCount); $o++)
+{
+    select -cl;
+    string $jnt=`joint -p 0 0 0 -n ($prefix+"upperTwist_jnt"+$o)`;
+    string $cnt[]=`circle -ch 0 -n ($prefix+"upperTwist_cnt"+$o)`;
+    
+    parent $jnt $cnt[0];
+    
+    rotate -r -os 0 -90 0 ($cnt[0]+".cv[0:7]");
+    
+    delete `parentConstraint -weight 1 $upperDRV[$o] $cnt[0]`;
+    
+    parent $cnt $upperDRV[$o];
+    
+    connectAttr -f ($extraCNT+".fineTuneControl") ($cnt[0]+".visibility");
+    
+    string $meta=`shadingNode -asUtility -n ("meta_"+$cnt[0]) network`;
+    
+    addAttr -ln "type" -dt "string" $meta;
+    setAttr ($meta+".type") -type "string" "control";
+    addAttr -ln "component" -dt "string" $meta;
+    setAttr ($meta+".component") -type "string" "uppertwist";
+    addAttr -ln "system" -dt "string" $meta;
+    setAttr ($meta+".system") -type "string" "bend";
+    addAttr -ln "metaParent" -at message $meta;
+    connectAttr -f ($module+".message") ($meta+".metaParent");
+    addAttr -ln "metaParent" -at message $cnt[0];
+    connectAttr -f ($meta+".message") ($cnt[0]+".metaParent");
+    addAttr -ln "index" -at long $meta;
+    setAttr ($meta+".index") $o;
+    
+    string $meta=`shadingNode -asUtility -n ("meta_"+$jnt) network`;
+    
+    addAttr -ln "type" -dt "string" $meta;
+    setAttr ($meta+".type") -type "string" "joint";
+    addAttr -ln "component" -dt "string" $meta;
+    setAttr ($meta+".component") -type "string" "uppertwist";
+    addAttr -ln "system" -dt "string" $meta;
+    setAttr ($meta+".system") -type "string" "skin";
+    addAttr -ln "metaParent" -at message $meta;
+    connectAttr -f ($module+".message") ($meta+".metaParent");
+    addAttr -ln "metaParent" -at message $jnt;
+    connectAttr -f ($meta+".message") ($jnt+".metaParent");
+    addAttr -ln "index" -at long $meta;
+    setAttr ($meta+".index") $o;
+    
+    setAttr -lock true -keyable false -channelBox false ($cnt[0]+".v");
+}
+
+//setup lower jnts
+delete `parentConstraint -weight 1 $kneeBLD $lowerDRV[0]`;
+
+string $lowerIkHandle[]=`ikHandle -sol ikSplineSolver -createCurve 1 -sj $lowerDRV[0] -endEffector $lowerDRV[$lowerTwistCount]`;
+
+select -cl;
+float $lowerCurve01POS[]=`xform -q -ws -translation ($lowerIkHandle[2]+".cv[1]")`;
+string $lowerBend01JNT=`joint -p $lowerCurve01POS[0] $lowerCurve01POS[1] $lowerCurve01POS[2] -n ($prefix+"lowerBend01_jnt")`;
+
+select -cl;
+float $lowerCurve02POS[]=`xform -q -ws -translation ($lowerIkHandle[2]+".cv[2]")`;
+string $lowerBend02JNT=`joint -p $lowerCurve02POS[0] $lowerCurve02POS[1] $lowerCurve02POS[2] -n ($prefix+"lowerBend02_jnt")`;
+
+string $skin[]=`skinCluster -tsb $kneeBLD $lowerBend01JNT $lowerBend02JNT $lowerIkHandle[2]`;
+
+skinPercent -tv $kneeBLD 1 $skin[0] ($lowerIkHandle[2]+".cv[0]");
+skinPercent -tv $lowerBend01JNT 1 $skin[0] ($lowerIkHandle[2]+".cv[1]");
+skinPercent -tv $lowerBend02JNT 1 $skin[0] ($lowerIkHandle[2]+".cv[2]");
+skinPercent -tv $kneeBLD 1 $skin[0] ($lowerIkHandle[2]+".cv[3]");
+
+delete `parentConstraint -weight 1 $averageJNT $lowerBend01JNT`;
+delete `parentConstraint -weight 1 $averageJNT $lowerBend02JNT`;
+
+string $lowerBend01GRP=`createNode "transform" -ss -n ($prefix+"lowerBend01_grp")`;
+string $lowerBend02GRP=`createNode "transform" -ss -n ($prefix+"lowerBend02_grp")`;
+
+delete `parentConstraint -weight 1 $averageJNT $lowerBend01GRP`;
+delete `parentConstraint -weight 1 $averageJNT $lowerBend02GRP`;
+
+parent $lowerBend01JNT $lowerBend01GRP;
+parent $lowerBend02JNT $lowerBend02GRP;
+parent $lowerBend01GRP $averageJNT;
+parent $lowerBend02GRP $averageJNT;
+
+orientConstraint -weight 1 -offset 0 0 0 $kneeBLD $lowerBend02GRP;
+
+string $lowerBend01MD=`shadingNode -asUtility -n ($prefix+"lowerBend01_md") multiplyDivide`;
+setAttr ($lowerBend01MD+".input2X") ($lowerLength-0.0001);
+connectAttr -f ($extraCNT+".bendy") ($lowerBend01MD+".input1X");
+
+connectAttr -f ($lowerBend01MD+".outputX") ($lowerBend01JNT+".tx");
+connectAttr -f ($lowerBend01MD+".outputX") ($lowerBend02JNT+".tx");
+
+setAttr ($lowerIkHandle[0]+".dTwistControlEnable") 1;
+setAttr ($lowerIkHandle[0]+".dWorldUpType") 4;
+connectAttr -f ($kneeBLD+".worldMatrix[0]") ($lowerIkHandle[0]+".dWorldUpMatrix");
+connectAttr -f ($footJNT+".worldMatrix[0]") ($lowerIkHandle[0]+".dWorldUpMatrixEnd");
+
+//making twist jnts stretchy
+string $lowerBendStretch01MD=`shadingNode -asUtility -n ($prefix+"lowerBendStretch01_md") multiplyDivide`;
+setAttr ($lowerBendStretch01MD+".operation") 2;
+setAttr ($lowerBendStretch01MD+".input2X") ($lowerLength);
+
+string $lowerBendStretch02MD=`shadingNode -asUtility -n ($prefix+"lowerBendStretch02_md") multiplyDivide`;
+setAttr ($lowerBendStretch02MD+".operation") 2;
+connectAttr -f ($plug+".sx") ($lowerBendStretch02MD+".input2X");
+
+string $temp[]=`listRelatives -s $lowerIkHandle[2]`;
+string $temp01=`arclen -ch 1 $temp[0]`;
+string $lowerBendStretch01INFO=`rename $temp01 ($prefix+"lowerBendStretch01_info")`;
+
+connectAttr -f ($lowerBendStretch01INFO+".arcLength") ($lowerBendStretch01MD+".input1X");
+
+connectAttr -f ($lowerBendStretch01MD+".outputX") ($lowerBendStretch02MD+".input1X");
+
+for($o = 0; $o < ($lowerTwistCount); $o++)
+{
+    connectAttr -f ($lowerBendStretch02MD+".outputX") ($lowerDRV[$o]+".sx");
+}
+
+parent $lowerDRV[0] $thighJNT;
+
+//rename curves and ikHandles
+rename $lowerIkHandle[0] ($prefix+"lowerBend01_ikHandle");
+rename $lowerIkHandle[1] ($prefix+"lowerBend01_eff");
+rename $lowerIkHandle[2] ($prefix+"lowerBend01_crv");
+
+//create bend controls
+for($o = 0; $o < ($lowerTwistCount); $o++)
+{
+    select -cl;
+    string $jnt=`joint -p 0 0 0 -n ($prefix+"lowerTwist_jnt"+$o)`;
+    string $cnt[]=`circle -ch 0 -n ($prefix+"lowerTwist_cnt"+$o)`;
+    
+    parent $jnt $cnt[0];
+    
+    rotate -r -os 0 -90 0 ($cnt[0]+".cv[0:7]");
+    
+    delete `parentConstraint -weight 1 $lowerDRV[$o] $cnt[0]`;
+    
+    parent $cnt $lowerDRV[$o];
+    
+    connectAttr -f ($extraCNT+".fineTuneControl") ($cnt[0]+".visibility");
+    
+    string $meta=`shadingNode -asUtility -n ("meta_"+$cnt[0]) network`;
+    
+    addAttr -ln "type" -dt "string" $meta;
+    setAttr ($meta+".type") -type "string" "control";
+    addAttr -ln "component" -dt "string" $meta;
+    setAttr ($meta+".component") -type "string" "lowertwist";
+    addAttr -ln "system" -dt "string" $meta;
+    setAttr ($meta+".system") -type "string" "bend";
+    addAttr -ln "metaParent" -at message $meta;
+    connectAttr -f ($module+".message") ($meta+".metaParent");
+    addAttr -ln "metaParent" -at message $cnt[0];
+    connectAttr -f ($meta+".message") ($cnt[0]+".metaParent");
+    addAttr -ln "index" -at long $meta;
+    setAttr ($meta+".index") $o;
+    
+    string $meta=`shadingNode -asUtility -n ("meta_"+$jnt) network`;
+    
+    addAttr -ln "type" -dt "string" $meta;
+    setAttr ($meta+".type") -type "string" "joint";
+    addAttr -ln "component" -dt "string" $meta;
+    setAttr ($meta+".component") -type "string" "lowertwist";
+    addAttr -ln "system" -dt "string" $meta;
+    setAttr ($meta+".system") -type "string" "skin";
+    addAttr -ln "metaParent" -at message $meta;
+    connectAttr -f ($module+".message") ($meta+".metaParent");
+    addAttr -ln "metaParent" -at message $jnt;
+    connectAttr -f ($meta+".message") ($jnt+".metaParent");
+    addAttr -ln "index" -at long $meta;
+    setAttr ($meta+".index") $o;
+    
+    setAttr -lock true -keyable false -channelBox false ($cnt[0]+".v");
+}
+
+//create knee control
+select -cl;
+string $kneeCNT[]=`circle -ch 0 -n ($prefix+"bend_cnt")`;
+
+rotate -r -os 0 -90 0 ($kneeCNT[0]+".cv[0:7]");
+
+delete `parentConstraint -weight 1 $averageJNT $kneeCNT[0]`;
+
+parent $kneeJNT $kneeCNT[0];
+
+parent $kneeCNT $averageJNT;
+
+connectAttr -f ($extraCNT+".fineTuneControl") ($kneeCNT[1]+".visibility");
+
+setAttr -lock true -keyable false -channelBox false ($kneeCNT[1]+".v");
+
+///setup for ZvParentMaster
+select $ikfootCNT;
+group -n ($prefix+"ikFoot_cnt_SN");
+group -n ($prefix+"ikFoot_cnt_PH");
+
+select $polevectorCNT;
+group -n ($prefix+"polevector_cnt_SN");
+group -n ($prefix+"polevector_cnt_PH");
