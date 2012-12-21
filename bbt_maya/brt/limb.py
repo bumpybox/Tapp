@@ -3,6 +3,7 @@ import maya.mel as mel
 
 from bbt_maya import generic
 from bbt_maya.brt import utils
+from bbt_maya.brt import twistJoints
 
 class Limb():
     
@@ -69,19 +70,22 @@ class Limb():
         prefix=side[0]+'_'+limbType+str(index)+'_'
         suffix='_'+side[0]+'_'+limbType+str(index)
         
+        #creating asset
+        asset=cmds.container(n=prefix+'rig')
+        
         #create module
         data={'side':side,'index':str(index)}
         
         module=meta.setData(('meta'+suffix), 'module', limbType, None,data)
         
+        cmds.container(asset,e=True,addNode=module)
+        
         #create joints
         startJoint=cmds.joint(position=(startTrans[0],startTrans[1],startTrans[2]),name=prefix+'jnt01')
-        midBlend=cmds.joint(position=(midTrans[0],midTrans[1],midTrans[2]),name=prefix+'bld01')
-        endBlend=cmds.joint(position=(endTrans[0],endTrans[1],endTrans[2]),name=prefix+'bld02')
-        cmds.select(cl=True)
         midJoint=cmds.joint(position=(midTrans[0],midTrans[1],midTrans[2]),name=prefix+'jnt02')
-        cmds.select(cl=True)
         endJoint=cmds.joint(position=(endTrans[0],endTrans[1],endTrans[2]),name=prefix+'jnt03')
+        
+        cmds.container(asset,e=True,addNode=[startJoint,midJoint,endJoint])
         
         #create plug
         plug=cmds.spaceLocator(name=prefix+'plug')[0]
@@ -91,6 +95,8 @@ class Limb():
         metaParent=meta.setData('meta_'+plug, 'plug', None, module,None)
         
         meta.setTransform(plug, metaParent)
+        
+        cmds.container(asset,e=True,addNode=plug)
         
         #create socket
         startSocket=cmds.spaceLocator(name=prefix+'socket01')[0]
@@ -117,6 +123,8 @@ class Limb():
         metaParent=meta.setData('meta_'+endSocket, 'socket', None, module,data)
         meta.setTransform(endSocket, metaParent)
         
+        cmds.container(asset,e=True,addNode=[startSocket,midSocket,endSocket])
+        
         #finding the worldUpVecter for the joints
         vectorA=[0,0,0]
         vectorB=[0,0,0]
@@ -139,7 +147,7 @@ class Limb():
         #setup start joint
         grp=cmds.group(empty=True)
         cmds.xform(grp,worldSpace=True,translation=startTrans)
-        cmds.aimConstraint(midBlend,grp,worldUpType='vector',worldUpVector=cross)
+        cmds.aimConstraint(midJoint,grp,worldUpType='vector',worldUpVector=cross)
         
         rot=cmds.xform(grp,query=True,rotation=True)
         cmds.rotate(rot[0],rot[1],rot[2],startJoint,worldSpace=True,pcp=True)
@@ -151,25 +159,25 @@ class Limb():
         #setup mid and end blend
         grp=cmds.group(empty=True)
         cmds.xform(grp,worldSpace=True,translation=midTrans)
-        cmds.aimConstraint(endBlend,grp,worldUpType='vector',worldUpVector=cross)
+        cmds.aimConstraint(endJoint,grp,worldUpType='vector',worldUpVector=cross)
         
         rot=cmds.xform(grp,query=True,rotation=True)
-        cmds.rotate(rot[0],rot[1],rot[2],midBlend,worldSpace=True,pcp=True)
+        cmds.rotate(rot[0],rot[1],rot[2],midJoint,worldSpace=True,pcp=True)
         
         cmds.delete(grp)
         
-        cmds.rotate(rot[0],rot[1],rot[2],endBlend,worldSpace=True,pcp=True)
+        cmds.rotate(rot[0],rot[1],rot[2],endJoint,worldSpace=True,pcp=True)
         
-        cmds.makeIdentity(midBlend,apply=True, t=1, r=1, s=1, n=0)
-        cmds.makeIdentity(endBlend,apply=True, t=1, r=1, s=1, n=0)
+        cmds.makeIdentity(midJoint,apply=True, t=1, r=1, s=1, n=0)
+        cmds.makeIdentity(endJoint,apply=True, t=1, r=1, s=1, n=0)
         
         #setup end joint
         cmds.xform(endJoint,worldSpace=True,rotation=endRot)
         
         #create ik chain
         startIk=cmds.duplicate(startJoint,st=True,po=True,n=prefix+'ik01')[0]
-        midIk=cmds.duplicate(midBlend,st=True,po=True,n=prefix+'ik02')[0]
-        endIk=cmds.duplicate(endBlend,st=True,po=True,n=prefix+'ik03')[0]
+        midIk=cmds.duplicate(midJoint,st=True,po=True,n=prefix+'ik02')[0]
+        endIk=cmds.duplicate(endJoint,st=True,po=True,n=prefix+'ik03')[0]
         
         cmds.parent(midIk,startIk)
         cmds.parent(endIk,midIk)
@@ -177,18 +185,24 @@ class Limb():
         cmds.connectAttr('%s.scale' % startIk,'%s.inverseScale' % midIk,force=True)
         cmds.connectAttr('%s.scale' % midIk,'%s.inverseScale' % endIk,force=True)
         
+        cmds.container(asset,e=True,addNode=[startIk,midIk,endIk])
+        
         #create polevector
         polevector=cmds.spaceLocator(name=prefix+'polevector')[0]
         cmds.xform(polevector,worldSpace=True,translation=midTrans)
         
-        rot=cmds.xform(midBlend,worldSpace=True,q=True,rotation=True)
+        rot=cmds.xform(midJoint,worldSpace=True,q=True,rotation=True)
         cmds.xform(polevector,worldSpace=True,rotation=rot)
         
-        tx=cmds.getAttr('%s.tx' % midBlend)
+        tx=cmds.getAttr('%s.tx' % midJoint)
         cmds.move(0,0,-tx,polevector,r=True,os=True,wd=True)
+        
+        cmds.container(asset,e=True,addNode=[polevector])
         
         #create ik handle
         ikHandle=cmds.ikHandle(sj=startIk,ee=endIk,sol='ikRPsolver',name=prefix+'ikHandle')
+        
+        cmds.container(asset,e=True,addNode=[ikHandle[0],ikHandle[1]])
         
         cmds.rename(ikHandle[1],prefix+'_eff')
         
@@ -196,14 +210,16 @@ class Limb():
         
         #create fk chain
         startFk=cmds.duplicate(startJoint,st=True,po=True,n=prefix+'fk01')[0]
-        midFk=cmds.duplicate(midBlend,st=True,po=True,n=prefix+'fk02')[0]
-        endFk=cmds.duplicate(endBlend,st=True,po=True,n=prefix+'fk03')[0]
+        midFk=cmds.duplicate(midJoint,st=True,po=True,n=prefix+'fk02')[0]
+        endFk=cmds.duplicate(endJoint,st=True,po=True,n=prefix+'fk03')[0]
         
         rot=cmds.xform(endJoint,worldSpace=True,q=True,rotation=True)
         cmds.xform(endFk,worldSpace=True,rotation=rot)
         
         cmds.parent(midFk,startFk)
         cmds.parent(endFk,midFk)
+        
+        cmds.container(asset,e=True,addNode=[startFk,midFk,endFk])
         
         #setup ik stretching
         stretch01=cmds.createNode('transform',ss=True,n=prefix+'stretch01')
@@ -213,11 +229,14 @@ class Limb():
         stretch02MD=cmds.shadingNode('multiplyDivide',asUtility=True,n=prefix+'stretch02MD')
         stretchBLD=cmds.shadingNode('blendColors',asUtility=True,n=prefix+'stretchBLD')
         
+        cmds.container(asset,e=True,addNode=[stretch01,stretch02,stretchDIST,stretch01MD,
+                                             stretch02MD,stretchBLD])
+        
         cmds.transformLimits(startIk,sx=(1,1),esx=(1,0))
         cmds.transformLimits(midIk,sx=(1,1),esx=(1,0))
         
-        temp1=cmds.getAttr('%s.tx' % midBlend)
-        temp2=cmds.getAttr('%s.tx' % endBlend)
+        temp1=cmds.getAttr('%s.tx' % midJoint)
+        temp2=cmds.getAttr('%s.tx' % endJoint)
         
         cmds.setAttr('%s.color2R' % stretchBLD,1)
         cmds.setAttr('%s.blender' % stretchBLD,1)
@@ -252,6 +271,8 @@ class Limb():
         endFkCNT=ucs.box(prefix+'endFk_cnt')
         extraCNT=ucs.pin(prefix+'extra_cnt')
         
+        cnts=[polevectorCNT,endIkCNT,startFkCNT,midFkCNT,endFkCNT,extraCNT]
+        
         #setup polevectorCNT
         data={'system':'ik','switch':midFk}
         mNode=meta.setData(('meta_'+polevectorCNT), 'control', 'polevector', module,data)
@@ -269,9 +290,6 @@ class Limb():
         
         cmds.parent(polevector,polevectorCNT)
         
-        attrs=['rx','ry','rz','sx','sy','sz','v']
-        ut.channelboxClean(polevectorCNT, attrs)
-        
         #setup endIkCNT
         data={'system':'ik','switch':endFk}
         mNode=meta.setData(('meta_'+endIkCNT), 'control', 'end',module,data)
@@ -286,9 +304,6 @@ class Limb():
         
         cmds.parentConstraint(endIkCNT,stretch02)
         
-        attrs=['sx','sy','sz','v']
-        ut.channelboxClean(endIkCNT, attrs)
-        
         #setup startFkCNT
         data={'system':'fk','switch':startIk}
         mNode=meta.setData(('meta_'+startFkCNT), 'control', 'start',module,data)
@@ -299,9 +314,6 @@ class Limb():
         ut.snap(startFk, grp)
         
         cmds.parent(startFk,startFkCNT)
-        
-        attrs=['tx','ty','tz','sx','sy','sz','v']
-        ut.channelboxClean(startFkCNT, attrs)
         
         #setup midFkCNT
         data={'system':'fk','switch':midIk}
@@ -314,9 +326,6 @@ class Limb():
         
         cmds.parent(midFk,midFkCNT)
         
-        attrs=['tx','ty','tz','sx','sy','sz','v']
-        ut.channelboxClean(midFkCNT, attrs)
-        
         #setup endFkCNT
         data={'system':'fk','switch':endIkCNT}
         mNode=meta.setData(('meta_'+endFkCNT), 'control', 'end',module,data)
@@ -328,8 +337,127 @@ class Limb():
         
         cmds.parent(endFk,endFkCNT)
         
+        #setup extraCNT
+        mNode=meta.setData(('meta_'+extraCNT), 'control', 'extra',module,None)
+        
+        cmds.addAttr(extraCNT,ln='FKIK',at='float',keyable=True,min=0,max=1)
+        cmds.addAttr(extraCNT,ln='ikTwistControls',at='float',keyable=True,min=0,max=1)
+        cmds.addAttr(extraCNT,ln='stretch',at='float',keyable=True,min=0,max=1)
+        
+        cmds.connectAttr(extraCNT+'.stretch',stretchBLD+'.blender',force=True)
+        
+        ut.snap(endFk,extraCNT)
+        
+        cmds.parent(extraCNT,endJoint)
+        cmds.rotate(0,90,0,extraCNT,r=True,os=True)
+        
+        #create twist controls
+        startIkTwistCNT=ucs.circle(prefix+'startIkTwist_cnt')
+        midIkTwistCNT=ucs.circle(prefix+'midIkTwist_cnt')
+        
+        cnts.append(startIkTwistCNT)
+        cnts.append(midIkTwistCNT)
+        
+        #create twist joints
+        startIkTwistJNT=cmds.duplicate(startIk,st=True,po=True,n=(prefix+'ikTwist01'))[0]
+        midIkTwistJNT=cmds.duplicate(midIk,st=True,po=True,n=(prefix+'ikTwist02'))[0]
+        
+        cmds.container(asset,e=True,addNode=[startIkTwistJNT,midIkTwistJNT])
+        
+        #setup startIkTwistCNT        
+        data={'system':'ik','switch':startFk,'worldspace':'false','index':1}
+        mNode=meta.setData(('meta_'+startIkTwistCNT), 'control', 'iktwist',module,data)
+        
+        ut.snap(startIk,startIkTwistCNT)
+        
+        cmds.parent(startIkTwistJNT,startIkTwistCNT)
+        cmds.parent(startIkTwistCNT,startIk)
+        
+        #setup midIkTwistCNT
+        data={'system':'ik','switch':midFk,'worldspace':'false','index':2}
+        mNode=meta.setData(('meta_'+midIkTwistCNT), 'control', 'iktwist',module,data)
+        
+        ut.snap(midIk,midIkTwistCNT)
+        
+        cmds.parent(midIkTwistJNT,midIkTwistCNT)
+        cmds.parent(midIkTwistCNT,midIk)
+        
+        #setup blending
+        fkIkREV=cmds.shadingNode('reverse',asUtility=True,n=(prefix+'fkIkREV'))
+        
+        cmds.container(asset,e=True,addNode=[fkIkREV])
+        
+        cmds.connectAttr(extraCNT+'.FKIK',fkIkREV+'.inputX')
+        
+        orientCon=cmds.orientConstraint(startIkTwistJNT,startFk,startJoint)
+        cmds.setAttr(orientCon[0]+'.interpType',2)
+        cmds.connectAttr(fkIkREV+'.outputX',orientCon[0]+'.'+startFk+'W1',force=True)
+        cmds.connectAttr(extraCNT+'.FKIK',orientCon[0]+'.'+startIkTwistJNT+'W0',force=True)
+        orientCon=cmds.orientConstraint(midIkTwistJNT,midFk,midJoint)
+        cmds.setAttr(orientCon[0]+'.interpType',2)
+        cmds.connectAttr(fkIkREV+'.outputX',orientCon[0]+'.'+midFk+'W1',force=True)
+        cmds.connectAttr(extraCNT+'.FKIK',orientCon[0]+'.'+midIkTwistJNT+'W0',force=True)
+        orientCon=cmds.orientConstraint(stretch02,endFk,endJoint)
+        cmds.setAttr(orientCon[0]+'.interpType',2)
+        cmds.connectAttr(fkIkREV+'.outputX',orientCon[0]+'.'+endFk+'W1',force=True)
+        cmds.connectAttr(extraCNT+'.FKIK',orientCon[0]+'.'+stretch02+'W0',force=True)
+        scaleCon=cmds.scaleConstraint(startIk,startFk,startJoint)
+        cmds.connectAttr(fkIkREV+'.outputX',scaleCon[0]+'.'+startFk+'W1',force=True)
+        cmds.connectAttr(extraCNT+'.FKIK',scaleCon[0]+'.'+startIk+'W0',force=True)
+        
+        cmds.connectAttr(startJoint+'.sx',midJoint+'.sx',force=True)
+        
+        cmds.connectAttr(fkIkREV+'.outputX',startFkCNT+'.visibility')
+        cmds.connectAttr(fkIkREV+'.outputX',midFkCNT+'.visibility')
+        cmds.connectAttr(fkIkREV+'.outputX',endFkCNT+'.visibility')
+        cmds.connectAttr(extraCNT+'.FKIK',endIkCNT+'.visibility')
+        cmds.connectAttr(extraCNT+'.FKIK',polevectorCNT+'.visibility')
+        cmds.connectAttr(extraCNT+'.ikTwistControls',startIkTwistCNT+'.visibility')
+        cmds.connectAttr(extraCNT+'.ikTwistControls',midIkTwistCNT+'.visibility')
+        
+        #twist joints
+        tj=twistJoints.TwistJoints()
+        
+        if upperTwist==True or lowerTwist==True:
+            averageJNT=cmds.joint(p=[0,0,0],n=prefix+'average_jnt')
+            
+            ut.snap(midFk,averageJNT)
+            cmds.parent(averageJNT,midJoint)
+            
+            orientCon=cmds.orientConstraint(startJoint,midJoint,averageJNT)
+            cmds.setAttr(orientCon[0]+'.interpType',2)
+            
+            cmds.container(asset,e=True,addNode=[averageJNT])
+        
+        if upperTwist==True:
+            pass
+        if lowerTwist==True:
+            pass
+        
+        #channelbox cleanup
+        attrs=['rx','ry','rz','sx','sy','sz','v']
+        ut.channelboxClean(polevectorCNT, attrs)
+        
+        attrs=['sx','sy','sz','v']
+        ut.channelboxClean(endIkCNT, attrs)
+        
         attrs=['tx','ty','tz','sx','sy','sz','v']
+        ut.channelboxClean(startFkCNT, attrs)
+        ut.channelboxClean(midFkCNT, attrs)
         ut.channelboxClean(endFkCNT, attrs)
+        
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+        ut.channelboxClean(extraCNT, attrs)
+        
+        attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
+        ut.channelboxClean(startIkTwistCNT, attrs)
+        ut.channelboxClean(midIkTwistCNT, attrs)
+        
+        #adding controls and publish to asset
+        for cnt in cnts:
+            cmds.container(asset,e=True,addNode=[cnt])
+            cmds.containerPublish(asset,publishNode=(cnt,''))
+            cmds.containerPublish(asset,bindNode=(cnt,cnt))
 
 templateModule='meta_limb'
 

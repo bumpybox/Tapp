@@ -18,6 +18,7 @@ class controlShape():
         
         #resize to standard
         cmds.scale(0.25,0.25,0.25, curve)
+        cmds.rotate(0,0,90,curve)
         
         cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
         
@@ -34,7 +35,7 @@ class controlShape():
         curve=cmds.circle(radius=1,constructionHistory=False)
         
         #transform to standard
-        cmds.rotate(90,0,0,curve)
+        cmds.rotate(0,90,0,curve)
         
         cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
         
