@@ -2,6 +2,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 from bbt_maya import generic
+from bbt_maya.brt import utils
 
 class Limb():
     
@@ -240,6 +241,95 @@ class Limb():
         
         cmds.connectAttr('%s.outputR' % stretchBLD,'%s.sx' % startIk,force=True)
         cmds.connectAttr('%s.outputR' % stretchBLD,'%s.sx' % midIk,force=True)
+        
+        #creating controls
+        ucs=utils.controlShape()
+        
+        polevectorCNT=ucs.sphere(prefix+'polevector_cnt')
+        endIkCNT=ucs.sphere(prefix+'endIk_cnt')
+        startFkCNT=ucs.box(prefix+'startFk_cnt')
+        midFkCNT=ucs.box(prefix+'midFk_cnt')
+        endFkCNT=ucs.box(prefix+'endFk_cnt')
+        extraCNT=ucs.pin(prefix+'extra_cnt')
+        
+        #setup polevectorCNT
+        data={'system':'ik','switch':midFk}
+        mNode=meta.setData(('meta_'+polevectorCNT), 'control', 'polevector', module,data)
+        meta.setTransform(polevectorCNT, mNode)
+        
+        grp=cmds.group(polevectorCNT,n=(polevectorCNT+'_grp'))
+        cmds.parent(grp,plug)
+        
+        cmds.group(polevectorCNT,n=(polevectorCNT+'_PH'))
+        cmds.group(polevectorCNT,n=(polevectorCNT+'_SN'))
+        
+        ut=utils.transform()
+        
+        ut.snap(polevector,grp)
+        
+        cmds.parent(polevector,polevectorCNT)
+        
+        attrs=['rx','ry','rz','sx','sy','sz','v']
+        ut.channelboxClean(polevectorCNT, attrs)
+        
+        #setup endIkCNT
+        data={'system':'ik','switch':endFk}
+        mNode=meta.setData(('meta_'+endIkCNT), 'control', 'end',module,data)
+        
+        grp=cmds.group(endIkCNT,n=(endIkCNT+'_grp'))
+        cmds.parent(grp,plug)
+        
+        cmds.group(endIkCNT,n=(endIkCNT+'_PH'))
+        cmds.group(endIkCNT,n=(endIkCNT+'_SN'))
+        
+        ut.snap(endFk,grp)
+        
+        cmds.parentConstraint(endIkCNT,stretch02)
+        
+        attrs=['sx','sy','sz','v']
+        ut.channelboxClean(endIkCNT, attrs)
+        
+        #setup startFkCNT
+        data={'system':'fk','switch':startIk}
+        mNode=meta.setData(('meta_'+startFkCNT), 'control', 'start',module,data)
+        
+        grp=cmds.group(startFkCNT,n=(startFkCNT+'_grp'))
+        cmds.parent(grp,plug)
+        
+        ut.snap(startFk, grp)
+        
+        cmds.parent(startFk,startFkCNT)
+        
+        attrs=['tx','ty','tz','sx','sy','sz','v']
+        ut.channelboxClean(startFkCNT, attrs)
+        
+        #setup midFkCNT
+        data={'system':'fk','switch':midIk}
+        mNode=meta.setData(('meta_'+midFkCNT), 'control', 'mid',module,data)
+        
+        grp=cmds.group(midFkCNT,n=(midFkCNT+'_grp'))
+        cmds.parent(grp,startFk)
+        
+        ut.snap(midFk, grp)
+        
+        cmds.parent(midFk,midFkCNT)
+        
+        attrs=['tx','ty','tz','sx','sy','sz','v']
+        ut.channelboxClean(midFkCNT, attrs)
+        
+        #setup endFkCNT
+        data={'system':'fk','switch':endIkCNT}
+        mNode=meta.setData(('meta_'+endFkCNT), 'control', 'end',module,data)
+        
+        grp=cmds.group(endFkCNT,n=(endFkCNT+'_grp'))
+        cmds.parent(grp,midFk)
+        
+        ut.snap(endFk, grp)
+        
+        cmds.parent(endFk,endFkCNT)
+        
+        attrs=['tx','ty','tz','sx','sy','sz','v']
+        ut.channelboxClean(endFkCNT, attrs)
 
 templateModule='meta_limb'
 

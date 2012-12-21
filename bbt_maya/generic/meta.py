@@ -34,8 +34,12 @@ class Meta():
         #add extra data
         if args[0]!=None:
             for arg in args[0]:
-                cmds.addAttr(node,longName=arg,dataType='string')
-                cmds.setAttr('%s.%s' % (node,arg),args[0][arg],type='string')
+                if arg=='switch':
+                    cmds.addAttr(node,longName=arg,attributeType='message')
+                    cmds.connectAttr('%s.message' % args[0][arg],'%s.switch' % node)
+                else:
+                    cmds.addAttr(node,longName=arg,dataType='string')
+                    cmds.setAttr('%s.%s' % (node,arg),args[0][arg],type='string')
         
         return node
     

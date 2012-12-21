@@ -1,162 +1,139 @@
 import maya.cmds as cmds
 
-class meta():
-    ''' Class for all functions associated with the meta data '''
+class controlShape():
+    ''' Class for all control shapes for rigging. '''
     
-    def createSkin(self,name):
-        ''' Creates a skin meta node'''
+    def fourWay(self,name):
+        ''' Creates a four leg arrow shape. '''
         
-        return self.setData(name,'skin',None,None,None)
-    
-    def createProxy(self,name):
-        ''' Creates a skin meta node'''
+        #creating the curve
+        curve=cmds.curve(d=1, p=[(-4, 0, 0),(-2, 0, -1.5),(-2, 0, -0.5),
+                           (-0.5, 0, -0.5),(-0.5, 0, -2),(-1.5, 0, -2),
+                           (0, 0, -4),(1.5, 0, -2),(0.5, 0, -2),
+                           (0.5, 0, -0.5),(2, 0, -0.5),(2, 0, -1.5),
+                           (4, 0, 0),(2, 0, 1.5),(2, 0, 0.5),
+                           (0.5, 0, 0.5),(0.5, 0, 2),(1.5, 0, 2),
+                           (0, 0, 4),(-1.5, 0, 2),(-0.5, 0, 2),
+                           (-0.5, 0, 0.5),(-2, 0, 0.5),(-2, 0, 1.5),(-4, 0, 0)])
         
-        return self.setData(name,'proxy',None,None,None)
-    
-    def createControl(self,name,component,metaParent,data):
-        ''' Creates a control meta node 
-            data needs to be dictionary
-        '''
+        #resize to standard
+        cmds.scale(0.25,0.25,0.25, curve)
         
-        return self.setData(name,'control',component,metaParent,data)
-    
-    def createRoot(self,name,version,component):
-        ''' Creates a root meta node '''
+        cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
         
-        data={'version':version}
+        #naming control
+        node=cmds.rename(curve,name)
         
-        return self.setData(name, 'root', component, None,data)
-    
-    def createModule(self,name,component,metaParent,index,side):
-        ''' Creates a module meta node '''
-        
-        data={'index':index,'side':side}
-        
-        return self.setData(name,'module',component,metaParent,data)
-    
-    def setData(self,name,type,component,metaParent,*args):
-        ''' Create a network node with the requested data 
-            args should be passed in as a dictionary
-        '''
-        
-        #create network node
-        node=cmds.shadingNode( 'network',asUtility=True, n=name)
-        
-        #add base data
-        cmds.addAttr(node,longName='type',dataType='string')
-        if type==None:
-            cmds.warning('Not setting type on %s can be BAD!' % node)
-        else:
-            cmds.setAttr('%s.type' % node,type,type='string')
-        
-        cmds.addAttr(node,longName='component',dataType='string')
-        if component==None:
-            cmds.warning('Not setting component on %s can be BAD!' % node)
-        else:
-            cmds.setAttr('%s.component' % node,component,type='string')
-        
-        cmds.addAttr(node,longName='metaParent',attributeType='message')
-        if metaParent==None:
-            cmds.warning('No metaParent specified for %s.' % node)
-        else:
-            cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
-        
-        #add extra data
-        if args[0]!=None:
-            for arg in args[0]:
-                cmds.addAttr(node,longName=arg,dataType='string')
-                cmds.setAttr('%s.%s' % (node,arg),args[0][arg],type='string')
-        
+        #return
         return node
     
-    def getData(self,node):
-        ''' Returns the meta data as a dictionary for the requested node '''
+    def circle(self,name):
+        ''' Creates a circle shape. '''
         
-        #making sure we get a network node
-        if cmds.nodeType(node)!='network':
-            metaNode=cmds.listConnections('%s.metaParent' % node)[0]
-        else:
-            metaNode=node
+        #creating the curve
+        curve=cmds.circle(radius=1,constructionHistory=False)
         
-        #setting data variables
-        attrList=[]
-        attrList=cmds.attributeInfo(metaNode,all=True)
-        data={}
-        data['name']=metaNode
+        #transform to standard
+        cmds.rotate(90,0,0,curve)
         
-        #looping through custom attributes
-        for count in range(7,len(attrList)):
-            
-            attr=attrList[count]
-            
-            if cmds.getAttr('%s.%s' % (metaNode,attr),type=True)!='message':
-                data[attr]=cmds.getAttr('%s.%s' % (metaNode,attr))
-            
-            if cmds.getAttr('%s.%s' % (metaNode,attr),type=True)=='message':
-                
-                #query whether message attribute is connected
-                if cmds.listConnections('%s.%s' % (metaNode,attr))==None:
-                    data[attr]=None
-                else:
-                    metaParent=cmds.listConnections('%s.%s' % (metaNode,attr))[0]
-                    
-                    data[attr]=metaParent
+        cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
         
-        return data
+        #naming control
+        node=cmds.rename(curve,name)
+        
+        #return
+        return node
     
-    def upStream(self,node,type):
-        ''' Returns the parent node with the requested type. '''
+    def box(self,name):
+        ''' Creates a box shape. '''
         
-        upStreamNode=None
-        data=self.getData(node)
+        #creating the curve
+        curve=cmds.curve(d=1, p=[(1,1,-1),(1,1,1),(1,-1,1),
+                                 (1,-1,-1),(1,1,-1),(-1,1,-1),
+                                 (-1,-1,-1),(-1,-1,1),(-1,1,1),
+                                 (1,1,1),(1,-1,1),(-1,-1,1),
+                                 (-1,-1,-1),(1,-1,-1),(1,1,-1),
+                                 (-1,1,-1),(-1,1,1),(1,1,1),
+                                 (1,1,-1)])
         
-        if data['type']!=type:
-            upStreamNode=self.upStream(cmds.listConnections('%s.metaParent' % node)[0],type)
+        #naming control
+        node=cmds.rename(curve,name)
         
-        if data['type']==type:
-            upStreamNode=node
-        
-        return upStreamNode
+        #return
+        return node
     
-    def downStream(self,node,type,all=False):
-        ''' Returns all nodes down the hierarchy with the requested type. 
+    def pin(self,name):
+        ''' Creates a pin shape. '''
         
-            If all=True, nodes further down the hierarchy is returned as well.
+        #creating the curve
+        curve=cmds.curve(d=1,p=[(0,0,0),(0,1.2,0),(-0.235114,1.276393,0),
+                                (-0.380423,1.476393,0),(-0.380423,1.723607,0),
+                                (-0.235114,1.923607,0),(0,2,0),(0.235114,1.923607,0),
+                                (0.380423,1.723607,0),(0.380423,1.476393,0),
+                                (0.235114,1.276393,0),(0,1.2,0)])
+        #transform to standard
+        cmds.rotate(-90,-90,0,curve)
+        
+        cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
+        
+        #naming control
+        node=cmds.rename(curve,name)
+        
+        #return
+        return node
+    
+    def sphere(self,name):
+        ''' Creates a sphere shape. '''
+        
+        #creating the curve
+        curve=cmds.curve(d=1,p=[(0,1,0),(-0.382683,0.92388,0),(-0.707107,0.707107,0),
+                                (-0.92388,0.382683,0),(-1,0,0),(-0.92388,-0.382683,0),
+                                (-0.707107,-0.707107,0),(-0.382683,-0.92388,0),(0,-1,0),
+                                (0.382683,-0.92388,0),(0.707107,-0.707107,0),
+                                (0.92388,-0.382683,0),(1,0,0),(0.92388,0.382683,0),
+                                (0.707107,0.707107,0),(0.382683,0.92388,0),(0,1,0),
+                                (0,0.92388,0.382683),(0,0.707107,0.707107),
+                                (0,0.382683,0.92388),(0,0,1),(0,-0.382683,0.92388),
+                                (0,-0.707107,0.707107),(0,-0.92388,0.382683),
+                                (0,-1,0),(0,-0.92388,-0.382683),(0,-0.707107,-0.707107),
+                                (0,-0.382683,-0.92388),(0,0,-1),(0,0.382683,-0.92388),
+                                (0,0.707107,-0.707107),(0,0.92388,-0.382683),(0,1,0),
+                                (-0.382683,0.92388,0),(-0.707107,0.707107,0),
+                                (-0.92388,0.382683,0),(-1,0,0),(-0.92388,0,0.382683),
+                                (-0.707107,0,0.707107),(-0.382683,0,0.92388),
+                                (0,0,1),(0.382683,0,0.92388),(0.707107,0,0.707107),
+                                (0.92388,0,0.382683),(1,0,0),(0.92388,0,-0.382683),
+                                (0.707107,0,-0.707107),(0.382683,0,-0.92388),
+                                (0,0,-1),(-0.382683,0,-0.92388),(-0.707107,0,-0.707107),
+                                (-0.92388,0,-0.382683),(-1,0,0)])
+        
+        #naming control
+        node=cmds.rename(curve,name)
+        
+        #return
+        return node
+
+class transform():
+    ''' Class for all transform related functions. '''
+    
+    def snap(self,source,target,point=True,orient=True):
+        ''' Snaps source object to target object.
+        If point is True, translation will snap.
+        If orient is True, orientation will snap.
         '''
         
-        childNodes=cmds.listConnections('%s.message' % node,type='network')
+        #translation
+        if point==True:
+            cmds.delete(cmds.pointConstraint(source,target))
         
-        validNodes=[]
-        
-        if childNodes!=None:
-            for n in childNodes:
-                data=self.getData(n)
-                
-                if data['type']==type:
-                    validNodes.append(n)
-                
-                #if user wants the whole hierarchy
-                if all==True:
-                    if (self.downStream(n,type,all=all))!=None:
-                        for m in (self.downStream(n,type,all=all)):
-                            validNodes.append(m)
-            
-            return validNodes
+        #orientation
+        if orient==True:
+            cmds.delete(cmds.orientConstraint(source,target))
     
-    def getHierarchies(self):
-        hierarchies={}
-        hierarchies['None']=[]
+    def channelboxClean(self,node,attrs):
+        ''' Removes list of attributes from the channelbox.
+        Attributes are locked and unkeyable.
+        '''
         
-        for node in cmds.ls(type='network'):
-            data=self.getData(node)
-            
-            if data['metaParent']==None:
-                hierarchies['None'].append(node)
-            
-            if cmds.listConnections('%s.message' % node,type='network')>0:
-                hierarchies[node]=[]
-                
-                for child in cmds.listConnections('%s.message' % node,type='network'):
-                    hierarchies[node].append(child)
-        
-        return hierarchies
+        for attr in attrs:
+            cmds.setAttr('%s.%s' % (node,attr),lock=True,keyable=False,channelBox=False)
