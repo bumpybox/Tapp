@@ -1,6 +1,6 @@
 //Maya ASCII 2013 scene
-//Name: limb.ma
-//Last modified: Sun, Dec 23, 2012 07:30:44 PM
+//Name: foot.ma
+//Last modified: Sun, Dec 23, 2012 10:05:53 PM
 //Codeset: 1252
 requires maya "2013";
 requires "stereoCamera" "10.0";
@@ -12,16 +12,15 @@ fileInfo "cutIdentifier" "201202220241-825136";
 fileInfo "osv" "Microsoft Windows 7 Ultimate Edition, 64-bit Windows 7 Service Pack 1 (Build 7601)\n";
 createNode transform -s -n "persp";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 22.050497071437945 12.350008419787077 12.264719631583299 ;
-	setAttr ".r" -type "double3" 342.86164726871641 66.199999999997658 359.99999999996834 ;
+	setAttr ".t" -type "double3" 10.488707661559115 4.1857380595045051 2.5394783622033144 ;
+	setAttr ".r" -type "double3" -15.338352729571492 85.800000000005937 2.1713769632568027e-014 ;
 createNode camera -s -n "perspShape" -p "persp";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999986;
-	setAttr ".coi" 25.059127042296691;
+	setAttr ".coi" 11.532539726707075;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
-	setAttr ".tp" -type "double3" 14.079234976941626 -0.7828223035827967 -0.58846517779611673 ;
 	setAttr ".hc" -type "string" "viewSet -p %camera";
 createNode transform -s -n "top";
 	setAttr ".v" no;
@@ -64,19 +63,15 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode dagContainer -n "limb";
+createNode dagContainer -n "foot";
 	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
-	addAttr -ci true -sn "upperTwistJoints" -ln "upperTwistJoints" -dv 3 -min 2 -at "long";
-	addAttr -ci true -sn "lowerTwistJoints" -ln "lowerTwistJoints" -dv 3 -min 2 -at "long";
-	addAttr -ci true -sn "upperTwist" -ln "upperTwist" -min 0 -max 1 -at "bool";
-	addAttr -ci true -sn "lowerTwist" -ln "lowerTwist" -min 0 -max 1 -at "bool";
-	addAttr -ci true -sn "limbType" -ln "limbType" -min 0 -max 1 -en "arm:leg" -at "enum";
-	addAttr -ci true -sn "index" -ln "index" -dv 1 -min 1 -at "long";
+	addAttr -ci true -sn "attachToLeg" -ln "attachToLeg" -min 0 -max 1 -at "bool";
+	addAttr -ci true -sn "index" -ln "index" -dv 1 -at "long";
 	setAttr ".isc" yes;
 	setAttr ".bbx" yes;
-	setAttr -s 3 ".pni";
-	setAttr ".ctor" -type "string" "tokejepsen";
-	setAttr ".cdat" -type "string" "2012/11/14 12:33:31";
+	setAttr -s 6 ".pni";
+	setAttr ".ctor" -type "string" "Bumpy";
+	setAttr ".cdat" -type "string" "2012/12/23 11:45:28";
 	setAttr -l on -k off ".tx";
 	setAttr -l on -k off ".ty";
 	setAttr -l on -k off ".tz";
@@ -86,160 +81,21 @@ createNode dagContainer -n "limb";
 	setAttr -l on -k off ".sx";
 	setAttr -l on -k off ".sy";
 	setAttr -l on -k off ".sz";
-	setAttr ".rp" -type "double3" 6.1116697119899914 0 -2.5823719907682361 ;
-	setAttr ".sp" -type "double3" 6.1116697119899914 0 -2.5823719907682361 ;
-	setAttr ".aal" -type "attributeAlias" {"start_cnt","publishedNodeInfo[0]","mid_cnt"
-		,"publishedNodeInfo[1]","end_cnt","publishedNodeInfo[2]"} ;
-	setAttr -k on ".upperTwistJoints";
-	setAttr -k on ".lowerTwistJoints";
-	setAttr -k on ".upperTwist";
-	setAttr -k on ".lowerTwist";
-	setAttr -k on ".limbType";
+	setAttr ".rp" -type "double3" 0 0.61166971198999187 1.5 ;
+	setAttr ".sp" -type "double3" 0 0.61166971198999187 1.5 ;
+	setAttr ".aal" -type "attributeAlias" {"foot_cnt","publishedNodeInfo[0]","toe_cnt"
+		,"publishedNodeInfo[1]","heel_cnt","publishedNodeInfo[2]","toetip_cnt","publishedNodeInfo[3]"
+		,"bank01_cnt","publishedNodeInfo[4]","bank02_cnt","publishedNodeInfo[5]"} ;
+	setAttr -k on ".attachToLeg" yes;
 	setAttr -k on ".index";
-createNode transform -n "connect_label" -p "limb";
-	setAttr ".ovdt" 2;
-	setAttr ".ove" yes;
-createNode nurbsCurve -n "connect_labelShape" -p "connect_label";
-	setAttr -k off ".v";
-	setAttr -s 8 ".iog[0].og";
-	setAttr -av ".iog[0].og[0].gid";
-	setAttr -av ".iog[0].og[1].gco";
-	setAttr -av ".iog[0].og[2].gid";
-	setAttr -av ".iog[0].og[3].gid";
-	setAttr ".tw" yes;
-createNode nurbsCurve -n "connect_labelShape1Orig" -p "connect_label";
-	setAttr -k off ".v";
-	setAttr ".io" yes;
-	setAttr ".cc" -type "nurbsCurve" 
-		1 2 0 no 3
-		3 0 1 2
-		3
-		0 0 0
-		6 0 -4
-		12 0 0
-		;
-createNode transform -n "avg_grp" -p "limb";
-	setAttr ".v" no;
-	setAttr ".dla" yes;
-createNode pointConstraint -n "avg_grp_pointConstraint1" -p "avg_grp";
-	addAttr -ci true -k true -sn "w0" -ln "start_cntW0" -dv 1 -min 0 -at "double";
-	addAttr -ci true -k true -sn "w1" -ln "end_cntW1" -dv 1 -min 0 -at "double";
-	setAttr -k on ".nds";
-	setAttr -k off ".v";
-	setAttr -k off ".tx";
-	setAttr -k off ".ty";
-	setAttr -k off ".tz";
-	setAttr -k off ".rx";
-	setAttr -k off ".ry";
-	setAttr -k off ".rz";
-	setAttr -k off ".sx";
-	setAttr -k off ".sy";
-	setAttr -k off ".sz";
-	setAttr ".erp" yes;
-	setAttr -s 2 ".tg";
-	setAttr ".rst" -type "double3" 6 0 0 ;
-	setAttr -k on ".w0";
-	setAttr -k on ".w1";
-createNode aimConstraint -n "avg_grp_aimConstraint1" -p "avg_grp";
-	addAttr -ci true -sn "w0" -ln "mid_cntW0" -dv 1 -at "double";
-	setAttr -k on ".nds";
-	setAttr -k off ".v";
-	setAttr -k off ".tx";
-	setAttr -k off ".ty";
-	setAttr -k off ".tz";
-	setAttr -k off ".rx";
-	setAttr -k off ".ry";
-	setAttr -k off ".rz";
-	setAttr -k off ".sx";
-	setAttr -k off ".sy";
-	setAttr -k off ".sz";
-	setAttr ".erp" yes;
-	setAttr ".wut" 1;
-	setAttr ".rsrr" -type "double3" -89.999999999999986 89.999999999999986 0 ;
-	setAttr -k on ".w0";
-createNode transform -n "start_cnt" -p "limb";
+createNode transform -n "foot_cnt" -p "foot";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".t" -type "double3" 0 8.4107867850545119 0 ;
-createNode nurbsCurve -n "start_cntShape" -p "start_cnt";
-	setAttr -k off ".v";
-	setAttr ".ove" yes;
-	setAttr ".cc" -type "nurbsCurve" 
-		1 52 0 no 3
-		53 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
-		 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
-		53
-		0 0.27666057602001637 0
-		-0.10587329921306791 0.25560117297337265 0
-		-0.19562862992778587 0.19562862992778587 0
-		-0.25560117297337265 0.10587329921306791 0
-		-0.27666057602001637 0 0
-		-0.25560117297337265 -0.10587329921306791 0
-		-0.19562862992778587 -0.19562862992778587 0
-		-0.10587329921306791 -0.25560117297337265 0
-		0 -0.27666057602001637 0
-		0.10587329921306791 -0.25560117297337265 0
-		0.19562862992778587 -0.19562862992778587 0
-		0.25560117297337265 -0.10587329921306791 0
-		0.27666057602001637 0 0
-		0.25560117297337265 0.10587329921306791 0
-		0.19562862992778587 0.19562862992778587 0
-		0.10587329921306791 0.25560117297337265 0
-		0 0.27666057602001637 0
-		0 0.25560117297337265 0.10587329921306791
-		0 0.19562862992778587 0.19562862992778587
-		0 0.10587329921306791 0.25560117297337265
-		0 0 0.27666057602001637
-		0 -0.10587329921306791 0.25560117297337265
-		0 -0.19562862992778587 0.19562862992778587
-		0 -0.25560117297337265 0.10587329921306791
-		0 -0.27666057602001637 0
-		0 -0.25560117297337265 -0.10587329921306791
-		0 -0.19562862992778587 -0.19562862992778587
-		0 -0.10587329921306791 -0.25560117297337265
-		0 0 -0.27666057602001637
-		0 0.10587329921306791 -0.25560117297337265
-		0 0.19562862992778587 -0.19562862992778587
-		0 0.25560117297337265 -0.10587329921306791
-		0 0.27666057602001637 0
-		-0.10587329921306791 0.25560117297337265 0
-		-0.19562862992778587 0.19562862992778587 0
-		-0.25560117297337265 0.10587329921306791 0
-		-0.27666057602001637 0 0
-		-0.25560117297337265 0 0.10587329921306791
-		-0.19562862992778587 0 0.19562862992778587
-		-0.10587329921306791 0 0.25560117297337265
-		0 0 0.27666057602001637
-		0.10587329921306791 0 0.25560117297337265
-		0.19562862992778587 0 0.19562862992778587
-		0.25560117297337265 0 0.10587329921306791
-		0.27666057602001637 0 0
-		0.25560117297337265 0 -0.10587329921306791
-		0.19562862992778587 0 -0.19562862992778587
-		0.10587329921306791 0 -0.25560117297337265
-		0 0 -0.27666057602001637
-		-0.10587329921306791 0 -0.25560117297337265
-		-0.19562862992778587 0 -0.19562862992778587
-		-0.25560117297337265 0 -0.10587329921306791
-		-0.27666057602001637 0 0
-		;
-createNode transform -n "start_cluster" -p "start_cnt";
-	setAttr ".v" no;
-createNode clusterHandle -n "start_clusterShape" -p "start_cluster";
-	setAttr ".ihi" 0;
-	setAttr -k off ".v";
-createNode transform -n "start_socket" -p "start_cnt";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".v" no;
-createNode locator -n "start_socketShape" -p "start_socket";
-	setAttr -k off ".v";
-createNode transform -n "plug" -p "start_cnt";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".v" no;
-createNode locator -n "plugShape" -p "plug";
-	setAttr -k off ".v";
-createNode transform -n "end_cnt" -p "limb";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-createNode nurbsCurve -n "end_cntShape" -p "end_cnt";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" 0 1 0 ;
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "foot_cntShape" -p "foot_cnt";
 	setAttr -k off ".v";
 	setAttr ".ove" yes;
 	setAttr ".cc" -type "nurbsCurve" 
@@ -268,24 +124,31 @@ createNode nurbsCurve -n "end_cntShape" -p "end_cnt";
 		0.5 0.5 0.5
 		0.5 0.5 -0.5
 		;
-createNode transform -n "end_cluster" -p "end_cnt";
+createNode transform -n "group1" -p "foot_cnt";
+	setAttr ".t" -type "double3" 0 -1 -1 ;
+	setAttr ".rp" -type "double3" 0.25 1.25 1.25 ;
+	setAttr ".sp" -type "double3" 0.25 1.25 1.25 ;
+createNode transform -n "cluster1Handle" -p "group1";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" -12 0 0 ;
-	setAttr ".rp" -type "double3" 12 0 0 ;
-	setAttr ".sp" -type "double3" 12 0 0 ;
-createNode clusterHandle -n "end_clusterShape" -p "end_cluster";
+	setAttr ".t" -type "double3" 3.9701786819679015 1 -3.6662288162369792 ;
+	setAttr ".rp" -type "double3" -3.9701786819679015 0 4.6662288162369796 ;
+	setAttr ".sp" -type "double3" -3.9701786819679015 0 4.6662288162369796 ;
+createNode clusterHandle -n "cluster1HandleShape" -p "cluster1Handle";
 	setAttr ".ihi" 0;
 	setAttr -k off ".v";
-	setAttr ".or" -type "double3" 12 0 0 ;
-createNode transform -n "end_socket" -p "end_cnt";
+	setAttr ".or" -type "double3" -3.9701786819679015 0 4.6662288162369796 ;
+createNode transform -n "toe_cnt" -p "foot_cnt";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".v" no;
-createNode locator -n "end_socketShape" -p "end_socket";
-	setAttr -k off ".v";
-createNode transform -n "mid_cnt" -p "limb";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".t" -type "double3" 0 4.110449057597986 1.8916610114831196 ;
-createNode nurbsCurve -n "mid_cntShape" -p "mid_cnt";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" 0 -1 2 ;
+	setAttr -l on -k off ".tx";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".ry";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "toe_cntShape" -p "toe_cnt";
 	setAttr -k off ".v";
 	setAttr ".ove" yes;
 	setAttr ".cc" -type "nurbsCurve" 
@@ -347,19 +210,300 @@ createNode nurbsCurve -n "mid_cntShape" -p "mid_cnt";
 		-0.25560117297337265 0 -0.10587329921306791
 		-0.27666057602001637 0 0
 		;
-createNode transform -n "mid_cluster" -p "mid_cnt";
+createNode transform -n "group2" -p "toe_cnt";
+	setAttr ".t" -type "double3" 0 0 -3 ;
+	setAttr ".rp" -type "double3" 0.25 0.25 3.25 ;
+	setAttr ".sp" -type "double3" 0.25 0.25 3.25 ;
+createNode transform -n "cluster2Handle" -p "group2";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" -6 0 4 ;
-	setAttr ".rp" -type "double3" 6 0 -4 ;
-	setAttr ".sp" -type "double3" 6 0 -4 ;
-createNode clusterHandle -n "mid_clusterShape" -p "mid_cluster";
+	setAttr ".t" -type "double3" 3.4737835724724704 0 -8.8180246298520508 ;
+	setAttr ".rp" -type "double3" -3.4737835724724704 0 11.818024629852053 ;
+	setAttr ".sp" -type "double3" -3.4737835724724704 0 11.818024629852053 ;
+createNode clusterHandle -n "cluster2HandleShape" -p "cluster2Handle";
 	setAttr ".ihi" 0;
 	setAttr -k off ".v";
-	setAttr ".or" -type "double3" 6 0 -4 ;
-createNode transform -n "direction_label" -p "mid_cnt";
+	setAttr ".or" -type "double3" -3.4737835724724704 0 11.818024629852053 ;
+createNode transform -n "heel_cnt" -p "foot_cnt";
+	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" 0 -1 -1 ;
+	setAttr -l on -k off ".tx";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".ry";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "heel_cntShape" -p "heel_cnt";
+	setAttr -k off ".v";
+	setAttr ".ove" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 52 0 no 3
+		53 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+		 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
+		53
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 -0.10587329921306791 0
+		-0.19562862992778587 -0.19562862992778587 0
+		-0.10587329921306791 -0.25560117297337265 0
+		0 -0.27666057602001637 0
+		0.10587329921306791 -0.25560117297337265 0
+		0.19562862992778587 -0.19562862992778587 0
+		0.25560117297337265 -0.10587329921306791 0
+		0.27666057602001637 0 0
+		0.25560117297337265 0.10587329921306791 0
+		0.19562862992778587 0.19562862992778587 0
+		0.10587329921306791 0.25560117297337265 0
+		0 0.27666057602001637 0
+		0 0.25560117297337265 0.10587329921306791
+		0 0.19562862992778587 0.19562862992778587
+		0 0.10587329921306791 0.25560117297337265
+		0 0 0.27666057602001637
+		0 -0.10587329921306791 0.25560117297337265
+		0 -0.19562862992778587 0.19562862992778587
+		0 -0.25560117297337265 0.10587329921306791
+		0 -0.27666057602001637 0
+		0 -0.25560117297337265 -0.10587329921306791
+		0 -0.19562862992778587 -0.19562862992778587
+		0 -0.10587329921306791 -0.25560117297337265
+		0 0 -0.27666057602001637
+		0 0.10587329921306791 -0.25560117297337265
+		0 0.19562862992778587 -0.19562862992778587
+		0 0.25560117297337265 -0.10587329921306791
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 0 0.10587329921306791
+		-0.19562862992778587 0 0.19562862992778587
+		-0.10587329921306791 0 0.25560117297337265
+		0 0 0.27666057602001637
+		0.10587329921306791 0 0.25560117297337265
+		0.19562862992778587 0 0.19562862992778587
+		0.25560117297337265 0 0.10587329921306791
+		0.27666057602001637 0 0
+		0.25560117297337265 0 -0.10587329921306791
+		0.19562862992778587 0 -0.19562862992778587
+		0.10587329921306791 0 -0.25560117297337265
+		0 0 -0.27666057602001637
+		-0.10587329921306791 0 -0.25560117297337265
+		-0.19562862992778587 0 -0.19562862992778587
+		-0.25560117297337265 0 -0.10587329921306791
+		-0.27666057602001637 0 0
+		;
+createNode transform -n "toetip_cnt" -p "foot_cnt";
+	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" 0 -1 4 ;
+	setAttr -l on -k off ".tx";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".ry";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "toetip_cntShape" -p "toetip_cnt";
+	setAttr -k off ".v";
+	setAttr ".ove" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 52 0 no 3
+		53 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+		 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
+		53
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 -0.10587329921306791 0
+		-0.19562862992778587 -0.19562862992778587 0
+		-0.10587329921306791 -0.25560117297337265 0
+		0 -0.27666057602001637 0
+		0.10587329921306791 -0.25560117297337265 0
+		0.19562862992778587 -0.19562862992778587 0
+		0.25560117297337265 -0.10587329921306791 0
+		0.27666057602001637 0 0
+		0.25560117297337265 0.10587329921306791 0
+		0.19562862992778587 0.19562862992778587 0
+		0.10587329921306791 0.25560117297337265 0
+		0 0.27666057602001637 0
+		0 0.25560117297337265 0.10587329921306791
+		0 0.19562862992778587 0.19562862992778587
+		0 0.10587329921306791 0.25560117297337265
+		0 0 0.27666057602001637
+		0 -0.10587329921306791 0.25560117297337265
+		0 -0.19562862992778587 0.19562862992778587
+		0 -0.25560117297337265 0.10587329921306791
+		0 -0.27666057602001637 0
+		0 -0.25560117297337265 -0.10587329921306791
+		0 -0.19562862992778587 -0.19562862992778587
+		0 -0.10587329921306791 -0.25560117297337265
+		0 0 -0.27666057602001637
+		0 0.10587329921306791 -0.25560117297337265
+		0 0.19562862992778587 -0.19562862992778587
+		0 0.25560117297337265 -0.10587329921306791
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 0 0.10587329921306791
+		-0.19562862992778587 0 0.19562862992778587
+		-0.10587329921306791 0 0.25560117297337265
+		0 0 0.27666057602001637
+		0.10587329921306791 0 0.25560117297337265
+		0.19562862992778587 0 0.19562862992778587
+		0.25560117297337265 0 0.10587329921306791
+		0.27666057602001637 0 0
+		0.25560117297337265 0 -0.10587329921306791
+		0.19562862992778587 0 -0.19562862992778587
+		0.10587329921306791 0 -0.25560117297337265
+		0 0 -0.27666057602001637
+		-0.10587329921306791 0 -0.25560117297337265
+		-0.19562862992778587 0 -0.19562862992778587
+		-0.25560117297337265 0 -0.10587329921306791
+		-0.27666057602001637 0 0
+		;
+createNode transform -n "group3" -p "toetip_cnt";
+	setAttr ".t" -type "double3" 0 0 -5 ;
+	setAttr ".rp" -type "double3" 0.25 0.25 5.25 ;
+	setAttr ".sp" -type "double3" 0.25 0.25 5.25 ;
+createNode transform -n "cluster3Handle" -p "group3";
+	setAttr ".v" no;
+	setAttr ".t" -type "double3" -3.3111865616507909 0 -3.1746854359406829 ;
+	setAttr ".rp" -type "double3" 3.3111865616507909 0 8.1746854359406829 ;
+	setAttr ".sp" -type "double3" 3.3111865616507909 0 8.1746854359406829 ;
+createNode clusterHandle -n "cluster3HandleShape" -p "cluster3Handle";
+	setAttr ".ihi" 0;
+	setAttr -k off ".v";
+	setAttr ".or" -type "double3" 3.3111865616507909 0 8.1746854359406829 ;
+createNode transform -n "footIndicator" -p "foot";
+createNode nurbsCurve -n "footIndicatorShape" -p "footIndicator";
+	setAttr -k off ".v";
+	setAttr -s 8 ".iog[0].og";
+	setAttr -av ".iog[0].og[0].gco";
+	setAttr -av ".iog[0].og[1].gco";
+	setAttr -av ".iog[0].og[2].gco";
+	setAttr -av ".iog[0].og[3].gco";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
-createNode nurbsCurve -n "direction_labelShape" -p "direction_label";
+	setAttr ".tw" yes;
+createNode nurbsCurve -n "footIndicatorShape1Orig" -p "footIndicator";
+	setAttr -k off ".v";
+	setAttr ".io" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 2 0 no 3
+		3 0 1 2
+		3
+		-3.9701786819679015 0 4.6662288162369796
+		-3.4737835724724704 0 11.818024629852053
+		3.3111865616507909 0 8.1746854359406829
+		;
+createNode transform -n "average_grp" -p "foot";
+createNode parentConstraint -n "average_grp_parentConstraint1" -p "average_grp";
+	addAttr -ci true -k true -sn "w0" -ln "pasted__start_cntW0" -dv 1 -min 0 -at "double";
+	addAttr -ci true -k true -sn "w1" -ln "pasted__start_cnt1W1" -dv 1 -min 0 -at "double";
+	setAttr -k on ".nds";
+	setAttr -k off ".v";
+	setAttr -k off ".tx";
+	setAttr -k off ".ty";
+	setAttr -k off ".tz";
+	setAttr -k off ".rx";
+	setAttr -k off ".ry";
+	setAttr -k off ".rz";
+	setAttr -k off ".sx";
+	setAttr -k off ".sy";
+	setAttr -k off ".sz";
+	setAttr ".erp" yes;
+	setAttr -s 2 ".tg";
+	setAttr ".rst" -type "double3" 0 0 1.1657904707868836 ;
+	setAttr -k on ".w0";
+	setAttr -k on ".w1";
+createNode transform -n "aim_grp" -p "average_grp";
+createNode transform -n "r_bank_cnt" -p "aim_grp";
+	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" 2 0 0 ;
+	setAttr -l on -k off ".ty";
+	setAttr -l on -k off ".tz";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "r_bank_cntShape" -p "r_bank_cnt";
+	setAttr -k off ".v";
+	setAttr ".ove" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 52 0 no 3
+		53 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+		 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
+		53
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 -0.10587329921306791 0
+		-0.19562862992778587 -0.19562862992778587 0
+		-0.10587329921306791 -0.25560117297337265 0
+		0 -0.27666057602001637 0
+		0.10587329921306791 -0.25560117297337265 0
+		0.19562862992778587 -0.19562862992778587 0
+		0.25560117297337265 -0.10587329921306791 0
+		0.27666057602001637 0 0
+		0.25560117297337265 0.10587329921306791 0
+		0.19562862992778587 0.19562862992778587 0
+		0.10587329921306791 0.25560117297337265 0
+		0 0.27666057602001637 0
+		0 0.25560117297337265 0.10587329921306791
+		0 0.19562862992778587 0.19562862992778587
+		0 0.10587329921306791 0.25560117297337265
+		0 0 0.27666057602001637
+		0 -0.10587329921306791 0.25560117297337265
+		0 -0.19562862992778587 0.19562862992778587
+		0 -0.25560117297337265 0.10587329921306791
+		0 -0.27666057602001637 0
+		0 -0.25560117297337265 -0.10587329921306791
+		0 -0.19562862992778587 -0.19562862992778587
+		0 -0.10587329921306791 -0.25560117297337265
+		0 0 -0.27666057602001637
+		0 0.10587329921306791 -0.25560117297337265
+		0 0.19562862992778587 -0.19562862992778587
+		0 0.25560117297337265 -0.10587329921306791
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 0 0.10587329921306791
+		-0.19562862992778587 0 0.19562862992778587
+		-0.10587329921306791 0 0.25560117297337265
+		0 0 0.27666057602001637
+		0.10587329921306791 0 0.25560117297337265
+		0.19562862992778587 0 0.19562862992778587
+		0.25560117297337265 0 0.10587329921306791
+		0.27666057602001637 0 0
+		0.25560117297337265 0 -0.10587329921306791
+		0.19562862992778587 0 -0.19562862992778587
+		0.10587329921306791 0 -0.25560117297337265
+		0 0 -0.27666057602001637
+		-0.10587329921306791 0 -0.25560117297337265
+		-0.19562862992778587 0 -0.19562862992778587
+		-0.25560117297337265 0 -0.10587329921306791
+		-0.27666057602001637 0 0
+		;
+createNode transform -n "bank01Indicator" -p "r_bank_cnt";
+	setAttr ".ovdt" 2;
+	setAttr ".ove" yes;
+	setAttr ".r" -type "double3" 89.999999999999986 0 0 ;
+	setAttr ".s" -type "double3" 0.99999999999999989 1.0000000000000002 1.0000000000000002 ;
+createNode nurbsCurve -n "bank01IndicatorShape" -p "bank01Indicator";
 	setAttr -k off ".v";
 	setAttr ".ovdt" 2;
 	setAttr ".ove" yes;
@@ -376,8 +520,103 @@ createNode nurbsCurve -n "direction_labelShape" -p "direction_label";
 		0.01474398153647194 0.25478857119030507 7.3274719625260323e-017
 		0.01474398153647194 -0.25478857119030507 -7.3274719625260347e-017
 		;
-createNode orientConstraint -n "direction_label_orientConstraint1" -p "direction_label";
-	addAttr -ci true -k true -sn "w0" -ln "null1W0" -dv 1 -min 0 -at "double";
+createNode transform -n "l_bank_cnt" -p "aim_grp";
+	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
+	setAttr -l on -k off ".v";
+	setAttr ".t" -type "double3" -2 0 0 ;
+	setAttr -l on -k off ".ty";
+	setAttr -l on -k off ".tz";
+	setAttr -l on -k off ".rx";
+	setAttr -l on -k off ".rz";
+	setAttr -l on -k off ".sx";
+	setAttr -l on -k off ".sy";
+	setAttr -l on -k off ".sz";
+createNode nurbsCurve -n "l_bank_cntShape" -p "l_bank_cnt";
+	setAttr -k off ".v";
+	setAttr ".ove" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 52 0 no 3
+		53 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+		 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
+		53
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 -0.10587329921306791 0
+		-0.19562862992778587 -0.19562862992778587 0
+		-0.10587329921306791 -0.25560117297337265 0
+		0 -0.27666057602001637 0
+		0.10587329921306791 -0.25560117297337265 0
+		0.19562862992778587 -0.19562862992778587 0
+		0.25560117297337265 -0.10587329921306791 0
+		0.27666057602001637 0 0
+		0.25560117297337265 0.10587329921306791 0
+		0.19562862992778587 0.19562862992778587 0
+		0.10587329921306791 0.25560117297337265 0
+		0 0.27666057602001637 0
+		0 0.25560117297337265 0.10587329921306791
+		0 0.19562862992778587 0.19562862992778587
+		0 0.10587329921306791 0.25560117297337265
+		0 0 0.27666057602001637
+		0 -0.10587329921306791 0.25560117297337265
+		0 -0.19562862992778587 0.19562862992778587
+		0 -0.25560117297337265 0.10587329921306791
+		0 -0.27666057602001637 0
+		0 -0.25560117297337265 -0.10587329921306791
+		0 -0.19562862992778587 -0.19562862992778587
+		0 -0.10587329921306791 -0.25560117297337265
+		0 0 -0.27666057602001637
+		0 0.10587329921306791 -0.25560117297337265
+		0 0.19562862992778587 -0.19562862992778587
+		0 0.25560117297337265 -0.10587329921306791
+		0 0.27666057602001637 0
+		-0.10587329921306791 0.25560117297337265 0
+		-0.19562862992778587 0.19562862992778587 0
+		-0.25560117297337265 0.10587329921306791 0
+		-0.27666057602001637 0 0
+		-0.25560117297337265 0 0.10587329921306791
+		-0.19562862992778587 0 0.19562862992778587
+		-0.10587329921306791 0 0.25560117297337265
+		0 0 0.27666057602001637
+		0.10587329921306791 0 0.25560117297337265
+		0.19562862992778587 0 0.19562862992778587
+		0.25560117297337265 0 0.10587329921306791
+		0.27666057602001637 0 0
+		0.25560117297337265 0 -0.10587329921306791
+		0.19562862992778587 0 -0.19562862992778587
+		0.10587329921306791 0 -0.25560117297337265
+		0 0 -0.27666057602001637
+		-0.10587329921306791 0 -0.25560117297337265
+		-0.19562862992778587 0 -0.19562862992778587
+		-0.25560117297337265 0 -0.10587329921306791
+		-0.27666057602001637 0 0
+		;
+createNode transform -n "bank02Indicator" -p "l_bank_cnt";
+	setAttr ".ovdt" 2;
+	setAttr ".ove" yes;
+	setAttr ".r" -type "double3" 89.999999999999986 7.0622500768802582e-031 180 ;
+	setAttr ".s" -type "double3" 0.99999999999999989 1.0000000000000002 1.0000000000000002 ;
+createNode nurbsCurve -n "bank02IndicatorShape" -p "bank02Indicator";
+	setAttr -k off ".v";
+	setAttr ".ovdt" 2;
+	setAttr ".ove" yes;
+	setAttr ".cc" -type "nurbsCurve" 
+		1 7 0 no 3
+		8 0 1 2 3 4 5 6 7
+		8
+		0.01474398153647194 -0.25478857119030507 -7.3274719625260347e-017
+		0.67474398153647197 -0.25478857119030507 -7.3274719625260347e-017
+		0.67474398153647197 -0.66000000000000014 -1.4654943925052069e-016
+		1.6647439815364722 2.9964652161161708e-016 -1.3306978701682276e-031
+		0.67474398153647197 0.66000000000000014 1.4654943925052069e-016
+		0.67474398153647197 0.25478857119030507 7.3274719625260323e-017
+		0.01474398153647194 0.25478857119030507 7.3274719625260323e-017
+		0.01474398153647194 -0.25478857119030507 -7.3274719625260347e-017
+		;
+createNode aimConstraint -n "aim_grp_aimConstraint1" -p "aim_grp";
+	addAttr -ci true -sn "w0" -ln "toetip_cntW0" -dv 1 -at "double";
 	setAttr -k on ".nds";
 	setAttr -k off ".v";
 	setAttr -k off ".tx";
@@ -390,14 +629,9 @@ createNode orientConstraint -n "direction_label_orientConstraint1" -p "direction
 	setAttr -k off ".sy";
 	setAttr -k off ".sz";
 	setAttr ".erp" yes;
-	setAttr ".lr" -type "double3" 89.999999999999872 -87.126679366438765 -90 ;
-	setAttr ".rsrr" -type "double3" -89.999999999999972 89.999999999999972 0 ;
+	setAttr ".a" -type "double3" 0 0 1 ;
+	setAttr ".wut" 1;
 	setAttr -k on ".w0";
-createNode transform -n "mid_socket" -p "mid_cnt";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".v" no;
-createNode locator -n "mid_socketShape" -p "mid_socket";
-	setAttr -k off ".v";
 createNode lightLinker -s -n "lightLinker1";
 	setAttr -s 2 ".lnk";
 	setAttr -s 2 ".slnk";
@@ -474,69 +708,86 @@ createNode script -n "uiConfigurationScriptNode";
 createNode script -n "sceneConfigurationScriptNode";
 	setAttr ".b" -type "string" "playbackOptions -min 1 -max 24 -ast 1 -aet 48 ";
 	setAttr ".st" 6;
-createNode network -n "meta_limb";
+createNode network -n "meta_foot";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
 	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
 	addAttr -ci true -sn "system" -ln "system" -dt "string";
-	addAttr -ci true -sn "upperTwistJoints" -ln "upperTwistJoints" -at "long";
-	addAttr -ci true -sn "lowerTwistJoints" -ln "lowerTwistJoints" -at "long";
-	addAttr -ci true -sn "upperTwist" -ln "upperTwist" -min 0 -max 1 -at "bool";
-	addAttr -ci true -sn "lowerTwist" -ln "lowerTwist" -min 0 -max 1 -at "bool";
-	addAttr -ci true -sn "limbType" -ln "limbType" -min 0 -max 1 -en "arm:leg" -at "enum";
-	addAttr -ci true -sn "index" -ln "index" -dv 1 -min 1 -at "long";
+	addAttr -ci true -sn "index" -ln "index" -dv 1 -at "long";
+	addAttr -ci true -sn "attachToLeg" -ln "attachToLeg" -min 0 -max 1 -at "bool";
 	setAttr ".type" -type "string" "module";
-	setAttr ".component" -type "string" "limb";
+	setAttr ".component" -type "string" "foot";
 	setAttr ".system" -type "string" "template";
-	setAttr -k on ".upperTwistJoints";
-	setAttr -k on ".lowerTwistJoints";
-	setAttr -k on ".upperTwist";
-	setAttr -k on ".lowerTwist";
-	setAttr -k on ".limbType";
 	setAttr -k on ".index";
-createNode network -n "meta_start_cnt";
+	setAttr -k on ".attachToLeg";
+createNode network -n "meta_r_bank_cnt";
+	addAttr -ci true -sn "type" -ln "type" -dt "string";
+	addAttr -ci true -sn "component" -ln "component" -dt "string";
+	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
+	addAttr -ci true -sn "side" -ln "side" -dt "string";
+	setAttr ".type" -type "string" "control";
+	setAttr ".component" -type "string" "bank";
+	setAttr -k on ".side" -type "string" "right";
+createNode network -n "meta_toe_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
 	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
 	setAttr ".type" -type "string" "control";
-	setAttr ".component" -type "string" "start";
-createNode network -n "meta_mid_cnt";
+	setAttr ".component" -type "string" "toe";
+createNode network -n "meta_heel_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
 	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
 	setAttr ".type" -type "string" "control";
-	setAttr ".component" -type "string" "mid";
-createNode network -n "meta_end_cnt";
+	setAttr ".component" -type "string" "heel";
+createNode network -n "meta_toetip_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
 	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
 	setAttr ".type" -type "string" "control";
-	setAttr ".component" -type "string" "end";
-createNode network -n "meta_start_socket";
+	setAttr ".component" -type "string" "toetip";
+createNode network -n "meta_l_bank_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
+	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	addAttr -ci true -sn "index" -ln "index" -dt "string";
-	setAttr ".type" -type "string" "socket";
-	setAttr ".index" -type "string" "1";
-createNode network -n "meta_mid_socket";
+	addAttr -ci true -sn "side" -ln "side" -dt "string";
+	setAttr ".type" -type "string" "control";
+	setAttr ".component" -type "string" "bank";
+	setAttr -k on ".side" -type "string" "left";
+createNode network -n "meta_foot_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
+	addAttr -ci true -sn "component" -ln "component" -dt "string";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	addAttr -ci true -sn "index" -ln "index" -dt "string";
-	setAttr ".type" -type "string" "socket";
-	setAttr ".index" -type "string" "2";
-createNode network -n "meta_end_socket";
-	addAttr -ci true -sn "type" -ln "type" -dt "string";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	addAttr -ci true -sn "index" -ln "index" -dt "string";
-	setAttr ".type" -type "string" "socket";
-	setAttr ".index" -type "string" "3";
-createNode network -n "meta_plug";
-	addAttr -ci true -sn "type" -ln "type" -dt "string";
-	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
-	setAttr ".type" -type "string" "plug";
+	setAttr ".type" -type "string" "control";
+	setAttr ".component" -type "string" "foot";
 createNode hyperLayout -n "hyperLayout1";
 	setAttr ".ihi" 0;
-	setAttr -s 41 ".hyp";
+	setAttr -s 44 ".hyp";
+createNode cluster -n "cluster3";
+	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+createNode groupParts -n "cluster3GroupParts";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "cv[2]";
+createNode groupId -n "cluster3GroupId";
+	setAttr ".ihi" 0;
+createNode objectSet -n "cluster3Set";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode cluster -n "cluster2";
+	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+createNode groupParts -n "cluster2GroupParts";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "cv[1]";
+createNode groupId -n "cluster2GroupId";
+	setAttr ".ihi" 0;
+createNode objectSet -n "cluster2Set";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode cluster -n "cluster1";
+	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+createNode objectSet -n "cluster1Set";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
 createNode groupParts -n "groupParts2";
 	setAttr ".ihi" 0;
 	setAttr ".ic" -type "componentList" 1 "cv[*]";
@@ -551,31 +802,6 @@ createNode groupParts -n "cluster1GroupParts";
 	setAttr ".ic" -type "componentList" 1 "cv[0]";
 createNode groupId -n "cluster1GroupId";
 	setAttr ".ihi" 0;
-createNode groupParts -n "cluster2GroupParts";
-	setAttr ".ihi" 0;
-	setAttr ".ic" -type "componentList" 1 "cv[1]";
-createNode groupId -n "cluster2GroupId";
-	setAttr ".ihi" 0;
-createNode groupParts -n "cluster3GroupParts";
-	setAttr ".ihi" 0;
-	setAttr ".ic" -type "componentList" 1 "cv[2]";
-createNode groupId -n "cluster3GroupId";
-	setAttr ".ihi" 0;
-createNode cluster -n "start_clusterCluster";
-	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
-createNode objectSet -n "cluster1Set";
-	setAttr ".ihi" 0;
-	setAttr ".vo" yes;
-createNode cluster -n "end_clusterCluster";
-	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
-createNode objectSet -n "cluster3Set";
-	setAttr ".ihi" 0;
-	setAttr ".vo" yes;
-createNode cluster -n "mid_clusterCluster";
-	setAttr ".gm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
-createNode objectSet -n "cluster2Set";
-	setAttr ".ihi" 0;
-	setAttr ".vo" yes;
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -590,7 +816,7 @@ select -ne :defaultShaderList1;
 select -ne :postProcessList1;
 	setAttr -s 2 ".p";
 select -ne :defaultRenderUtilityList1;
-	setAttr -s 8 ".u";
+	setAttr -s 7 ".u";
 select -ne :defaultRenderingList1;
 select -ne :renderGlobalsList1;
 select -ne :hardwareRenderGlobals;
@@ -599,168 +825,169 @@ select -ne :hardwareRenderGlobals;
 select -ne :defaultHardwareRenderGlobals;
 	setAttr ".fn" -type "string" "im";
 	setAttr ".res" -type "string" "ntsc_4d 646 485 1.333";
-connectAttr "hyperLayout1.msg" "limb.hl";
-connectAttr "start_cnt.msg" "limb.pni[0].pnod";
-connectAttr "mid_cnt.msg" "limb.pni[1].pnod";
-connectAttr "end_cnt.msg" "limb.pni[2].pnod";
-connectAttr "cluster1GroupId.id" "connect_labelShape.iog.og[0].gid";
-connectAttr "cluster1Set.mwc" "connect_labelShape.iog.og[0].gco";
-connectAttr "tweakSet1.mwc" "connect_labelShape.iog.og[1].gco";
-connectAttr "groupId2.id" "connect_labelShape.iog.og[1].gid";
-connectAttr "cluster2GroupId.id" "connect_labelShape.iog.og[2].gid";
-connectAttr "cluster2Set.mwc" "connect_labelShape.iog.og[2].gco";
-connectAttr "cluster3GroupId.id" "connect_labelShape.iog.og[3].gid";
-connectAttr "cluster3Set.mwc" "connect_labelShape.iog.og[3].gco";
-connectAttr "end_clusterCluster.og[0]" "connect_labelShape.cr";
-connectAttr "tweak1.pl[0].cp[0]" "connect_labelShape.twl";
-connectAttr "avg_grp_pointConstraint1.ctx" "avg_grp.tx";
-connectAttr "avg_grp_pointConstraint1.cty" "avg_grp.ty";
-connectAttr "avg_grp_pointConstraint1.ctz" "avg_grp.tz";
-connectAttr "avg_grp_aimConstraint1.crx" "avg_grp.rx";
-connectAttr "avg_grp_aimConstraint1.cry" "avg_grp.ry";
-connectAttr "avg_grp_aimConstraint1.crz" "avg_grp.rz";
-connectAttr "avg_grp.pim" "avg_grp_pointConstraint1.cpim";
-connectAttr "avg_grp.rp" "avg_grp_pointConstraint1.crp";
-connectAttr "avg_grp.rpt" "avg_grp_pointConstraint1.crt";
-connectAttr "start_cnt.t" "avg_grp_pointConstraint1.tg[0].tt";
-connectAttr "start_cnt.rp" "avg_grp_pointConstraint1.tg[0].trp";
-connectAttr "start_cnt.rpt" "avg_grp_pointConstraint1.tg[0].trt";
-connectAttr "start_cnt.pm" "avg_grp_pointConstraint1.tg[0].tpm";
-connectAttr "avg_grp_pointConstraint1.w0" "avg_grp_pointConstraint1.tg[0].tw";
-connectAttr "end_cnt.t" "avg_grp_pointConstraint1.tg[1].tt";
-connectAttr "end_cnt.rp" "avg_grp_pointConstraint1.tg[1].trp";
-connectAttr "end_cnt.rpt" "avg_grp_pointConstraint1.tg[1].trt";
-connectAttr "end_cnt.pm" "avg_grp_pointConstraint1.tg[1].tpm";
-connectAttr "avg_grp_pointConstraint1.w1" "avg_grp_pointConstraint1.tg[1].tw";
-connectAttr "avg_grp.pim" "avg_grp_aimConstraint1.cpim";
-connectAttr "avg_grp.t" "avg_grp_aimConstraint1.ct";
-connectAttr "avg_grp.rp" "avg_grp_aimConstraint1.crp";
-connectAttr "avg_grp.rpt" "avg_grp_aimConstraint1.crt";
-connectAttr "avg_grp.ro" "avg_grp_aimConstraint1.cro";
-connectAttr "mid_cnt.t" "avg_grp_aimConstraint1.tg[0].tt";
-connectAttr "mid_cnt.rp" "avg_grp_aimConstraint1.tg[0].trp";
-connectAttr "mid_cnt.rpt" "avg_grp_aimConstraint1.tg[0].trt";
-connectAttr "mid_cnt.pm" "avg_grp_aimConstraint1.tg[0].tpm";
-connectAttr "avg_grp_aimConstraint1.w0" "avg_grp_aimConstraint1.tg[0].tw";
-connectAttr "start_cnt.wm" "avg_grp_aimConstraint1.wum";
-connectAttr "meta_start_cnt.msg" "start_cnt.metaParent";
-connectAttr "meta_start_socket.msg" "start_socket.metaParent";
-connectAttr "meta_plug.msg" "plug.metaParent";
-connectAttr "meta_end_cnt.msg" "end_cnt.metaParent";
-connectAttr "meta_end_socket.msg" "end_socket.metaParent";
-connectAttr "meta_mid_cnt.msg" "mid_cnt.metaParent";
-connectAttr "direction_label_orientConstraint1.crx" "direction_label.rx";
-connectAttr "direction_label_orientConstraint1.cry" "direction_label.ry";
-connectAttr "direction_label_orientConstraint1.crz" "direction_label.rz";
-connectAttr "direction_label.ro" "direction_label_orientConstraint1.cro";
-connectAttr "direction_label.pim" "direction_label_orientConstraint1.cpim";
-connectAttr "avg_grp.r" "direction_label_orientConstraint1.tg[0].tr";
-connectAttr "avg_grp.ro" "direction_label_orientConstraint1.tg[0].tro";
-connectAttr "avg_grp.pm" "direction_label_orientConstraint1.tg[0].tpm";
-connectAttr "direction_label_orientConstraint1.w0" "direction_label_orientConstraint1.tg[0].tw"
+connectAttr "hyperLayout1.msg" "foot.hl";
+connectAttr "foot_cnt.msg" "foot.pni[0].pnod";
+connectAttr "toe_cnt.msg" "foot.pni[1].pnod";
+connectAttr "heel_cnt.msg" "foot.pni[2].pnod";
+connectAttr "toetip_cnt.msg" "foot.pni[3].pnod";
+connectAttr "r_bank_cnt.msg" "foot.pni[4].pnod";
+connectAttr "l_bank_cnt.msg" "foot.pni[5].pnod";
+connectAttr "meta_foot_cnt.msg" "foot_cnt.metaParent";
+connectAttr "meta_toe_cnt.msg" "toe_cnt.metaParent";
+connectAttr "meta_heel_cnt.msg" "heel_cnt.metaParent";
+connectAttr "meta_toetip_cnt.msg" "toetip_cnt.metaParent";
+connectAttr "cluster1Set.mwc" "footIndicatorShape.iog.og[0].gco";
+connectAttr "cluster1GroupId.id" "footIndicatorShape.iog.og[0].gid";
+connectAttr "tweakSet1.mwc" "footIndicatorShape.iog.og[1].gco";
+connectAttr "groupId2.id" "footIndicatorShape.iog.og[1].gid";
+connectAttr "cluster2Set.mwc" "footIndicatorShape.iog.og[2].gco";
+connectAttr "cluster2GroupId.id" "footIndicatorShape.iog.og[2].gid";
+connectAttr "cluster3Set.mwc" "footIndicatorShape.iog.og[3].gco";
+connectAttr "cluster3GroupId.id" "footIndicatorShape.iog.og[3].gid";
+connectAttr "cluster3.og[0]" "footIndicatorShape.cr";
+connectAttr "tweak1.pl[0].cp[0]" "footIndicatorShape.twl";
+connectAttr "average_grp_parentConstraint1.ctx" "average_grp.tx";
+connectAttr "average_grp_parentConstraint1.cty" "average_grp.ty";
+connectAttr "average_grp_parentConstraint1.ctz" "average_grp.tz";
+connectAttr "average_grp_parentConstraint1.crx" "average_grp.rx";
+connectAttr "average_grp_parentConstraint1.cry" "average_grp.ry";
+connectAttr "average_grp_parentConstraint1.crz" "average_grp.rz";
+connectAttr "average_grp.ro" "average_grp_parentConstraint1.cro";
+connectAttr "average_grp.pim" "average_grp_parentConstraint1.cpim";
+connectAttr "average_grp.rp" "average_grp_parentConstraint1.crp";
+connectAttr "average_grp.rpt" "average_grp_parentConstraint1.crt";
+connectAttr "heel_cnt.t" "average_grp_parentConstraint1.tg[0].tt";
+connectAttr "heel_cnt.rp" "average_grp_parentConstraint1.tg[0].trp";
+connectAttr "heel_cnt.rpt" "average_grp_parentConstraint1.tg[0].trt";
+connectAttr "heel_cnt.r" "average_grp_parentConstraint1.tg[0].tr";
+connectAttr "heel_cnt.ro" "average_grp_parentConstraint1.tg[0].tro";
+connectAttr "heel_cnt.s" "average_grp_parentConstraint1.tg[0].ts";
+connectAttr "heel_cnt.pm" "average_grp_parentConstraint1.tg[0].tpm";
+connectAttr "average_grp_parentConstraint1.w0" "average_grp_parentConstraint1.tg[0].tw"
 		;
-connectAttr "meta_mid_socket.msg" "mid_socket.metaParent";
+connectAttr "toetip_cnt.t" "average_grp_parentConstraint1.tg[1].tt";
+connectAttr "toetip_cnt.rp" "average_grp_parentConstraint1.tg[1].trp";
+connectAttr "toetip_cnt.rpt" "average_grp_parentConstraint1.tg[1].trt";
+connectAttr "toetip_cnt.r" "average_grp_parentConstraint1.tg[1].tr";
+connectAttr "toetip_cnt.ro" "average_grp_parentConstraint1.tg[1].tro";
+connectAttr "toetip_cnt.s" "average_grp_parentConstraint1.tg[1].ts";
+connectAttr "toetip_cnt.pm" "average_grp_parentConstraint1.tg[1].tpm";
+connectAttr "average_grp_parentConstraint1.w1" "average_grp_parentConstraint1.tg[1].tw"
+		;
+connectAttr "aim_grp_aimConstraint1.crx" "aim_grp.rx";
+connectAttr "aim_grp_aimConstraint1.cry" "aim_grp.ry";
+connectAttr "aim_grp_aimConstraint1.crz" "aim_grp.rz";
+connectAttr "meta_r_bank_cnt.msg" "r_bank_cnt.metaParent";
+connectAttr "meta_l_bank_cnt.msg" "l_bank_cnt.metaParent";
+connectAttr "aim_grp.pim" "aim_grp_aimConstraint1.cpim";
+connectAttr "aim_grp.t" "aim_grp_aimConstraint1.ct";
+connectAttr "aim_grp.rp" "aim_grp_aimConstraint1.crp";
+connectAttr "aim_grp.rpt" "aim_grp_aimConstraint1.crt";
+connectAttr "aim_grp.ro" "aim_grp_aimConstraint1.cro";
+connectAttr "toetip_cnt.t" "aim_grp_aimConstraint1.tg[0].tt";
+connectAttr "toetip_cnt.rp" "aim_grp_aimConstraint1.tg[0].trp";
+connectAttr "toetip_cnt.rpt" "aim_grp_aimConstraint1.tg[0].trt";
+connectAttr "toetip_cnt.pm" "aim_grp_aimConstraint1.tg[0].tpm";
+connectAttr "aim_grp_aimConstraint1.w0" "aim_grp_aimConstraint1.tg[0].tw";
+connectAttr "foot_cnt.wm" "aim_grp_aimConstraint1.wum";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
-connectAttr "limb.upperTwistJoints" "meta_limb.upperTwistJoints";
-connectAttr "limb.lowerTwistJoints" "meta_limb.lowerTwistJoints";
-connectAttr "limb.upperTwist" "meta_limb.upperTwist";
-connectAttr "limb.lowerTwist" "meta_limb.lowerTwist";
-connectAttr "limb.limbType" "meta_limb.limbType";
-connectAttr "limb.index" "meta_limb.index";
-connectAttr "meta_limb.msg" "meta_start_cnt.metaParent";
-connectAttr "meta_limb.msg" "meta_mid_cnt.metaParent";
-connectAttr "meta_limb.msg" "meta_end_cnt.metaParent";
-connectAttr "meta_limb.msg" "meta_start_socket.metaParent";
-connectAttr "meta_limb.msg" "meta_mid_socket.metaParent";
-connectAttr "meta_limb.msg" "meta_end_socket.metaParent";
-connectAttr "meta_limb.msg" "meta_plug.metaParent";
-connectAttr "connect_label.msg" "hyperLayout1.hyp[0].dn";
-connectAttr "avg_grp.msg" "hyperLayout1.hyp[1].dn";
-connectAttr "start_cnt.msg" "hyperLayout1.hyp[2].dn";
-connectAttr "end_cnt.msg" "hyperLayout1.hyp[3].dn";
-connectAttr "mid_cnt.msg" "hyperLayout1.hyp[4].dn";
-connectAttr "connect_labelShape.msg" "hyperLayout1.hyp[5].dn";
-connectAttr "connect_labelShape1Orig.msg" "hyperLayout1.hyp[6].dn";
-connectAttr "avg_grp_pointConstraint1.msg" "hyperLayout1.hyp[7].dn";
-connectAttr "avg_grp_aimConstraint1.msg" "hyperLayout1.hyp[8].dn";
-connectAttr "start_cntShape.msg" "hyperLayout1.hyp[9].dn";
-connectAttr "start_cluster.msg" "hyperLayout1.hyp[10].dn";
-connectAttr "start_clusterShape.msg" "hyperLayout1.hyp[11].dn";
-connectAttr "start_socket.msg" "hyperLayout1.hyp[12].dn";
-connectAttr "start_socketShape.msg" "hyperLayout1.hyp[13].dn";
-connectAttr "plug.msg" "hyperLayout1.hyp[14].dn";
-connectAttr "plugShape.msg" "hyperLayout1.hyp[15].dn";
-connectAttr "end_cntShape.msg" "hyperLayout1.hyp[16].dn";
-connectAttr "end_cluster.msg" "hyperLayout1.hyp[17].dn";
-connectAttr "end_clusterShape.msg" "hyperLayout1.hyp[18].dn";
-connectAttr "end_socket.msg" "hyperLayout1.hyp[19].dn";
-connectAttr "end_socketShape.msg" "hyperLayout1.hyp[20].dn";
-connectAttr "mid_cntShape.msg" "hyperLayout1.hyp[21].dn";
-connectAttr "mid_cluster.msg" "hyperLayout1.hyp[22].dn";
-connectAttr "mid_clusterShape.msg" "hyperLayout1.hyp[23].dn";
-connectAttr "direction_label.msg" "hyperLayout1.hyp[24].dn";
-connectAttr "direction_labelShape.msg" "hyperLayout1.hyp[25].dn";
-connectAttr "direction_label_orientConstraint1.msg" "hyperLayout1.hyp[26].dn";
-connectAttr "mid_socket.msg" "hyperLayout1.hyp[27].dn";
-connectAttr "mid_socketShape.msg" "hyperLayout1.hyp[28].dn";
-connectAttr "cluster3GroupId.msg" "hyperLayout1.hyp[29].dn";
-connectAttr "cluster2GroupId.msg" "hyperLayout1.hyp[30].dn";
-connectAttr "groupId2.msg" "hyperLayout1.hyp[31].dn";
-connectAttr "cluster1GroupId.msg" "hyperLayout1.hyp[32].dn";
-connectAttr "tweak1.msg" "hyperLayout1.hyp[33].dn";
-connectAttr "start_clusterCluster.msg" "hyperLayout1.hyp[34].dn";
-connectAttr "end_clusterCluster.msg" "hyperLayout1.hyp[35].dn";
-connectAttr "cluster1GroupParts.msg" "hyperLayout1.hyp[36].dn";
-connectAttr "groupParts2.msg" "hyperLayout1.hyp[37].dn";
-connectAttr "mid_clusterCluster.msg" "hyperLayout1.hyp[38].dn";
-connectAttr "cluster2GroupParts.msg" "hyperLayout1.hyp[39].dn";
-connectAttr "cluster3GroupParts.msg" "hyperLayout1.hyp[40].dn";
-connectAttr "connect_labelShape1Orig.ws" "groupParts2.ig";
+connectAttr "foot.index" "meta_foot.index";
+connectAttr "foot.attachToLeg" "meta_foot.attachToLeg";
+connectAttr "meta_foot.msg" "meta_r_bank_cnt.metaParent";
+connectAttr "meta_foot.msg" "meta_toe_cnt.metaParent";
+connectAttr "meta_foot.msg" "meta_heel_cnt.metaParent";
+connectAttr "meta_foot.msg" "meta_toetip_cnt.metaParent";
+connectAttr "meta_foot.msg" "meta_l_bank_cnt.metaParent";
+connectAttr "meta_foot.msg" "meta_foot_cnt.metaParent";
+connectAttr "foot_cnt.msg" "hyperLayout1.hyp[0].dn";
+connectAttr "footIndicator.msg" "hyperLayout1.hyp[1].dn";
+connectAttr "average_grp.msg" "hyperLayout1.hyp[2].dn";
+connectAttr "foot_cntShape.msg" "hyperLayout1.hyp[3].dn";
+connectAttr "group1.msg" "hyperLayout1.hyp[4].dn";
+connectAttr "cluster1Handle.msg" "hyperLayout1.hyp[5].dn";
+connectAttr "cluster1HandleShape.msg" "hyperLayout1.hyp[6].dn";
+connectAttr "toe_cnt.msg" "hyperLayout1.hyp[7].dn";
+connectAttr "toe_cntShape.msg" "hyperLayout1.hyp[8].dn";
+connectAttr "group2.msg" "hyperLayout1.hyp[9].dn";
+connectAttr "cluster2Handle.msg" "hyperLayout1.hyp[10].dn";
+connectAttr "cluster2HandleShape.msg" "hyperLayout1.hyp[11].dn";
+connectAttr "heel_cnt.msg" "hyperLayout1.hyp[12].dn";
+connectAttr "heel_cntShape.msg" "hyperLayout1.hyp[13].dn";
+connectAttr "toetip_cnt.msg" "hyperLayout1.hyp[14].dn";
+connectAttr "toetip_cntShape.msg" "hyperLayout1.hyp[15].dn";
+connectAttr "group3.msg" "hyperLayout1.hyp[16].dn";
+connectAttr "cluster3Handle.msg" "hyperLayout1.hyp[17].dn";
+connectAttr "cluster3HandleShape.msg" "hyperLayout1.hyp[18].dn";
+connectAttr "footIndicatorShape.msg" "hyperLayout1.hyp[19].dn";
+connectAttr "footIndicatorShape1Orig.msg" "hyperLayout1.hyp[20].dn";
+connectAttr "r_bank_cnt.msg" "hyperLayout1.hyp[21].dn";
+connectAttr "r_bank_cntShape.msg" "hyperLayout1.hyp[22].dn";
+connectAttr "bank01Indicator.msg" "hyperLayout1.hyp[23].dn";
+connectAttr "bank01IndicatorShape.msg" "hyperLayout1.hyp[24].dn";
+connectAttr "l_bank_cnt.msg" "hyperLayout1.hyp[25].dn";
+connectAttr "l_bank_cntShape.msg" "hyperLayout1.hyp[26].dn";
+connectAttr "bank02Indicator.msg" "hyperLayout1.hyp[27].dn";
+connectAttr "bank02IndicatorShape.msg" "hyperLayout1.hyp[28].dn";
+connectAttr "average_grp_parentConstraint1.msg" "hyperLayout1.hyp[29].dn";
+connectAttr "cluster3.msg" "hyperLayout1.hyp[30].dn";
+connectAttr "cluster3GroupParts.msg" "hyperLayout1.hyp[31].dn";
+connectAttr "cluster2GroupParts.msg" "hyperLayout1.hyp[32].dn";
+connectAttr "cluster1.msg" "hyperLayout1.hyp[33].dn";
+connectAttr "cluster1GroupParts.msg" "hyperLayout1.hyp[34].dn";
+connectAttr "groupParts2.msg" "hyperLayout1.hyp[35].dn";
+connectAttr "cluster2.msg" "hyperLayout1.hyp[36].dn";
+connectAttr "cluster3GroupId.msg" "hyperLayout1.hyp[37].dn";
+connectAttr "cluster1GroupId.msg" "hyperLayout1.hyp[38].dn";
+connectAttr "groupId2.msg" "hyperLayout1.hyp[39].dn";
+connectAttr "tweak1.msg" "hyperLayout1.hyp[40].dn";
+connectAttr "cluster2GroupId.msg" "hyperLayout1.hyp[41].dn";
+connectAttr "aim_grp.msg" "hyperLayout1.hyp[46].dn";
+connectAttr "aim_grp_aimConstraint1.msg" "hyperLayout1.hyp[50].dn";
+connectAttr "cluster3GroupParts.og" "cluster3.ip[0].ig";
+connectAttr "cluster3GroupId.id" "cluster3.ip[0].gi";
+connectAttr "cluster3Handle.wm" "cluster3.ma";
+connectAttr "cluster3HandleShape.x" "cluster3.x";
+connectAttr "cluster2.og[0]" "cluster3GroupParts.ig";
+connectAttr "cluster3GroupId.id" "cluster3GroupParts.gi";
+connectAttr "cluster3GroupId.msg" "cluster3Set.gn" -na;
+connectAttr "footIndicatorShape.iog.og[3]" "cluster3Set.dsm" -na;
+connectAttr "cluster3.msg" "cluster3Set.ub[0]";
+connectAttr "cluster2GroupParts.og" "cluster2.ip[0].ig";
+connectAttr "cluster2GroupId.id" "cluster2.ip[0].gi";
+connectAttr "cluster2Handle.wm" "cluster2.ma";
+connectAttr "cluster2HandleShape.x" "cluster2.x";
+connectAttr "cluster1.og[0]" "cluster2GroupParts.ig";
+connectAttr "cluster2GroupId.id" "cluster2GroupParts.gi";
+connectAttr "cluster2GroupId.msg" "cluster2Set.gn" -na;
+connectAttr "footIndicatorShape.iog.og[2]" "cluster2Set.dsm" -na;
+connectAttr "cluster2.msg" "cluster2Set.ub[0]";
+connectAttr "cluster1GroupParts.og" "cluster1.ip[0].ig";
+connectAttr "cluster1GroupId.id" "cluster1.ip[0].gi";
+connectAttr "cluster1Handle.wm" "cluster1.ma";
+connectAttr "cluster1HandleShape.x" "cluster1.x";
+connectAttr "cluster1GroupId.msg" "cluster1Set.gn" -na;
+connectAttr "footIndicatorShape.iog.og[0]" "cluster1Set.dsm" -na;
+connectAttr "cluster1.msg" "cluster1Set.ub[0]";
+connectAttr "footIndicatorShape1Orig.ws" "groupParts2.ig";
 connectAttr "groupId2.id" "groupParts2.gi";
 connectAttr "groupParts2.og" "tweak1.ip[0].ig";
 connectAttr "groupId2.id" "tweak1.ip[0].gi";
 connectAttr "groupId2.msg" "tweakSet1.gn" -na;
-connectAttr "connect_labelShape.iog.og[1]" "tweakSet1.dsm" -na;
+connectAttr "footIndicatorShape.iog.og[1]" "tweakSet1.dsm" -na;
 connectAttr "tweak1.msg" "tweakSet1.ub[0]";
 connectAttr "tweak1.og[0]" "cluster1GroupParts.ig";
 connectAttr "cluster1GroupId.id" "cluster1GroupParts.gi";
-connectAttr "start_clusterCluster.og[0]" "cluster2GroupParts.ig";
-connectAttr "cluster2GroupId.id" "cluster2GroupParts.gi";
-connectAttr "mid_clusterCluster.og[0]" "cluster3GroupParts.ig";
-connectAttr "cluster3GroupId.id" "cluster3GroupParts.gi";
-connectAttr "cluster1GroupParts.og" "start_clusterCluster.ip[0].ig";
-connectAttr "cluster1GroupId.id" "start_clusterCluster.ip[0].gi";
-connectAttr "start_cluster.wm" "start_clusterCluster.ma";
-connectAttr "start_clusterShape.x" "start_clusterCluster.x";
-connectAttr "cluster1GroupId.msg" "cluster1Set.gn" -na;
-connectAttr "connect_labelShape.iog.og[0]" "cluster1Set.dsm" -na;
-connectAttr "start_clusterCluster.msg" "cluster1Set.ub[0]";
-connectAttr "cluster3GroupParts.og" "end_clusterCluster.ip[0].ig";
-connectAttr "cluster3GroupId.id" "end_clusterCluster.ip[0].gi";
-connectAttr "end_cluster.wm" "end_clusterCluster.ma";
-connectAttr "end_clusterShape.x" "end_clusterCluster.x";
-connectAttr "cluster3GroupId.msg" "cluster3Set.gn" -na;
-connectAttr "connect_labelShape.iog.og[3]" "cluster3Set.dsm" -na;
-connectAttr "end_clusterCluster.msg" "cluster3Set.ub[0]";
-connectAttr "cluster2GroupParts.og" "mid_clusterCluster.ip[0].ig";
-connectAttr "cluster2GroupId.id" "mid_clusterCluster.ip[0].gi";
-connectAttr "mid_cluster.wm" "mid_clusterCluster.ma";
-connectAttr "mid_clusterShape.x" "mid_clusterCluster.x";
-connectAttr "cluster2GroupId.msg" "cluster2Set.gn" -na;
-connectAttr "connect_labelShape.iog.og[2]" "cluster2Set.dsm" -na;
-connectAttr "mid_clusterCluster.msg" "cluster2Set.ub[0]";
-connectAttr "meta_limb.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_start_cnt.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_mid_cnt.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_end_cnt.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_start_socket.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_mid_socket.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_end_socket.msg" ":defaultRenderUtilityList1.u" -na;
-connectAttr "meta_plug.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_foot.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_foot_cnt.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_toe_cnt.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_toetip_cnt.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_r_bank_cnt.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_l_bank_cnt.msg" ":defaultRenderUtilityList1.u" -na;
+connectAttr "meta_heel_cnt.msg" ":defaultRenderUtilityList1.u" -na;
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of limb.ma
+// End of foot.ma

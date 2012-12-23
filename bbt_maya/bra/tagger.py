@@ -257,7 +257,7 @@ class tagDialog(QtGui.QDialog):
                 meta=generic.Meta()
                 
                 for node in sel:
-                    metaParent=meta.createControl(('meta_'+node), component, module, data)
+                    metaParent=meta.setData(('meta_'+node),'control', component, module,None)
                     
                     cmds.addAttr(node,longName='metaParent',attributeType='message')
                     cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)

@@ -3,7 +3,7 @@ import maya.mel as mel
 
 from bbt_maya import generic
 from bbt_maya.brt import utils
-from bbt_maya.brt import twistJoints
+from bbt_maya.python import ZvParentMaster as zv
 
 class Limb():
     ''' Class for all limb related functions. '''
@@ -16,22 +16,23 @@ class Limb():
     
     def Rig(self,templateModule):
         #class variables
-        ut=utils.transform()
-        tj=twistJoints.TwistJoints()
+        meta=generic.Meta()
+        ut=utils.Transform()
+        ucs=utils.ControlShape()
+        um=utils.Math()
+        tj=TwistJoints()
         
         #collect all components
-        meta=generic.Meta()
-        
-        controls=meta.downStream(templateModule,'control',
+        controls=meta.DownStream(templateModule,'control',
                                  allNodes=True)
         
         for control in controls:
-            if meta.getData(control)['component']=='start':
-                start=meta.getTransform(control)
-            if meta.getData(control)['component']=='mid':
-                mid=meta.getTransform(control)
-            if meta.getData(control)['component']=='end':
-                end=meta.getTransform(control)
+            if meta.GetData(control)['component']=='start':
+                start=meta.GetTransform(control)
+            if meta.GetData(control)['component']=='mid':
+                mid=meta.GetTransform(control)
+            if meta.GetData(control)['component']=='end':
+                end=meta.GetTransform(control)
         
         #getting transform data
         startTrans=cmds.xform(start,worldSpace=True,query=True,
@@ -45,8 +46,8 @@ class Limb():
         endRot=cmds.xform(end,worldSpace=True,query=True,
                           rotation=True)
         
-        #getting asset data
-        data=meta.getData(templateModule)
+        #getting module data
+        data=meta.GetData(templateModule)
         
         upperTwist=data['upperTwist']
         upperTwistJoints=data['upperTwistJoints']
@@ -67,15 +68,15 @@ class Limb():
             side='right'
         
         #establish index
-        data=meta.getData(templateModule)
+        data=meta.GetData(templateModule)
         
         index=data['index']
         
         for node in cmds.ls(type='network'):
-            if meta.getData(node)['type']=='module' and \
-            meta.getData(node)['component']==limbType and \
-                    meta.getData(node)['side']==side and \
-                    meta.getData(node)['index']==index:
+            if meta.GetData(node)['type']=='module' and \
+            meta.GetData(node)['component']==limbType and \
+                    meta.GetData(node)['side']==side and \
+                    meta.GetData(node)['index']==index:
                 index+=1
         
         #delete template
@@ -92,7 +93,7 @@ class Limb():
         #create module
         data={'side':side,'index':str(index)}
         
-        module=meta.setData(('meta'+suffix),'module',limbType,None,
+        module=meta.SetData(('meta'+suffix),'module','limb',None,
                             data)
         
         cmds.container(asset,e=True,addNode=module)
@@ -117,10 +118,10 @@ class Limb():
         
         cmds.xform(plug,worldSpace=True,translation=startTrans)
         
-        metaParent=meta.setData('meta_'+plug,'plug',None,module,
+        metaParent=meta.SetData('meta_'+plug,'plug',None,module,
                                 None)
         
-        meta.setTransform(plug, metaParent)
+        meta.SetTransform(plug, metaParent)
         
         cmds.container(asset,e=True,addNode=plug)
         
@@ -139,42 +140,25 @@ class Limb():
         cmds.parent(endSocket,endJoint)
         
         data={'index':1}
-        metaParent=meta.setData('meta_'+startSocket,'socket',None,
+        metaParent=meta.SetData('meta_'+startSocket,'socket',None,
                                 module,data)
-        meta.setTransform(startSocket, metaParent)
+        meta.SetTransform(startSocket, metaParent)
         
         data={'index':2}
-        metaParent=meta.setData('meta_'+midSocket,'socket',None,
+        metaParent=meta.SetData('meta_'+midSocket,'socket',None,
                                 module,data)
-        meta.setTransform(midSocket, metaParent)
+        meta.SetTransform(midSocket, metaParent)
         
         data={'index':3}
-        metaParent=meta.setData('meta_'+endSocket,'socket',None,
+        metaParent=meta.SetData('meta_'+endSocket,'socket',None,
                                 module,data)
-        meta.setTransform(endSocket, metaParent)
+        meta.SetTransform(endSocket, metaParent)
         
         cmds.container(asset,e=True,addNode=[startSocket,midSocket,
                                              endSocket])
         
-        #finding the worldUpVecter for the joints
-        vectorA=[0,0,0]
-        vectorB=[0,0,0]
-        
-        posA=(startTrans[0],startTrans[1],startTrans[2])
-        posB=(midTrans[0],midTrans[1],midTrans[2])
-        posC=(endTrans[0],endTrans[1],endTrans[2])
-        
-        vectorA[0]=posA[0]-posB[0]
-        vectorA[1]=posA[1]-posB[1]
-        vectorA[2]=posA[2]-posB[2]
-        
-        vectorB[0]=posC[0]-posB[0]
-        vectorB[1]=posC[1]-posB[1]
-        vectorB[2]=posC[2]-posB[2]
-        
-        crs=mel.eval('crossProduct <<%s,%s,%s>> <<%s,%s,%s>> 1 1;'\
-                        % (vectorA[0],vectorA[1],vectorA[2],
-                           vectorB[0],vectorB[1],vectorB[2]))
+        #finding the upVector for the joints
+        crs=um.CrossProduct(startTrans,midTrans,endTrans)
         
         #setup start joint
         grp=cmds.group(empty=True)
@@ -211,7 +195,7 @@ class Limb():
         #setup end joint
         cmds.xform(endJoint,worldSpace=True,rotation=endRot)
         
-        diff=ut.closestOrient(midJoint, endJoint)
+        diff=ut.ClosestOrient(midJoint, endJoint)
         
         cmds.rotate(diff[0],diff[1],diff[2],endJoint,r=True,
                     os=True)
@@ -282,6 +266,8 @@ class Limb():
                                   n=prefix+'stretch01')
         stretch02=cmds.createNode('transform',ss=True,
                                   n=prefix+'stretch02')
+        stretch02REF=cmds.createNode('transform',ss=True,
+                                  n=prefix+'stretch02REF')
         stretchDIST=cmds.shadingNode('distanceBetween',
                                      asUtility=True,
                                      n=prefix+'stretchDIST')
@@ -295,10 +281,17 @@ class Limb():
                                     asUtility=True,
                                     n=prefix+'stretchBLD')
         
+        phgrp=cmds.group(stretch02REF,n=(stretch02REF+'_PH'))
+        sngrp=cmds.group(stretch02REF,n=(stretch02REF+'_SN'))
+        
+        ut.Snap(endJoint,phgrp)
+        cmds.parentConstraint(stretch02REF,stretch02)
+        
         cmds.container(asset,e=True,
                        addNode=[stretch01,stretch02,stretchDIST,
                                 stretch01MD,stretch02MD,
-                                stretchBLD])
+                                stretchBLD,phgrp,sngrp,
+                                stretch02REF])
         
         cmds.transformLimits(startIk,sx=(1,1),esx=(1,0))
         cmds.transformLimits(midIk,sx=(1,1),esx=(1,0))
@@ -337,24 +330,22 @@ class Limb():
         cmds.connectAttr('%s.outputR' % stretchBLD,
                          '%s.sx' % midIk,force=True)
         
-        #creating controls
-        ucs=utils.controlShape()
-        
-        polevectorCNT=ucs.sphere(prefix+'polevector_cnt')
-        endIkCNT=ucs.sphere(prefix+'endIk_cnt')
-        startFkCNT=ucs.box(prefix+'startFk_cnt')
-        midFkCNT=ucs.box(prefix+'midFk_cnt')
-        endFkCNT=ucs.box(prefix+'endFk_cnt')
-        extraCNT=ucs.pin(prefix+'extra_cnt')
+        #creating controls       
+        polevectorCNT=ucs.Sphere(prefix+'polevector_cnt')
+        endIkCNT=ucs.Sphere(prefix+'endIk_cnt')
+        startFkCNT=ucs.Box(prefix+'startFk_cnt')
+        midFkCNT=ucs.Box(prefix+'midFk_cnt')
+        endFkCNT=ucs.Box(prefix+'endFk_cnt')
+        extraCNT=ucs.Pin(prefix+'extra_cnt')
         
         cnts=[polevectorCNT,endIkCNT,startFkCNT,midFkCNT,endFkCNT,
               extraCNT]
         
         #setup polevectorCNT
         data={'system':'ik','switch':midFk}
-        mNode=meta.setData(('meta_'+polevectorCNT),'control',
+        mNode=meta.SetData(('meta_'+polevectorCNT),'control',
                            'polevector', module,data)
-        meta.setTransform(polevectorCNT, mNode)
+        meta.SetTransform(polevectorCNT, mNode)
         
         grp=cmds.group(polevectorCNT,n=(polevectorCNT+'_grp'))
         cmds.parent(grp,plug)
@@ -362,15 +353,39 @@ class Limb():
         phgrp=cmds.group(polevectorCNT,n=(polevectorCNT+'_PH'))
         sngrp=cmds.group(polevectorCNT,n=(polevectorCNT+'_SN'))
         
-        ut.snap(polevector,grp)
+        ut.Snap(polevector,grp)
         
         cmds.parent(polevector,polevectorCNT)
         
         cmds.container(asset,e=True,addNode=[grp,phgrp,sngrp])
         
+        curve=cmds.curve(d=1,p=[(0,0,0),(1,0,0)])
+        polevectorSHP=cmds.listRelatives(curve,s=True)[0]
+        cmds.setAttr(polevectorSHP+'.overrideEnabled',1)
+        cmds.setAttr(polevectorSHP+'.overrideDisplayType',2)
+        
+        cmds.select(curve+'.cv[0]',r=True)
+        cluster=mel.eval('newCluster " -envelope 1";')
+        ut.Snap(polevector,cluster[1])
+        cmds.parent(cluster[1],polevector)
+        
+        cmds.container(asset,e=True,addNode=[curve,cluster[0],
+                                             cluster[1]])
+        cmds.rename(cluster[0],prefix+'polvector_cls')
+        
+        cmds.select(curve+'.cv[1]',r=True)
+        cluster=mel.eval('newCluster " -envelope 1";')
+        ut.Snap(midIk,cluster[1])
+        cmds.parent(cluster[1],midIk)
+        
+        cmds.container(asset,e=True,addNode=[cluster[0],
+                                             cluster[1]])
+        cmds.rename(cluster[0],prefix+'polvector_cls')
+        polevectorSHP=cmds.rename(curve,prefix+'polevector_shp')
+        
         #setup endIkCNT
         data={'system':'ik','switch':endFk}
-        mNode=meta.setData(('meta_'+endIkCNT),'control','end',
+        mNode=meta.SetData(('meta_'+endIkCNT),'control','end',
                            module,data)
         
         grp=cmds.group(endIkCNT,n=(endIkCNT+'_grp'))
@@ -379,21 +394,22 @@ class Limb():
         phgrp=cmds.group(endIkCNT,n=(endIkCNT+'_PH'))
         sngrp=cmds.group(endIkCNT,n=(endIkCNT+'_SN'))
         
-        ut.snap(endFk,grp)
+        ut.Snap(endFk,grp)
         
-        cmds.parentConstraint(endIkCNT,stretch02)
+        cmds.select([stretch02REF,endIkCNT],r=True)
+        zv.attach()
         
         cmds.container(asset,e=True,addNode=[grp,phgrp,sngrp])
         
         #setup startFkCNT
         data={'system':'fk','switch':startIk}
-        mNode=meta.setData(('meta_'+startFkCNT),'control','start',
+        mNode=meta.SetData(('meta_'+startFkCNT),'control','start',
                            module,data)
         
         grp=cmds.group(startFkCNT,n=(startFkCNT+'_grp'))
         cmds.parent(grp,plug)
         
-        ut.snap(startFk, grp)
+        ut.Snap(startFk, grp)
         
         cmds.parent(startFk,startFkCNT)
         
@@ -401,13 +417,13 @@ class Limb():
         
         #setup midFkCNT
         data={'system':'fk','switch':midIk}
-        mNode=meta.setData(('meta_'+midFkCNT),'control','mid',
+        mNode=meta.SetData(('meta_'+midFkCNT),'control','mid',
                            module,data)
         
         grp=cmds.group(midFkCNT,n=(midFkCNT+'_grp'))
         cmds.parent(grp,startFk)
         
-        ut.snap(midFk, grp)
+        ut.Snap(midFk, grp)
         
         cmds.parent(midFk,midFkCNT)
         
@@ -415,20 +431,20 @@ class Limb():
         
         #setup endFkCNT
         data={'system':'fk','switch':endIkCNT}
-        mNode=meta.setData(('meta_'+endFkCNT),'control','end',
+        mNode=meta.SetData(('meta_'+endFkCNT),'control','end',
                            module,data)
         
         grp=cmds.group(endFkCNT,n=(endFkCNT+'_grp'))
         cmds.parent(grp,midFk)
         
-        ut.snap(endFk, grp)
+        ut.Snap(endFk, grp)
         
         cmds.parent(endFk,endFkCNT)
         
         cmds.container(asset,e=True,addNode=grp)
         
         #setup extraCNT
-        mNode=meta.setData(('meta_'+extraCNT),'control','extra',
+        mNode=meta.SetData(('meta_'+extraCNT),'control','extra',
                            module,None)
         
         cmds.addAttr(extraCNT,ln='FKIK',at='float',keyable=True,
@@ -441,7 +457,7 @@ class Limb():
         cmds.connectAttr(extraCNT+'.stretch',stretchBLD+'.blender',
                          force=True)
         
-        ut.snap(endFk,extraCNT)
+        ut.Snap(endFk,extraCNT)
         
         cmds.parent(extraCNT,endJoint)
         cmds.rotate(0,90,0,extraCNT,r=True,os=True)
@@ -449,8 +465,8 @@ class Limb():
         cmds.scaleConstraint(plug,extraCNT)
         
         #create twist controls
-        startIkTwistCNT=ucs.circle(prefix+'startIkTwist_cnt')
-        midIkTwistCNT=ucs.circle(prefix+'midIkTwist_cnt')
+        startIkTwistCNT=ucs.Circle(prefix+'startIkTwist_cnt')
+        midIkTwistCNT=ucs.Circle(prefix+'midIkTwist_cnt')
         
         cnts.append(startIkTwistCNT)
         cnts.append(midIkTwistCNT)
@@ -467,10 +483,10 @@ class Limb():
         #setup startIkTwistCNT        
         data={'system':'ik','switch':startFk,'worldspace':'false',
               'index':1}
-        mNode=meta.setData(('meta_'+startIkTwistCNT),'control',
+        mNode=meta.SetData(('meta_'+startIkTwistCNT),'control',
                            'iktwist',module,data)
         
-        ut.snap(startIk,startIkTwistCNT)
+        ut.Snap(startIk,startIkTwistCNT)
         
         cmds.parent(startIkTwistJNT,startIkTwistCNT)
         cmds.parent(startIkTwistCNT,startIk)
@@ -478,10 +494,10 @@ class Limb():
         #setup midIkTwistCNT
         data={'system':'ik','switch':midFk,'worldspace':'false',
               'index':2}
-        mNode=meta.setData(('meta_'+midIkTwistCNT),'control',
+        mNode=meta.SetData(('meta_'+midIkTwistCNT),'control',
                            'iktwist',module,data)
         
-        ut.snap(midIk,midIkTwistCNT)
+        ut.Snap(midIk,midIkTwistCNT)
         
         cmds.parent(midIkTwistJNT,midIkTwistCNT)
         cmds.parent(midIkTwistCNT,midIk)
@@ -525,21 +541,21 @@ class Limb():
         
         cmds.connectAttr(fkIkREV+'.outputX',startFkCNT+
                          '.visibility')
-        cmds.connectAttr(fkIkREV+'.outputX',midFkCNT+'.visibility')
-        cmds.connectAttr(fkIkREV+'.outputX',endFkCNT+'.visibility')
-        cmds.connectAttr(extraCNT+'.FKIK',endIkCNT+'.visibility')
-        cmds.connectAttr(extraCNT+'.FKIK',polevectorCNT+
-                         '.visibility')
+        cmds.connectAttr(fkIkREV+'.outputX',midFkCNT+'.v')
+        cmds.connectAttr(fkIkREV+'.outputX',endFkCNT+'.v')
+        cmds.connectAttr(extraCNT+'.FKIK',endIkCNT+'.v')
+        cmds.connectAttr(extraCNT+'.FKIK',polevectorCNT+'.v')
+        cmds.connectAttr(extraCNT+'.FKIK',polevectorSHP+'.v')
         cmds.connectAttr(extraCNT+'.ikTwistControls',
-                         startIkTwistCNT+'.visibility')
-        cmds.connectAttr(extraCNT+'.ikTwistControls',midIkTwistCNT+
-                         '.visibility')
+                         startIkTwistCNT+'.v')
+        cmds.connectAttr(extraCNT+'.ikTwistControls',
+                         midIkTwistCNT+'.v')
         
         #twist joints        
         if upperTwist==True or lowerTwist==True:
             averageJNT=cmds.joint(p=[0,0,0],n=prefix+'average_jnt')
             
-            ut.snap(midFk,averageJNT)
+            ut.Snap(midFk,averageJNT)
             cmds.parent(averageJNT,midJoint)
             
             orientCon=cmds.orientConstraint(startJoint,midJoint,
@@ -549,7 +565,7 @@ class Limb():
             cmds.container(asset,e=True,addNode=[averageJNT])
         
         if upperTwist==True:
-            nodes=tj.rig(startJoint,averageJNT,plug,midJoint,
+            nodes=tj.Rig(startJoint,averageJNT,plug,midJoint,
                          averageJNT,extraCNT,plug,upperTwistJoints,
                          prefix+'upper_')
             
@@ -558,7 +574,7 @@ class Limb():
                                    addNode=[node,node])        
             
         if lowerTwist==True:
-            nodes=tj.rig(midJoint,endJoint,midJoint,endJoint,
+            nodes=tj.Rig(midJoint,endJoint,midJoint,endJoint,
                          averageJNT,extraCNT,plug,lowerTwistJoints,
                          prefix+'lower_')
             
@@ -568,28 +584,185 @@ class Limb():
         
         #channelbox cleanup
         attrs=['rx','ry','rz','sx','sy','sz','v']
-        ut.channelboxClean(polevectorCNT, attrs)
+        ut.ChannelboxClean(polevectorCNT, attrs)
         
         attrs=['sx','sy','sz','v']
-        ut.channelboxClean(endIkCNT, attrs)
+        ut.ChannelboxClean(endIkCNT, attrs)
         
         attrs=['tx','ty','tz','sx','sy','sz','v']
-        ut.channelboxClean(startFkCNT, attrs)
-        ut.channelboxClean(midFkCNT, attrs)
-        ut.channelboxClean(endFkCNT, attrs)
+        ut.ChannelboxClean(startFkCNT, attrs)
+        ut.ChannelboxClean(midFkCNT, attrs)
+        ut.ChannelboxClean(endFkCNT, attrs)
         
         attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
-        ut.channelboxClean(extraCNT, attrs)
+        ut.ChannelboxClean(extraCNT, attrs)
         
         attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
-        ut.channelboxClean(startIkTwistCNT, attrs)
-        ut.channelboxClean(midIkTwistCNT, attrs)
+        ut.ChannelboxClean(startIkTwistCNT, attrs)
+        ut.ChannelboxClean(midIkTwistCNT, attrs)
         
         #adding controls and publish to asset
         for cnt in cnts:
             cmds.container(asset,e=True,addNode=[cnt])
             cmds.containerPublish(asset,publishNode=(cnt,''))
             cmds.containerPublish(asset,bindNode=(cnt,cnt))
+
+class TwistJoints():
+    
+    def Rig(self,start,end,startMatrix,endMatrix,bendControl,
+            attrControl,scaleRoot,amount,prefix):
+        ''' Creates twist joints from start to end. '''
+        
+        #class variables
+        ut=utils.Transform()
+        
+        #clear selection
+        cmds.select(cl=True)
+        
+        #nodes collection
+        nodes=[]
+        
+        #calculate distance
+        startPOS=cmds.xform(start,q=True,translation=True,ws=True)
+        endPOS=cmds.xform(end,q=True,translation=True,ws=True)
+        
+        distX=startPOS[0]-endPOS[0]
+        distY=startPOS[1]-endPOS[1]
+        distZ=startPOS[2]-endPOS[2]
+        
+        dist=mel.eval('mag <<%s,%s,%s>>;' % (distX,distY,distZ))
+        
+        #create joints
+        jnts=[]
+        
+        for count in xrange(0,amount+1):
+            jnt=cmds.joint(p=((dist/amount)*count,0,0),
+                           n=prefix+'twist'+str(count))
+            
+            jnts.append(jnt)
+            nodes.append(jnt)
+        
+        ut.Snap(start, jnts[0])
+        
+        #setup joints
+        ikHandle=cmds.ikHandle(sol='ikSplineSolver',
+                               createCurve=True,
+                               sj=jnts[0],endEffector=jnts[amount])
+        
+        cmds.setAttr(ikHandle[0]+'.dTwistControlEnable',1)
+        cmds.setAttr(ikHandle[0]+'.dWorldUpType',4)
+        
+        cmds.connectAttr(startMatrix+'.worldMatrix[0]',
+                         ikHandle[0]+'.dWorldUpMatrix',force=True)
+        cmds.connectAttr(endMatrix+'.worldMatrix[0]',
+                         ikHandle[0]+'.dWorldUpMatrixEnd',
+                         force=True)
+        
+        nodes.append(ikHandle[0])
+        nodes.append(ikHandle[1])
+        nodes.append(ikHandle[2])
+        
+        #create bend joints
+        cmds.select(cl=True)
+        pos=cmds.xform(ikHandle[2]+'.cv[1]',q=True,ws=True,
+                       translation=True)
+        bend01=cmds.joint(p=[0,0,0],n=prefix+'bend01_jnt')
+        bend01GRP=cmds.group(bend01,n=prefix+'bend01_grp')
+        cmds.xform(bend01GRP,ws=True,translation=pos)        
+        ut.Snap(start,bend01GRP,point=False)
+        
+        nodes.append(bend01)
+        nodes.append(bend01GRP)
+        
+        cmds.select(cl=True)
+        pos=cmds.xform(ikHandle[2]+'.cv[2]',q=True,ws=True,
+                       translation=True)
+        bend02=cmds.joint(p=[0,0,0],n=prefix+'bend02_jnt')
+        bend02GRP=cmds.group(bend02,n=prefix+'bend02_grp')
+        cmds.xform(bend02GRP,ws=True,translation=pos)        
+        ut.Snap(start,bend02GRP,point=False)
+        
+        nodes.append(bend02)
+        nodes.append(bend02GRP)
+        
+        #setup bend joints
+        skin=cmds.skinCluster(start,bend01,bend02,ikHandle[2])[0]
+        
+        cmds.skinPercent(skin,ikHandle[2]+'.cv[0]',
+                         transformValue=[(start, 1)])
+        cmds.skinPercent(skin,ikHandle[2]+'.cv[1]',
+                         transformValue=[(bend01, 1)])
+        cmds.skinPercent(skin,ikHandle[2]+'.cv[2]',
+                         transformValue=[(bend02, 1)])
+        cmds.skinPercent(skin,ikHandle[2]+'.cv[3]',
+                         transformValue=[(start, 1)])
+        
+        ut.Snap(bendControl,bend01GRP)
+        ut.Snap(bendControl,bend02GRP)
+        
+        cmds.parent(bend01GRP,bendControl)
+        cmds.parent(bend02GRP,bendControl)
+        
+        bend01MD=cmds.shadingNode('multiplyDivide',asUtility=True,
+                                  n=prefix+'bend01_md')
+        bend02MD=cmds.shadingNode('multiplyDivide',asUtility=True,
+                                  n=prefix+'bend02_md')
+        bend01PMS=cmds.shadingNode('plusMinusAverage',
+                                   asUtility=True,
+                                   n=prefix+'bend01_pms')
+        
+        nodes.append(bend01MD)
+        nodes.append(bend02MD)
+        nodes.append(bend01PMS)
+        
+        cmds.setAttr(bend01MD+'.input2X',-dist)
+        cmds.setAttr(bend02MD+'.input1Y',dist/1000)
+        
+        attrs=cmds.attributeInfo(attrControl,all=True)
+        
+        if 'bendy' not in attrs:
+            cmds.addAttr(attrControl,longName='bendy'
+                         ,attributeType='float',min=0,max=1,
+                         keyable=True,)
+        
+        cmds.connectAttr(bend02MD+'.outputY',
+                         bend01PMS+'.input1D[0]',force=True)
+        cmds.connectAttr(attrControl+'.bendy',
+                         bend01PMS+'.input1D[1]')
+        cmds.connectAttr(bend01PMS+'.output1D',bend01MD+'.input1X')
+        cmds.connectAttr(bend01MD+'.outputX',bend01+'.tx')
+        cmds.connectAttr(bend01MD+'.outputX',bend02+'.tx')
+        
+        #making twist joints stretchy
+        stretch01MD=cmds.shadingNode('multiplyDivide',
+                                     asUtility=True,
+                                         n=prefix+'stretch01MD')
+        cmds.setAttr(stretch01MD+'.operation',2)
+        cmds.setAttr(stretch01MD+'.input2X',dist)
+        
+        stretch02MD=cmds.shadingNode('multiplyDivide',
+                                     asUtility=True,
+                                         n=prefix+'stretch02MD')
+        cmds.setAttr(stretch02MD+'.operation',2)
+        cmds.connectAttr(scaleRoot+'.sx',stretch02MD+'.input2X')
+        
+        temp=cmds.listRelatives(ikHandle[2],s=True)
+        temp1=cmds.arclen(temp[0],ch=True)
+        stretchINFO=cmds.rename(temp1,prefix+'stretch_info')
+        
+        cmds.connectAttr(stretchINFO+'.arcLength',
+                         stretch01MD+'.input1X',force=True)
+        cmds.connectAttr(stretch01MD+'.outputX',
+                         stretch02MD+'.input1X',force=True)
+        
+        for jnt in jnts:
+            cmds.connectAttr(stretch02MD+'.outputX',jnt+'.sx')
+        
+        #making rig scalable
+        cmds.parent(jnts[0],scaleRoot)
+        
+        #return
+        return nodes
 
 templateModule='meta_limb'
 

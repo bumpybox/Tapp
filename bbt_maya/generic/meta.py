@@ -3,7 +3,7 @@ import maya.cmds as cmds
 class Meta():
     ''' Class for all nodes functions associated with the meta data '''
     
-    def setData(self,name,nodeType,component,metaParent,*args):
+    def SetData(self,name,nodeType,component,metaParent,*args):
         ''' Create a network node with the requested data 
             args should be passed in as a dictionary
         '''
@@ -43,19 +43,19 @@ class Meta():
         
         return node
     
-    def setTransform(self,node,metaParent):
+    def SetTransform(self,node,metaParent):
         ''' Create an metaParent attribute on the passed transform,
         and connect to the passed meta node.'''
         
         cmds.addAttr(node,longName='metaParent',attributeType='message')
         cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
     
-    def getTransform(self,node):
+    def GetTransform(self,node):
         ''' Returns the transform node attached to a meta node. '''
         
         return cmds.listConnections('%s.message' % node,type='transform')[0]
 
-    def getData(self,node):
+    def GetData(self,node):
         ''' Returns the meta data as a dictionary for the requested node '''
         
         #making sure we get a network node
@@ -92,7 +92,7 @@ class Meta():
         
         return data
     
-    def upStream(self,node,nodeType):
+    def UpStream(self,node,nodeType):
         ''' Returns the parent node with the requested nodeType. '''
         
         upStreamNode=None
@@ -106,7 +106,7 @@ class Meta():
         
         return upStreamNode
     
-    def downStream(self,node,nodeType,allNodes=False):
+    def DownStream(self,node,nodeType,allNodes=False):
         ''' Returns allNodes nodes down the hierarchy with the requested nodeType. 
         
             If allNodes=True, nodes further down the hierarchy is returned as well.
@@ -118,25 +118,25 @@ class Meta():
         
         if childNodes!=None:
             for n in childNodes:
-                data=self.getData(n)
+                data=self.GetData(n)
                 
                 if data['type']==nodeType:
                     validNodes.append(n)
                 
                 #if user wants the whole hierarchy
                 if allNodes==True:
-                    if (self.downStream(n,nodeType,allNodes=allNodes))!=None:
-                        for m in (self.downStream(n,nodeType,allNodes=allNodes)):
+                    if (self.DownStream(n,nodeType,allNodes=allNodes))!=None:
+                        for m in (self.DownStream(n,nodeType,allNodes=allNodes)):
                             validNodes.append(m)
             
             return validNodes
     
-    def getHierarchies(self):
+    def GetHierarchies(self):
         hierarchies={}
         hierarchies['None']=[]
         
         for node in cmds.ls(nodeType='network'):
-            data=self.getData(node)
+            data=self.GetData(node)
             
             if data['metaParent']==None:
                 hierarchies['None'].append(node)
