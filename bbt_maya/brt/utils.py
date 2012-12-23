@@ -138,3 +138,24 @@ class transform():
         
         for attr in attrs:
             cmds.setAttr('%s.%s' % (node,attr),lock=True,keyable=False,channelBox=False)
+    
+    def closestOrient(self,source,target):
+        ''' Returns degrees to rotate target to align closely to
+        source. Degree steps are at 90, so visually orientation
+        of target is preserved.
+        source is node to align to.
+        target is node to align.
+        '''
+        
+        sourceRot=cmds.xform(source,q=True,ws=True,rotation=True)
+        targetRot=cmds.xform(target,q=True,ws=True,rotation=True)
+        
+        xDiff=sourceRot[0]-targetRot[0]
+        yDiff=sourceRot[1]-targetRot[1]
+        zDiff=sourceRot[2]-targetRot[2]
+        
+        x=round((xDiff/90.0),0)*90.0
+        y=round((yDiff/90.0),0)*90.0
+        z=round((zDiff/90.0),0)*90.0
+        
+        return [x,y,z]
