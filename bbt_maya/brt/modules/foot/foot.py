@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
 from bbt_maya import generic
-from bbt_maya.brt import utils
+from bbt_maya.brt.modules import utils
 from bbt_maya.python import ZvParentMaster as zv
 
 class Foot():
@@ -19,7 +19,7 @@ class Foot():
     def Detach(self,module):
         pass
     
-    def Rig(self,templateModule):
+    def Rig(self,module):
         ''' Rigs the provided module. '''
         
         #class variables
@@ -29,8 +29,7 @@ class Foot():
         um=utils.Math()
         
         #collect all components
-        controls=meta.DownStream(templateModule,'control',
-                                 allNodes=True)
+        controls=meta.DownStream(module,'control')
         
         for control in controls:
             data=meta.GetData(control)
@@ -69,7 +68,7 @@ class Foot():
                               rotation=True)
         
         #getting module data
-        data=meta.GetData(templateModule)
+        data=meta.GetData(module)
         
         attachToLeg=data['attachToLeg']
         
@@ -84,20 +83,21 @@ class Foot():
             side='right'
         
         #establish index
-        data=meta.GetData(templateModule)
+        data=meta.GetData(module)
         
         index=data['index']
         
         for node in cmds.ls(type='network'):
             data=meta.GetData(node)
-            if 'index' in data.keys() and 'side' in data.keys()\
-            and data['type']=='module' and data['side']==side and\
+            if 'index' in data.keys() and \
+            'side' in data.keys() and \
+            data['type']=='module' and \
+            data['side']==side and \
             data['index']==index:
                 index+=1
         
         #delete template
-        cmds.delete(cmds.listConnections('%s.message' % foot,
-                                         type='dagContainer'))
+        cmds.delete(cmds.container(q=True,fc=foot))
         
         #establish prefix and suffix
         prefix=side[0]+'_'+'foot'+str(index)+'_'
@@ -107,7 +107,7 @@ class Foot():
         asset=cmds.container(n=prefix+'rig')
         
         #create module
-        data={'side':side,'index':str(index)}
+        data={'side':side,'index':str(index),'system':'rig'}
         
         module=meta.SetData(('meta'+suffix),'module','foot',None,
                             data)

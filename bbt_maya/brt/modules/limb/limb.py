@@ -2,7 +2,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 from bbt_maya import generic
-from bbt_maya.brt import utils
+from bbt_maya.brt.modules import utils
 from bbt_maya.python import ZvParentMaster as zv
 
 class Limb():
@@ -20,7 +20,7 @@ class Limb():
     def Detach(self,module):
         pass
     
-    def Rig(self,templateModule):
+    def Rig(self,module):
         ''' Rigs the provided module. '''
         
         #class variables
@@ -31,8 +31,7 @@ class Limb():
         tj=TwistJoints()
         
         #collect all components
-        controls=meta.DownStream(templateModule,'control',
-                                 allNodes=True)
+        controls=meta.DownStream(module,'control')
         
         for control in controls:
             if meta.GetData(control)['component']=='start':
@@ -55,7 +54,7 @@ class Limb():
                           rotation=True)
         
         #getting module data
-        data=meta.GetData(templateModule)
+        data=meta.GetData(module)
         
         upperTwist=data['upperTwist']
         upperTwistJoints=data['upperTwistJoints']
@@ -76,20 +75,23 @@ class Limb():
             side='right'
         
         #establish index
-        data=meta.GetData(templateModule)
+        data=meta.GetData(module)
         
         index=data['index']
         
         for node in cmds.ls(type='network'):
-            if meta.GetData(node)['type']=='module' and \
-            meta.GetData(node)['component']==limbType and \
-                    meta.GetData(node)['side']==side and \
-                    meta.GetData(node)['index']==index:
+            data=meta.GetData(node)
+            if 'index' in data.keys() and \
+            'side' in data.keys() and \
+            'component' in data.keys() and \
+            data['type']=='module' and \
+            data['side']==side and \
+            data['index']==index and \
+            data['component']==limbType:
                 index+=1
         
         #delete template
-        cmds.delete(cmds.listConnections('%s.message' % start,
-                                         type='dagContainer'))
+        cmds.delete(cmds.container(q=True,fc=start))
         
         #establish prefix and suffix
         prefix=side[0]+'_'+limbType+str(index)+'_'
@@ -99,7 +101,7 @@ class Limb():
         asset=cmds.container(n=prefix+'rig')
         
         #create module
-        data={'side':side,'index':str(index)}
+        data={'side':side,'index':str(index),'system':'rig'}
         
         module=meta.SetData(('meta'+suffix),'module','limb',None,
                             data)

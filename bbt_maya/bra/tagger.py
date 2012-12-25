@@ -137,7 +137,7 @@ class tagDialog(QtGui.QDialog):
                 
                 node=sel[0]
                 
-                metaParent=meta.setData(('meta_'+node), 'camera', component, None,None)
+                metaParent=meta.SetData(('meta_'+node), 'camera', component, None,None)
                 
                 cmds.addAttr(node,longName='metaParent',attributeType='message')
                 cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
@@ -160,7 +160,7 @@ class tagDialog(QtGui.QDialog):
                 meta=generic.Meta()
                 
                 for node in sel:
-                    metaParent=meta.setData(('meta_'+node), 'joint', component, metaNode,data)
+                    metaParent=meta.SetData(('meta_'+node), 'joint', component, metaNode,data)
                     
                     cmds.addAttr(node,longName='metaParent',attributeType='message')
                     cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
@@ -183,7 +183,7 @@ class tagDialog(QtGui.QDialog):
                 
                 node=sel[0]
                 
-                metaParent=meta.setData(('meta_'+node), 'socket', None, module,data)
+                metaParent=meta.SetData(('meta_'+node), 'socket', None, module,data)
                 
                 if cmds.attributeQuery('metaParent',n=node,ex=True)==False:
                     cmds.addAttr(node,longName='metaParent',attributeType='message')
@@ -209,7 +209,7 @@ class tagDialog(QtGui.QDialog):
                 
                 node=sel[0]
                 
-                metaParent=meta.setData(('meta_'+node), 'plug', None, module,data)
+                metaParent=meta.SetData(('meta_'+node), 'plug', None, module,data)
                 
                 if cmds.attributeQuery('metaParent',n=node,ex=True)==False:
                     cmds.addAttr(node,longName='metaParent',attributeType='message')
@@ -237,7 +237,7 @@ class tagDialog(QtGui.QDialog):
             #creating module
             meta=generic.Meta()
             
-            meta.setData(node, 'module', component, None,data)
+            meta.SetData(node, 'module', component, None,data)
             
         if self.typeCBox.currentText()=='control':
             #making sure something is selected
@@ -257,7 +257,7 @@ class tagDialog(QtGui.QDialog):
                 meta=generic.Meta()
                 
                 for node in sel:
-                    metaParent=meta.setData(('meta_'+node),'control', component, module,None)
+                    metaParent=meta.SetData(('meta_'+node),'control', component, module,None)
                     
                     cmds.addAttr(node,longName='metaParent',attributeType='message')
                     cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)

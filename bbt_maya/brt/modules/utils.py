@@ -213,11 +213,13 @@ class Transform():
         
         #translation
         if point==True:
-            cmds.delete(cmds.pointConstraint(source,target))
+            trans=cmds.xform(source,q=True,ws=True,translation=True)
+            cmds.xform(target,ws=True,translation=trans)
         
         #orientation
         if orient==True:
-            cmds.delete(cmds.orientConstraint(source,target))
+            rot=cmds.xform(source,q=True,ws=True,rotation=True)
+            cmds.xform(target,ws=True,rotation=rot)
     
     def ChannelboxClean(self,node,attrs):
         ''' Removes list of attributes from the channelbox.

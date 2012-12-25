@@ -2,6 +2,11 @@ This is the Bumpybox tool set.
 
 Everything is very much a work-in-progress.
 
+REQUIREMENTS
+
+- PyQt
+
+
 INSTALL
 
 - clone the repository to a local or network drive.

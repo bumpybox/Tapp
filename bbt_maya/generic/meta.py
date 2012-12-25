@@ -1,9 +1,36 @@
+import operator
+
 import maya.cmds as cmds
 
 class Meta():
     ''' Class for all nodes functions associated with 
         the meta data. 
     '''
+    
+    def Sort(self,objects,attr):
+        ''' Sorts objects based on a value attribute.
+            objects is a list of objects.
+            attr is the attribute to sort by.
+            Returns a list. 
+        '''
+        
+        objs={}
+        
+        for obj in objects:
+            data=self.GetData(obj)
+            
+            objs[obj]=float(data[attr])
+        
+        sortedList=sorted(objs.iteritems(),
+                          key=operator.itemgetter(1))
+        
+        sortedObjs=[]
+        
+        for item in sortedList:
+            sortedObjs.append(item[0])
+        
+        #return
+        return sortedObjs
     
     def SetData(self,name,nodeType,component,metaParent,*args):
         ''' Create a network node with the requested data 
