@@ -1,7 +1,9 @@
 import maya.cmds as cmds
 
 class Meta():
-    ''' Class for all nodes functions associated with the meta data '''
+    ''' Class for all nodes functions associated with 
+        the meta data. 
+    '''
     
     def SetData(self,name,nodeType,component,metaParent,*args):
         ''' Create a network node with the requested data 
@@ -13,54 +15,68 @@ class Meta():
         
         #add base data
         cmds.addAttr(node,longName='type',dataType='string')
-        if nodeType==None:
-            cmds.warning('Not setting nodeType on %s can be BAD!' % node)
-        else:
+        if nodeType!=None:
             cmds.setAttr('%s.type' % node,nodeType,type='string')
         
-        if component==None:
-            cmds.warning('Not setting component on %s can be BAD!' % node)
-        else:
-            cmds.addAttr(node,longName='component',dataType='string')
+        if component!=None:
+            cmds.addAttr(node,longName='component',
+                         dataType='string')
             
-            cmds.setAttr('%s.component' % node,component,type='string')
+            cmds.setAttr('%s.component' % node,component,
+                         type='string')
         
-        cmds.addAttr(node,longName='metaParent',attributeType='message')
-        if metaParent==None:
-            cmds.warning('No metaParent specified for %s.' % node)
-        else:           
-            cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
+        cmds.addAttr(node,longName='metaParent',
+                     attributeType='message')
+        if metaParent!=None:           
+            cmds.connectAttr('%s.message' % metaParent,
+                             '%s.metaParent' % node)
         
         #add extra data
         if args[0]!=None:
             for arg in args[0]:
                 if arg=='switch':
-                    cmds.addAttr(node,longName=arg,attributeType='message')
-                    cmds.connectAttr('%s.message' % args[0][arg],'%s.switch' % node)
+                    cmds.addAttr(node,longName=arg,
+                                 attributeType='message')
+                    cmds.connectAttr('%s.message' % args[0][arg],
+                                     '%s.switch' % node)
                 else:
-                    cmds.addAttr(node,longName=arg,dataType='string')
-                    cmds.setAttr('%s.%s' % (node,arg),args[0][arg],type='string')
+                    cmds.addAttr(node,longName=arg,
+                                 dataType='string')
+                    cmds.setAttr('%s.%s' % (node,arg),args[0][arg],
+                                 type='string')
         
         return node
     
     def SetTransform(self,node,metaParent):
         ''' Create an metaParent attribute on the passed transform,
-        and connect to the passed meta node.'''
+            and connect to the passed meta node.'''
         
-        cmds.addAttr(node,longName='metaParent',attributeType='message')
-        cmds.connectAttr('%s.message' % metaParent,'%s.metaParent' % node)
+        attrList=cmds.attributeInfo(node,
+                                    all=True)
+        
+        if 'metaParent' not in attrList:
+            cmds.addAttr(node,longName='metaParent',
+                         attributeType='message')
+            cmds.connectAttr('%s.message' % metaParent,
+                             '%s.metaParent' % node)
+        else:
+            cmds.connectAttr('%s.message' % metaParent,
+                             '%s.metaParent' % node,force=True)
     
     def GetTransform(self,node):
         ''' Returns the transform node attached to a meta node. '''
         
-        return cmds.listConnections('%s.message' % node,type='transform')[0]
+        return cmds.listConnections('%s.message' % node,
+                                    type='transform')[0]
 
     def GetData(self,node):
-        ''' Returns the meta data as a dictionary for the requested node '''
+        ''' Returns the meta data as a dictionary for
+        the requested node. 
+        '''
         
         #making sure we get a network node
         if cmds.nodeType(node)!='network':
-            metaNode=cmds.listConnections('%s.metaParent' % node)[0]
+            metaNode=cmds.listConnections(node+'.metaParent')[0]
         else:
             metaNode=node
         
@@ -74,19 +90,26 @@ class Meta():
             
             attr=attrList[count]
             
-            if cmds.getAttr('%s.%s' % (metaNode,attr),type=True)=='enum':               
-                data[attr]=cmds.getAttr('%s.%s' % (metaNode,attr),asString=True)
+            if cmds.getAttr('%s.%s' % (metaNode,attr),
+                            type=True)=='enum':               
+                data[attr]=cmds.getAttr(metaNode+'.'+attr,
+                                        asString=True)
             
-            if cmds.getAttr('%s.%s' % (metaNode,attr),type=True)!='enum' and cmds.getAttr('%s.%s' % (metaNode,attr),type=True)!='message':
-                data[attr]=cmds.getAttr('%s.%s' % (metaNode,attr))
+            if cmds.getAttr('%s.%s' % (metaNode,attr),
+                            type=True)!='enum' and\
+                             cmds.getAttr(metaNode+'.'+attr,
+                                          type=True)!='message':
+                data[attr]=cmds.getAttr(metaNode+'.'+attr)
             
-            if cmds.getAttr('%s.%s' % (metaNode,attr),type=True)=='message':
+            if cmds.getAttr(metaNode+'.'+attr,
+                            type=True)=='message':
                 
                 #query whether message attribute is connected
-                if cmds.listConnections('%s.%s' % (metaNode,attr))==None:
+                if cmds.listConnections(metaNode+'.'+attr)==None:
                     data[attr]=None
                 else:
-                    metaParent=cmds.listConnections('%s.%s' % (metaNode,attr))[0]
+                    metaParent=cmds.listConnections(metaNode+
+                                                    '.'+attr)[0]
                     
                     data[attr]=metaParent
         
@@ -96,10 +119,12 @@ class Meta():
         ''' Returns the parent node with the requested nodeType. '''
         
         upStreamNode=None
-        data=self.getData(node)
+        data=self.GetData(node)
         
         if data['type']!=nodeType:
-            upStreamNode=self.upStream(cmds.listConnections('%s.metaParent' % node)[0],nodeType)
+            upStreamNode=self.UpStream(cmds.listConnections\
+                                       (node+'.metaParent')[0],
+                                       nodeType)
         
         if data['type']==nodeType:
             upStreamNode=node
@@ -107,12 +132,15 @@ class Meta():
         return upStreamNode
     
     def DownStream(self,node,nodeType,allNodes=False):
-        ''' Returns allNodes nodes down the hierarchy with the requested nodeType. 
+        ''' Returns allNodes nodes down the hierarchy with 
+            the requested nodeType. 
         
-            If allNodes=True, nodes further down the hierarchy is returned as well.
+            If allNodes=True, nodes further down the hierarchy 
+            is returned as well.
         '''
         
-        childNodes=cmds.listConnections('%s.message' % node,type='network')
+        childNodes=cmds.listConnections('%s.message' % node,
+                                        type='network')
         
         validNodes=[]
         
@@ -125,8 +153,11 @@ class Meta():
                 
                 #if user wants the whole hierarchy
                 if allNodes==True:
-                    if (self.DownStream(n,nodeType,allNodes=allNodes))!=None:
-                        for m in (self.DownStream(n,nodeType,allNodes=allNodes)):
+                    if (self.DownStream(n,nodeType,
+                                        allNodes=allNodes))!=None:
+                        for m in (self.DownStream(n,nodeType,
+                                                  allNodes=\
+                                                  allNodes)):
                             validNodes.append(m)
             
             return validNodes
@@ -141,10 +172,13 @@ class Meta():
             if data['metaParent']==None:
                 hierarchies['None'].append(node)
             
-            if cmds.listConnections('%s.message' % node,nodeType='network')>0:
+            if cmds.listConnections('%s.message' % node,
+                                    nodeType='network')>0:
                 hierarchies[node]=[]
                 
-                for child in cmds.listConnections('%s.message' % node,nodeType='network'):
+                for child in cmds.listConnections(node+'.message',
+                                                  nodeType=\
+                                                  'network'):
                     hierarchies[node].append(child)
         
         return hierarchies

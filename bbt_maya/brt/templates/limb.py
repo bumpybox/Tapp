@@ -14,7 +14,15 @@ class Limb():
     def Import(self):
         pass
     
+    def Attach(self,sourceModule,targetModule):
+        pass
+    
+    def Detach(self,module):
+        pass
+    
     def Rig(self,templateModule):
+        ''' Rigs the provided module. '''
+        
         #class variables
         meta=generic.Meta()
         ut=utils.Transform()
@@ -116,14 +124,17 @@ class Limb():
         #create plug
         plug=cmds.spaceLocator(name=prefix+'plug')[0]
         
-        cmds.xform(plug,worldSpace=True,translation=startTrans)
+        phgrp=cmds.group(plug,n=(plug+'_PH'))
+        sngrp=cmds.group(plug,n=(plug+'_SN'))
+        
+        cmds.xform(phgrp,worldSpace=True,translation=startTrans)
         
         metaParent=meta.SetData('meta_'+plug,'plug',None,module,
                                 None)
         
         meta.SetTransform(plug, metaParent)
         
-        cmds.container(asset,e=True,addNode=plug)
+        cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
         
         #create socket
         startSocket=cmds.spaceLocator(name=prefix+'socket01')[0]
@@ -195,10 +206,7 @@ class Limb():
         #setup end joint
         cmds.xform(endJoint,worldSpace=True,rotation=endRot)
         
-        diff=ut.ClosestOrient(midJoint, endJoint)
-        
-        cmds.rotate(diff[0],diff[1],diff[2],endJoint,r=True,
-                    os=True)
+        ut.ClosestOrient(midJoint, endJoint)
         
         #create ik chain
         startIk=cmds.duplicate(startJoint,st=True,po=True,
@@ -268,6 +276,11 @@ class Limb():
                                   n=prefix+'stretch02')
         stretch02REF=cmds.createNode('transform',ss=True,
                                   n=prefix+'stretch02REF')
+        data={'system':'ik'}
+        mNode=meta.SetData(('meta_'+stretch02REF),'plug',None,
+                           module,data)
+        meta.SetTransform(stretch02REF, mNode)
+        
         stretchDIST=cmds.shadingNode('distanceBetween',
                                      asUtility=True,
                                      n=prefix+'stretchDIST')
@@ -387,6 +400,7 @@ class Limb():
         data={'system':'ik','switch':endFk}
         mNode=meta.SetData(('meta_'+endIkCNT),'control','end',
                            module,data)
+        meta.SetTransform(endIkCNT, mNode)
         
         grp=cmds.group(endIkCNT,n=(endIkCNT+'_grp'))
         cmds.parent(grp,plug)
@@ -405,6 +419,7 @@ class Limb():
         data={'system':'fk','switch':startIk}
         mNode=meta.SetData(('meta_'+startFkCNT),'control','start',
                            module,data)
+        meta.SetTransform(startFkCNT, mNode)
         
         grp=cmds.group(startFkCNT,n=(startFkCNT+'_grp'))
         cmds.parent(grp,plug)
@@ -419,6 +434,7 @@ class Limb():
         data={'system':'fk','switch':midIk}
         mNode=meta.SetData(('meta_'+midFkCNT),'control','mid',
                            module,data)
+        meta.SetTransform(midFkCNT,mNode)
         
         grp=cmds.group(midFkCNT,n=(midFkCNT+'_grp'))
         cmds.parent(grp,startFk)
@@ -433,6 +449,7 @@ class Limb():
         data={'system':'fk','switch':endIkCNT}
         mNode=meta.SetData(('meta_'+endFkCNT),'control','end',
                            module,data)
+        meta.SetTransform(endFkCNT,mNode)
         
         grp=cmds.group(endFkCNT,n=(endFkCNT+'_grp'))
         cmds.parent(grp,midFk)
@@ -446,6 +463,7 @@ class Limb():
         #setup extraCNT
         mNode=meta.SetData(('meta_'+extraCNT),'control','extra',
                            module,None)
+        meta.SetTransform(extraCNT,mNode)
         
         cmds.addAttr(extraCNT,ln='FKIK',at='float',keyable=True,
                      min=0,max=1)
@@ -485,6 +503,7 @@ class Limb():
               'index':1}
         mNode=meta.SetData(('meta_'+startIkTwistCNT),'control',
                            'iktwist',module,data)
+        meta.SetTransform(startIkTwistCNT,mNode)
         
         ut.Snap(startIk,startIkTwistCNT)
         
@@ -496,6 +515,7 @@ class Limb():
               'index':2}
         mNode=meta.SetData(('meta_'+midIkTwistCNT),'control',
                            'iktwist',module,data)
+        meta.SetTransform(midIkTwistCNT,mNode)
         
         ut.Snap(midIk,midIkTwistCNT)
         

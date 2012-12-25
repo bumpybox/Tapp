@@ -4,6 +4,23 @@ import maya.mel as mel
 class Math():
     ''' Class for all math related functions. '''
     
+    def Distance(self,objA,objB ):
+        ''' Returns distance between two nodes. '''
+        
+        from math import sqrt,pow
+        
+        At=cmds.xform(objA,ws=True,q=True,t=True)
+        Ax=At[0]
+        Ay=At[1]
+        Az=At[2]
+        
+        Bt=cmds.xform(objB,ws=True,q=True,t=True)
+        Bx=Bt[0]
+        By=Bt[1]
+        Bz=Bt[2]
+     
+        return sqrt(  pow(Ax-Bx,2) + pow(Ay-By,2) + pow(Az-Bz,2)  )
+    
     def CrossProduct(self,posA,posB,posC):
         ''' Finds the up vector between three points in space.
         posA, posB and posC are points in space, passed in as
@@ -205,18 +222,19 @@ class Transform():
     def ChannelboxClean(self,node,attrs):
         ''' Removes list of attributes from the channelbox.
         Attributes are locked and unkeyable.
+        attrs is a list.
         '''
         
         for attr in attrs:
             cmds.setAttr('%s.%s' % (node,attr),lock=True,
                          keyable=False,channelBox=False)
     
-    def ClosestOrient(self,source,target):
-        ''' Returns degrees to rotate target to align closely to
-        source. Degree steps are at 90, so visually orientation
-        of target is preserved.
+    def ClosestOrient(self,source,target,align=True):
+        ''' Rotates target to align closest to source, 
+        while preserving visual orientation.
         source is node to align to.
         target is node to align.
+        If align is false, returns the degrees to align.
         '''
         
         sourceRot=cmds.xform(source,q=True,ws=True,rotation=True)
@@ -230,4 +248,7 @@ class Transform():
         y=round((yDiff/90.0),0)*90.0
         z=round((zDiff/90.0),0)*90.0
         
-        return [x,y,z]
+        if align==True:
+            cmds.rotate(x,y,z,target,r=True,os=True)
+        else:
+            return [x,y,z]
