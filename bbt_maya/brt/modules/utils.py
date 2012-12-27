@@ -49,8 +49,12 @@ class Math():
 class ControlShape():
     ''' Class for all control shapes for rigging. '''
     
-    def Square(self,name):
-        ''' Creates a square shape. '''
+    def Square(self,name,group=False):
+        ''' Creates a square shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
+        
         #creating the curve
         curve=cmds.curve(d=1, p=[(0,1,1),(0,1,-1),(0,-1,-1),
                                  (0,-1,1),(0,1,1)])
@@ -61,11 +65,20 @@ class ControlShape():
         #naming control
         node=cmds.rename(curve,name)
         
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
+        
         #return
         return node
     
-    def FourWay(self,name):
-        ''' Creates a four leg arrow shape. '''
+    def FourWay(self,name,group=False):
+        ''' Creates a four leg arrow shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
         
         #creating the curve
         curve=cmds.curve(d=1, p=[(-4, 0, 0),(-2, 0, -1.5),
@@ -90,11 +103,20 @@ class ControlShape():
         #naming control
         node=cmds.rename(curve,name)
         
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
+        
         #return
         return node
     
-    def Circle(self,name):
-        ''' Creates a circle shape. '''
+    def Circle(self,name,group=False):
+        ''' Creates a circle shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
         
         #creating the curve
         curve=cmds.circle(radius=1,constructionHistory=False)
@@ -107,11 +129,20 @@ class ControlShape():
         #naming control
         node=cmds.rename(curve,name)
         
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
+        
         #return
         return node
     
-    def Box(self,name):
-        ''' Creates a box shape. '''
+    def Box(self,name,group=False):
+        ''' Creates a box shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
         
         #creating the curve
         curve=cmds.curve(d=1, p=[(1,1,-1),(1,1,1),(1,-1,1),
@@ -125,11 +156,20 @@ class ControlShape():
         #naming control
         node=cmds.rename(curve,name)
         
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
+        
         #return
         return node
     
-    def Pin(self,name):
-        ''' Creates a pin shape. '''
+    def Pin(self,name,group=False):
+        ''' Creates a pin shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
         
         #creating the curve
         curve=cmds.curve(d=1,p=[(0,0,0),(0,1.2,0),
@@ -149,11 +189,20 @@ class ControlShape():
         #naming control
         node=cmds.rename(curve,name)
         
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
+        
         #return
         return node
     
-    def Sphere(self,name):
-        ''' Creates a sphere shape. '''
+    def Sphere(self,name,group=False):
+        ''' Creates a sphere shape.
+            If group is True, will group control and
+            return a list [group,control].
+        '''
         
         #creating the curve
         curve=cmds.curve(d=1,p=[(0,1,0),(-0.382683,0.92388,0),
@@ -198,6 +247,12 @@ class ControlShape():
         
         #naming control
         node=cmds.rename(curve,name)
+        
+        #grouping control
+        if group==True:
+            grp=cmds.group(node,n=name+'_grp')
+            
+            return [grp,node]
         
         #return
         return node

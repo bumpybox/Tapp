@@ -44,6 +44,7 @@ class Spine():
         data=meta.GetData(module)
         
         jointAmount=data['joints']
+        hipsAttach=data['hips']
         
         #getting transform data
         startTrans=cmds.xform(start,worldSpace=True,query=True,
@@ -55,7 +56,20 @@ class Spine():
         endRot=cmds.xform(end,worldSpace=True,query=True,
                           rotation=True)
         
-        #NEED TO GET JOINTS TRANSLATION DATA
+        jntsTrans=[]
+        
+        grp=cmds.group(empty=True)
+        path=cmds.pathAnimation(grp,follow=True,c=line)
+        
+        for count in xrange(0,jointAmount+1):
+            pct=1.0/jointAmount*count
+            
+            cmds.setAttr(path+'.uValue',pct)
+            
+            trans=cmds.xform(grp,q=True,ws=True,translation=True)
+            jntsTrans.append(trans)
+        
+        cmds.delete(grp,path)
         
         #establish side
         side='center'
@@ -114,6 +128,152 @@ class Spine():
         meta.SetTransform(plug, metaParent)
         
         cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
+        
+        #create fkjnts, ikjnts, jnts, sockets, fkcnts
+        fkcnts=[]
+        fkcntsGRP=[]
+        fkjnts=[]
+        ikjnts=[]
+        jnts=[]
+        sockets=[]
+        
+        for pos in jntsTrans:
+            
+            count=jntsTrans.index(pos)+1
+            
+            #create joints
+            jnt=cmds.joint(position=(pos[0],pos[1],pos[2]),
+                                  name=prefix+'jnt'+str(count))
+            
+            cmds.container(asset,e=True,addNode=jnt)
+            
+            if len(jnts)>0:
+                cmds.parent(jnt,jnts[-1])
+            
+            jnts.append(jnt)
+            
+            if len(jnts)<jointAmount+1:
+                grp=cmds.group(empty=True)
+                newPos=jntsTrans[count]
+                cmds.xform(grp,worldSpace=True,
+                           translation=newPos)
+                aimCon=cmds.aimConstraint(grp,jnt,
+                                          worldUpVector=(1,0,0))
+                cmds.delete(aimCon)
+                
+                cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
+                
+                cmds.delete(grp)
+            else:
+                ut.Snap(jnts[-2],jnt,point=False)
+            
+            #create sockets
+            socket=cmds.spaceLocator(name=prefix+'socket'+
+                                     str(count))[0]
+            
+            ut.Snap(jnt,socket)
+            cmds.parent(socket,jnt)
+            
+            data={'index':count}
+            metaParent=meta.SetData('meta_'+socket,'socket',None,
+                                    module,data)
+            meta.SetTransform(socket, metaParent)
+            
+            sockets.append(socket)
+            
+            cmds.container(asset,e=True,addNode=socket)
+            
+            #create fk
+            cmds.select(cl=True)
+            fk=cmds.joint(position=(pos[0],pos[1],pos[2]),
+                                  name=prefix+'fk'+str(count))
+            
+            ut.Snap(jnt,fk)
+            cmds.makeIdentity(fk,apply=True,t=1,r=1,s=1,n=0)
+            
+            cmds.container(asset,e=True,addNode=fk)
+            
+            #create fk controls
+            [grp,cnt]=ucs.Square(prefix+'fk'+str(count)+'_cnt',
+                           group=True)
+            
+            cmds.container(asset,e=True,addNode=[grp,cnt])
+            
+            fkcnts.append(cnt)
+            fkcntsGRP.append(grp)
+            
+            #setup fk controls
+            ut.Snap(fk,grp)
+            
+            cmds.parent(fk,cnt)
+            
+            if len(fkjnts)>0:
+                cmds.parent(grp,fkjnts[-1])
+            
+            fkjnts.append(fk)
+            
+            #create ik
+            cmds.select(cl=True)
+            ik=cmds.joint(position=(pos[0],pos[1],pos[2]),
+                                  name=prefix+'ik'+str(count))
+            
+            ut.Snap(jnt,ik)
+            cmds.makeIdentity(ik,apply=True,t=1,r=1,s=1,n=0)
+            
+            cmds.container(asset,e=True,addNode=ik)
+            
+            #setup ik
+            if len(ikjnts)>0:
+                cmds.parent(ik,ikjnts[-1])
+            
+            ikjnts.append(ik)
+            
+        
+        cmds.parent(jnts[0],plug)
+        cmds.parent(fkcntsGRP[0],plug)
+        
+        #create end joint
+        chestJNT=cmds.duplicate(jnts[-1],st=True,po=True,
+                                n=prefix+'end_jnt')[0]
+        
+        cmds.container(asset,e=True,addNode=chestJNT)
+        
+        #setup chest joint
+        cmds.parent(sockets[-1],chestJNT)
+        
+        #create controls
+        [masterGRP,masterCNT]=ucs.FourWay(prefix+'master_cnt',
+                                        group=True)
+        [endGRP,endCNT]=ucs.Sphere(prefix+'end_cnt',group=True)
+        [startGRP,startCNT]=ucs.Sphere(prefix+'start_cnt',
+                                       group=True)
+        [midGRP,midCNT]=ucs.Sphere(prefix+'mid_cnt',group=True)
+        
+        cnts=[masterCNT,endCNT,startCNT,midCNT]
+        cntsGRP=[masterGRP,endGRP,startGRP,midGRP]
+        
+        cmds.container(asset,e=True,addNode=cnts)
+        cmds.container(asset,e=True,addNode=cntsGRP)
+        
+        #setup master control
+        cmds.xform(masterGRP,ws=True,translation=startTrans)
+        cmds.xform(masterGRP,ws=True,rotation=startRot)
+        
+        ut.ClosestOrient(jnts[0], masterGRP, align=True)
+        
+        #setup start control
+        cmds.xform(startGRP,ws=True,translation=startTrans)
+        cmds.xform(startGRP,ws=True,rotation=startRot)
+        
+        ut.ClosestOrient(jnts[0], startGRP, align=True)
+        
+        #setup end control
+        cmds.xform(endGRP,ws=True,translation=endTrans)
+        cmds.xform(endGRP,ws=True,rotation=endTrans)
+        
+        ut.ClosestOrient(jnts[-1], endGRP, align=True)
+        
+        #continue with setup of mid control
 
 templateModule='meta_spine'
 
