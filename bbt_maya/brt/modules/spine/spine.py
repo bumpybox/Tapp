@@ -276,6 +276,8 @@ class Spine():
         #setup mid control
         cmds.delete(cmds.parentConstraint(startGRP,endGRP,midGRP))
         
+        #test for the local/personal repo - tokejepsen
+        
         
 
 templateModule='meta_spine'
