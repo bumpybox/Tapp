@@ -278,7 +278,7 @@ class Spine():
         
         #test for the local/personal repo - tokejepsen
         
-        
+        #test for network/company repo - Bumpybox
 
 templateModule='meta_spine'
 
