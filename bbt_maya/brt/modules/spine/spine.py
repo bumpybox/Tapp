@@ -269,11 +269,14 @@ class Spine():
         
         #setup end control
         cmds.xform(endGRP,ws=True,translation=endTrans)
-        cmds.xform(endGRP,ws=True,rotation=endTrans)
+        cmds.xform(endGRP,ws=True,rotation=endRot)
         
-        ut.ClosestOrient(jnts[-1], endGRP, align=True)
+        ut.ClosestOrient(startGRP,endGRP, align=True)
         
-        #continue with setup of mid control
+        #setup mid control
+        cmds.delete(cmds.parentConstraint(startGRP,endGRP,midGRP))
+        
+        
 
 templateModule='meta_spine'
 
