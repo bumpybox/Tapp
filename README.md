@@ -4,7 +4,8 @@ Everything is very much a work-in-progress.
 
 REQUIREMENTS
 
-- PyQt
+- Python (http://www.python.org/ftp/python/2.6.4/python-2.6.4.amd64.msi)
+- PyQt (http://www.riverbankcomputing.co.uk/software/pyqt/download)
 
 
 INSTALL
