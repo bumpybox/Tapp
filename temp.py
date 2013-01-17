@@ -1,2 +1,1 @@
-import maya.cmds
-
+print 'something'

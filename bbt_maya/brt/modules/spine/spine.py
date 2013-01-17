@@ -131,9 +131,7 @@ class Spine():
         
         cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
         
-        #create fkjnts, ikjnts, jnts, sockets, fkcnts, ikcnts
-        ikcnts=[]
-        ikcntsGRP=[]
+        #create fkjnts, ikjnts, jnts, sockets, fkcnts
         fkcnts=[]
         fkcntsGRP=[]
         fkjnts=[]
@@ -231,28 +229,12 @@ class Spine():
                                'joint',module,data)
             meta.SetTransform(cnt, mNode)
             
-            #create ik controls
+            #setup ik jnts
             if count<jointAmount+1:
-                [grp,cnt]=ucs.Circle(prefix+'ik'+str(count)+'_cnt',
-                               group=True)
-                
-                cmds.container(asset,e=True,addNode=[grp,cnt])
-                
-                ikcnts.append(cnt)
-                ikcntsGRP.append(grp)
-                
-                #setup ik controls
-                ut.Snap(ik,grp)
-                
                 if len(ikjnts)>0:
                     cmds.parent(ik,ikjnts[-1])
                 
                 ikjnts.append(ik)
-                
-                data={'system':'ik','switch':fk,'index':count}
-                mNode=meta.SetData(('meta_'+cnt),'control',
-                                   'joint',module,data)
-                meta.SetTransform(cnt, mNode)
             else:
                 cmds.parent(ik,ikjnts[-1])
                 
@@ -397,7 +379,7 @@ class Spine():
         
         cmds.delete(cmds.aimConstraint(endCNT,spineGEO,
                                        aimVector=[0,0,-1],
-                                       upVector=[0,-1,0],
+                                       upVector=[0,1,0],
                                        worldUpType='object',
                                        worldUpObject=temp))
         
@@ -433,6 +415,10 @@ class Spine():
         cmds.setAttr(spineGEO+'.v',False)
         
         #setup ik jnts
+        cmds.parent(ikjnts[0],startJNT)
+        
+        posgrps=[startJNT]
+        
         for jnt in ikjnts:
             count=ikjnts.index(jnt)+1
             
@@ -447,6 +433,8 @@ class Spine():
                 
                 cmds.container(asset,e=True,addNode=[posGRP,upGRP,
                                                      psi])
+                
+                posgrps.append(posGRP)
                 
                 #setup surface grps
                 cmds.parent(upGRP,posGRP)
@@ -488,9 +476,10 @@ class Spine():
         cmds.rotate(0,-90,0,extraCNT,os=True,r=True)
         
         cmds.parent(extraCNT,jnts[-1])
-        '''
+        
         #setup stretching
-        cmds.addAttr(extraCNT,ln='squashStretch',at='float')
+        cmds.addAttr(extraCNT,ln='squashStretch',at='float',
+                     keyable=True,min=0,max=1)
         cmds.addAttr(plug,ln='squashStretch',at='float')
         cmds.setKeyframe(plug,at='squashStretch',t=0,v=0)
         cmds.setKeyframe(plug,at='squashStretch',t=jointAmount+1,
@@ -501,13 +490,12 @@ class Spine():
         cmds.keyTangent(plug,at='squashStretch',wt=1)
         cmds.keyTangent(plug,at='squashStretch',weightLock=False)
         
+        ikblend=[]
+        
         for ik in ikjnts:
             count=ikjnts.index(ik)+1
             
             if count<=jointAmount:
-                print ik
-                print ikjnts[count]
-                
                 dist=cmds.shadingNode('distanceBetween',
                                       n=prefix+'stretch_dist',
                                       asUtility=True)
@@ -533,9 +521,11 @@ class Spine():
                                     n=prefix+'stretch_md',
                                     asUtility=True)
                 
-                cmds.connectAttr(ik+'.worldMatrix[0]',
+                ikblend.append(blend)
+                
+                cmds.connectAttr(posgrps[count-1]+'.worldMatrix[0]',
                                  dist+'.inMatrix1')
-                cmds.connectAttr(ikjnts[count]+'.worldMatrix[0]',
+                cmds.connectAttr(posgrps[count]+'.worldMatrix[0]',
                                  dist+'.inMatrix2')
                 
                 cmds.setAttr(md01+'.operation',2)
@@ -572,9 +562,51 @@ class Spine():
                 cmds.connectAttr(md05+'.outputX',ik+'.sz')
         
         #setup blending
+        cmds.addAttr(extraCNT,ln='FKIK',at='float',
+                     keyable=True,min=0,max=1)
+        
+        fkikREV=cmds.shadingNode('reverse',asUtility=True,
+                                 n=prefix+'fkikREV')
+        
+        cmds.connectAttr(extraCNT+'.FKIK',fkikREV+'.inputX')
+        
+        for jnt in jnts[0:-1]:
+            count=jnts.index(jnt)
+            
+            #orient blending
+            orientCon=cmds.orientConstraint(ikjnts[count],
+                                            fkjnts[count],
+                                            jnt)[0]
+            
+            cmds.connectAttr(fkikREV+'.outputX',
+                             orientCon+'.'+fkjnts[count]+'W1')
+            cmds.connectAttr(extraCNT+'.FKIK',
+                             orientCon+'.'+ikjnts[count]+'W0')
+            
+            #scale blending
+            blend=cmds.shadingNode('blendColors',asUtility=True,
+                                    n=prefix+'blend')
+            stretch=cmds.shadingNode('blendColors',asUtility=True,
+                                     n=prefix+'stretch')
+            
+            cmds.setAttr(blend+'.color2R',1)
+            cmds.connectAttr(extraCNT+'.FKIK',blend+'.blender')
+            cmds.connectAttr(ikblend[count]+'.outputR',
+                             blend+'.color1R')
+            
+            cmds.setAttr(stretch+'.color2R',1)
+            cmds.connectAttr(extraCNT+'.squashStretch',
+                             stretch+'.blender')
+            cmds.connectAttr(blend+'.outputR',
+                             stretch+'.color1R')
+            cmds.connectAttr(stretch+'.outputR',
+                             jnt+'.sx')
+        
+        #continue with troubleshoot blending system
         
         #create hip
-        '''
+        
+        #clean channel box
 
 templateModule='meta_spine'
 
