@@ -1,6 +1,5 @@
 import os
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt4 import QtCore, QtGui
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omu
@@ -9,12 +8,12 @@ import sip
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
     ptr = omu.MQtUtil.mainWindow()
-    return sip.wrapinstance(long(ptr), QObject)
+    return sip.wrapinstance(long(ptr), QtCore.QObject)
     
-class brtDialog(QDialog):
+class brtDialog(QtGui.QDialog):
     
     def __init__(self, parent=maya_main_window()):
-        QDialog.__init__(self, parent)
+        QtGui.QDialog.__init__(self, parent)
         
         self.setObjectName('brtDialog')
         self.setWindowTitle('Bumpybox Rigging Tools')
@@ -26,30 +25,30 @@ class brtDialog(QDialog):
     
     def createLayout(self):
         #///create create tab///
-        create_tab=QWidget()
+        create_tab=QtGui.QWidget()
         
         #tab layout
-        tab_layout=QGridLayout()
+        tab_layout=QtGui.QGridLayout()
         create_tab.setLayout(tab_layout)
         
         #list widget
-        self.create_templateList=QListWidget()
+        self.create_templateList=QtGui.QListWidget()
         tab_layout.addWidget(self.create_templateList,0,0,1,2)
         
         #path browser       
-        self.create_pathButton=QPushButton('Path:')
-        self.create_pathLineEdit=QLineEdit()
+        self.create_pathButton=QtGui.QPushButton('Path:')
+        self.create_pathLineEdit=QtGui.QLineEdit()
         
         tab_layout.addWidget(self.create_pathButton,1,0)
         tab_layout.addWidget(self.create_pathLineEdit,1,1)
         
         #buttons
-        self.create_importButton=QPushButton('Import')
-        self.create_exportButton=QPushButton('Export')
-        self.create_deleteButton=QPushButton('Delete')
-        self.create_mirrorButton=QPushButton('Mirror')
-        self.create_rigButton=QPushButton('Create Rig')
-        self.create_characterButton=QPushButton('Create Character')
+        self.create_importButton=QtGui.QPushButton('Import')
+        self.create_exportButton=QtGui.QPushButton('Export')
+        self.create_deleteButton=QtGui.QPushButton('Delete')
+        self.create_mirrorButton=QtGui.QPushButton('Mirror')
+        self.create_rigButton=QtGui.QPushButton('Create Rig')
+        self.create_characterButton=QtGui.QPushButton('Create Character')
         
         tab_layout.addWidget(self.create_importButton,2,0)
         tab_layout.addWidget(self.create_exportButton,2,1)
@@ -59,18 +58,18 @@ class brtDialog(QDialog):
         tab_layout.addWidget(self.create_characterButton,4,1)
         
         #///create setup tab///
-        setup_tab=QWidget()
+        setup_tab=QtGui.QWidget()
         
         #tab layout
-        tab_layout=QVBoxLayout()
+        tab_layout=QtGui.QVBoxLayout()
         setup_tab.setLayout(tab_layout)
         
         #connect modules
-        gb=QGroupBox(title='Connect Modules')
-        gb_layout=QHBoxLayout()
+        gb=QtGui.QGroupBox(title='Connect Modules')
+        gb_layout=QtGui.QHBoxLayout()
         
-        self.setup_connectButton=QPushButton('Connect')
-        label=QLabel('Select targets first.\nSelect parent last.')
+        self.setup_connectButton=QtGui.QPushButton('Connect')
+        label=QtGui.QLabel('Select targets first.\nSelect parent last.')
         
         gb_layout.addWidget(self.setup_connectButton)
         gb_layout.addWidget(label)
@@ -79,11 +78,11 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #control shapes
-        gb=QGroupBox(title='Control Shapes')
-        gb_layout=QHBoxLayout()
+        gb=QtGui.QGroupBox(title='Control Shapes')
+        gb_layout=QtGui.QHBoxLayout()
         
-        self.setup_controlExportButton=QPushButton('Export')
-        self.setup_controlImportButton=QPushButton('Import')
+        self.setup_controlExportButton=QtGui.QPushButton('Export')
+        self.setup_controlImportButton=QtGui.QPushButton('Import')
         
         gb_layout.addWidget(self.setup_controlExportButton)
         gb_layout.addWidget(self.setup_controlImportButton)
@@ -92,11 +91,11 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #control shapes
-        gb=QGroupBox(title='Hierarchy')
-        gb_layout=QHBoxLayout()
+        gb=QtGui.QGroupBox(title='Hierarchy')
+        gb_layout=QtGui.QHBoxLayout()
         
-        self.setup_hierarchyExportButton=QPushButton('Export')
-        self.setup_hierarchyImportButton=QPushButton('Import')
+        self.setup_hierarchyExportButton=QtGui.QPushButton('Export')
+        self.setup_hierarchyImportButton=QtGui.QPushButton('Import')
         
         gb_layout.addWidget(self.setup_hierarchyExportButton)
         gb_layout.addWidget(self.setup_hierarchyImportButton)
@@ -105,13 +104,13 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #control shapes
-        gb=QGroupBox(title='Rig Preparation')
-        gb_layout=QGridLayout()
+        gb=QtGui.QGroupBox(title='Rig Preparation')
+        gb_layout=QtGui.QGridLayout()
         
-        self.setup_hideRigButton=QPushButton('Hide')
-        self.setup_unhideRigButton=QPushButton('Unhide')
-        self.setup_blackboxRigButton=QPushButton('Blackbox')
-        self.setup_unblackboxRigButton=QPushButton('Unblackbox')
+        self.setup_hideRigButton=QtGui.QPushButton('Hide')
+        self.setup_unhideRigButton=QtGui.QPushButton('Unhide')
+        self.setup_blackboxRigButton=QtGui.QPushButton('Blackbox')
+        self.setup_unblackboxRigButton=QtGui.QPushButton('Unblackbox')
         
         gb_layout.addWidget(self.setup_hideRigButton,0,0)
         gb_layout.addWidget(self.setup_unhideRigButton,0,1)
@@ -122,18 +121,18 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #///create utils tab///
-        utils_tab=QWidget()
+        utils_tab=QtGui.QWidget()
         
         #tab layout
-        tab_layout=QVBoxLayout()
+        tab_layout=QtGui.QVBoxLayout()
         utils_tab.setLayout(tab_layout)
         
         #sphere preview
-        gb=QGroupBox(title='Sphere Preview')
-        gb_layout=QHBoxLayout()
+        gb=QtGui.QGroupBox(title='Sphere Preview')
+        gb_layout=QtGui.QHBoxLayout()
         
-        self.utils_sphereCreateButton=QPushButton('Create')
-        self.utils_sphereRemoveButton=QPushButton('Remove All')
+        self.utils_sphereCreateButton=QtGui.QPushButton('Create')
+        self.utils_sphereRemoveButton=QtGui.QPushButton('Remove All')
         
         gb_layout.addWidget(self.utils_sphereCreateButton)
         gb_layout.addWidget(self.utils_sphereRemoveButton)
@@ -142,11 +141,11 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #weights maps
-        gb=QGroupBox(title='Weight Maps')
-        gb_layout=QHBoxLayout()
+        gb=QtGui.QGroupBox(title='Weight Maps')
+        gb_layout=QtGui.QHBoxLayout()
         
-        self.utils_weightImportButton=QPushButton('Import')
-        self.utils_weightExportButton=QPushButton('Export')
+        self.utils_weightImportButton=QtGui.QPushButton('Import')
+        self.utils_weightExportButton=QtGui.QPushButton('Export')
         
         gb_layout.addWidget(self.utils_weightImportButton)
         gb_layout.addWidget(self.utils_weightExportButton)
@@ -155,24 +154,24 @@ class brtDialog(QDialog):
         tab_layout.addWidget(gb)
         
         #proxy parent
-        self.utils_proxyParentButton=QPushButton('Proxy Parent')
+        self.utils_proxyParentButton=QtGui.QPushButton('Proxy Parent')
         
         tab_layout.addWidget(self.utils_proxyParentButton)
         
         #create main tabs
-        tabs=QVBoxLayout()
+        tabs=QtGui.QVBoxLayout()
         
-        main_tabs = QTabWidget()
+        main_tabs = QtGui.QTabWidget()
         tabs.addWidget(main_tabs)
         main_tabs.addTab(create_tab, 'Create')
         main_tabs.addTab(setup_tab, 'Setup')
         main_tabs.addTab(utils_tab, 'Utilities')
         
         # Create the main layout
-        main_layout = QVBoxLayout()
+        main_layout = QtGui.QVBoxLayout()
         main_layout.setMargin(2)
         
-        scrollArea=QScrollArea()
+        scrollArea=QtGui.QScrollArea()
         scrollArea.setLayout(tabs)
         scrollArea.setWidget(main_tabs)
         
@@ -182,8 +181,8 @@ class brtDialog(QDialog):
     
     def createConnections(self):
         #///character connections///
-        self.connect(self.create_pathButton, SIGNAL('clicked()'),self.browsePath)
-        self.connect(self.create_pathLineEdit, SIGNAL('returnPressed()'),self.refreshList)
+        self.connect(self.create_pathButton, QtCore.SIGNAL('clicked()'),self.browsePath)
+        self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
     
     def browsePath(self):
         templatePath=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
@@ -194,9 +193,8 @@ class brtDialog(QDialog):
         directory=str(self.create_pathLineEdit.text())
         
         templates = []
-        for root, dirs, files in os.walk(directory):
+        for files in os.walk(directory)[2]:
             for name in files:
-                path = os.path.join(root, name)
                 if name.endswith('.template'):
                     templates.append(name)
         
@@ -206,7 +204,7 @@ class brtDialog(QDialog):
 
 def show():
     #closing previous dialog
-    for widget in qApp.allWidgets():
+    for widget in QtGui.qApp.allWidgets():
         if widget.objectName()=='brtDialog':
             widget.close()
     

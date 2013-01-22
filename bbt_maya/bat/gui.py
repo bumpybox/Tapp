@@ -142,8 +142,6 @@ class batDialog(QtGui.QDialog):
         tabs.addWidget(main_tabs)
         main_tabs.addTab(char_tab, 'Character')
         main_tabs.addTab(tools_tab, 'Tools')
-        main_tabs.addTab(playblast_tab, 'Playblast')
-        #main_tabs.setCurrentIndex(1)
         
         # Create the main layout
         main_layout = QtGui.QVBoxLayout()
@@ -243,3 +241,5 @@ def show():
     dockPt = omu.MQtUtil.findControl(dock)
     dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
     dockWidget.setWidget(batDialog())
+
+show()

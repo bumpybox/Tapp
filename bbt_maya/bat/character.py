@@ -1,61 +1,44 @@
 import maya.cmds as cmds
-import maya.mel as mel
-import os
-from shutil import move
-import sys
+
+from bbt_maya import generic
+from bbt_maya.brt.modules import utils
 
 def fkSwitch():
     #undo enable
     cmds.undoInfo(openChunk=True)
     
-    #error checking for selection count
-    sel=cmds.ls(selection=True)
+    #class variables
+    meta=generic.Meta()
+    ut=utils.Transform()
     
-    if len(sel)>=1:
-        for selNode in sel:
+    #error checking for selection count
+    nodeSelection=cmds.ls(selection=True)
+    
+    if len(nodeSelection)>=1:
+        for node in nodeSelection:
             #travel upstream and finding the module
-            obj=cmds.listConnections('%s.metaParent' % selNode,type='network')
-            temp=cmds.listConnections('%s.metaParent' % obj[0],type='network')
-            module=temp[0]
+            module=meta.UpStream(node, 'module')
             
-            #array for while loop
-            metaNodes=list()
-            
-            #finding the anim controls and align FK to IK
-            for node in cmds.listConnections('%s.message' % module):
-                if (cmds.attributeQuery('component',n=node,ex=True))==True and (cmds.getAttr('%s.component' % node))=='extra':
-                    FKIK=cmds.listConnections('%s.message' % node)
-                    
-                    if cmds.nodeType(FKIK[0])=='transform':
-                        cmds.setAttr('%s.FKIK' % FKIK[0],0)
-                    if cmds.nodeType(FKIK[1])=='transform':
-                        cmds.setAttr('%s.FKIK' % FKIK[1],0)
+            #switching to fk with extra control and finding fk cnts
+            cnts=meta.DownStream(module, 'control')
+            for cnt in cnts:
+                data=meta.GetData(cnt)
                 
-                #cycle through module connections and find controls with switches
-                if (cmds.attributeQuery('switch',n=node,ex=True))==True:
-                    switch=cmds.listConnections('%s.switch' % node)
+                if data['component']=='extra':
+                    transformNode=meta.GetTransform(cnt)
                     
-                    if cmds.getAttr('%s.system' % node)=='fk' and switch!='':
-                        metaNodes.append(node)
+                    cmds.setAttr(transformNode+'.FKIK',0)
             
-            #while loop to ensure switch order is correct
-            index=1
-            while index<=len(metaNodes):
-                for o in metaNodes:
-                    if cmds.getAttr('%s.index' % o)==index:
-                        newNode=cmds.listConnections('%s.message' % o,type='transform')[0]
-                        newSwitch=cmds.listConnections('%s.switch' % o,type='transform')[0]
-                        
-                        rot=cmds.xform(newSwitch,query=True,worldSpace=True,rotation=True)
-                        cmds.xform(newNode,worldSpace=True,rotation=(rot[0],rot[1],rot[2]))
-                        
-                        if cmds.getAttr('%s.tx' % newNode,lock=True)==False:
-                            pos=cmds.xform(newSwitch,query=True,worldSpace=True,translation=True)
-                            cmds.xform(newNode,worldSpace=True,translation=(pos[0],pos[1],pos[2]))
+            #transforming fk cnts to their switch node
+            for cnt in meta.Sort(cnts, 'index'):
+                data=meta.GetData(cnt)
                 
-                index+=1
+                switch=data['switch']
+                transformNode=meta.GetTransform(cnt)
+                
+                ut.Snap(switch, transformNode)
     else:
-        raise RuntimeError, 'Nothing is selected!'
+        raise cmds.warning('Nothing is selected!')
     
     cmds.undoInfo(closeChunk=True)
 
@@ -290,7 +273,6 @@ def highRezRig():
             geo=cmds.listConnections('%s.message' % node,type='transform')[0]
             
             cmds.setAttr('%s.visibility' % geo,True)
-            midRez=True
             smoothDisplay(geo,True)
             
     for node in proxyNodes:
@@ -313,7 +295,6 @@ def midRezRig():
             geo=cmds.listConnections('%s.message' % node,type='transform')[0]
             
             cmds.setAttr('%s.visibility' % geo,True)
-            midRez=True
             smoothDisplay(geo,False)
             
     for node in proxyNodes:
@@ -336,7 +317,6 @@ def lowRezRig():
             geo=cmds.listConnections('%s.message' % node,type='transform')[0]
             
             cmds.setAttr('%s.visibility' % geo,True)
-            lowRez=True
             smoothDisplay(geo,False)
     
     for node in skinNodes:
@@ -367,8 +347,6 @@ def flipLimb():
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                     moduleControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    plug=cmds.listConnections('%s.message' % meta,type='transform')
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                     moduleControls.append(meta)
@@ -424,8 +402,6 @@ def flipLimb():
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                     moduleControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    plug=cmds.listConnections('%s.message' % meta,type='transform')
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                     moduleControls.append(meta)
@@ -485,8 +461,6 @@ def flipLimb():
                 for meta in cmds.listConnections('%s.message' % oppModule,type='network'):
                     if (cmds.getAttr('%s.type' % meta))=='control':
                         oppControls.append(meta)
-                    if (cmds.getAttr('%s.type' % meta))=='plug':
-                        oppPlug=cmds.listConnections('%s.message' % meta,type='transform')
                 
                 matchControls=list()
                 for meta in moduleControls:
@@ -540,8 +514,6 @@ def flipLimb():
         for meta in cmds.listConnections('%s.message' % module,type='network'):
             if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                 moduleControls.append(meta)
-            if (cmds.getAttr('%s.type' % meta))=='plug':
-                plug=cmds.listConnections('%s.message' % meta,type='transform')
         for meta in cmds.listConnections('%s.message' % module,type='network'):
             if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                 moduleControls.append(meta)
@@ -600,8 +572,6 @@ def flipLimb():
             for meta in cmds.listConnections('%s.message' % oppModule,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control':
                     oppControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    oppPlug=cmds.listConnections('%s.message' % meta,type='transform')
             
             matchControls=list()
             for meta in moduleControls:
@@ -624,7 +594,6 @@ def flipLimb():
             
             # mirroring controls
             mirrorValues=list()
-            extraValues=list()
             
             for metaList in matchControls:
                 sourceCNT=cmds.listConnections('%s.message' % metaList[0],type='transform')[0]
@@ -777,8 +746,6 @@ def mirrorLimb():
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                     moduleControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    plug=cmds.listConnections('%s.message' % meta,type='transform')
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                     moduleControls.append(meta)
@@ -834,8 +801,6 @@ def mirrorLimb():
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                     moduleControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    plug=cmds.listConnections('%s.message' % meta,type='transform')
             for meta in cmds.listConnections('%s.message' % module,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                     moduleControls.append(meta)
@@ -895,8 +860,6 @@ def mirrorLimb():
                 for meta in cmds.listConnections('%s.message' % oppModule,type='network'):
                     if (cmds.getAttr('%s.type' % meta))=='control':
                         oppControls.append(meta)
-                    if (cmds.getAttr('%s.type' % meta))=='plug':
-                        oppPlug=cmds.listConnections('%s.message' % meta,type='transform')
                 
                 matchControls=list()
                 for meta in moduleControls:
@@ -949,8 +912,6 @@ def mirrorLimb():
         for meta in cmds.listConnections('%s.message' % module,type='network'):
             if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==False:
                 moduleControls.append(meta)
-            if (cmds.getAttr('%s.type' % meta))=='plug':
-                plug=cmds.listConnections('%s.message' % meta,type='transform')
         for meta in cmds.listConnections('%s.message' % module,type='network'):
             if (cmds.getAttr('%s.type' % meta))=='control' and (cmds.attributeQuery('system',n=meta,ex=True))==True:
                 moduleControls.append(meta)
@@ -1009,8 +970,6 @@ def mirrorLimb():
             for meta in cmds.listConnections('%s.message' % oppModule,type='network'):
                 if (cmds.getAttr('%s.type' % meta))=='control':
                     oppControls.append(meta)
-                if (cmds.getAttr('%s.type' % meta))=='plug':
-                    oppPlug=cmds.listConnections('%s.message' % meta,type='transform')
             
             matchControls=list()
             for meta in moduleControls:
@@ -1033,7 +992,6 @@ def mirrorLimb():
             
             # mirroring controls
             mirrorValues=list()
-            extraValues=list()
             
             for metaList in matchControls:
                 sourceCNT=cmds.listConnections('%s.message' % metaList[0],type='transform')[0]
@@ -1090,7 +1048,6 @@ def mirrorLimb():
                     for attr in cmds.listAnimatable(targetCNT):
                         targetList.append(cmds.getAttr(attr))
                     
-                    sourceAttrs=cmds.listAnimatable(sourceCNT)
                     targetAttrs=cmds.listAnimatable(targetCNT)
                     for count in xrange(0,len(cmds.listAnimatable(sourceCNT))):
                         cmds.setAttr(targetAttrs[count],sourceList[count])
@@ -1105,7 +1062,6 @@ def mirrorLimb():
                 
                 # rotation mirror
                 sourceROT=cmds.xform(sourceCNT,q=True,os=True,ro=True)
-                targetROT=cmds.xform(targetCNT,q=True,os=True,ro=True)
                 cmds.xform(targetCNT,os=True,ro=((sourceROT[0]*-1),sourceROT[1],(sourceROT[2]*-1)))
     
     #compensating neck modules

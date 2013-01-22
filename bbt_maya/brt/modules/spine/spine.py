@@ -1,9 +1,7 @@
 import maya.cmds as cmds
-import maya.mel as mel
 
 from bbt_maya import generic
 from bbt_maya.brt.modules import utils
-from bbt_maya.python import ZvParentMaster as zv
 
 class Spine():
     ''' Class for all limb related functions. '''
@@ -45,6 +43,7 @@ class Spine():
         
         jointAmount=data['joints']
         hipsAttach=data['hips']
+        spineType=data['spineType']
         
         #getting transform data
         startTrans=cmds.xform(start,worldSpace=True,query=True,
@@ -151,6 +150,12 @@ class Spine():
             
             if len(jnts)>0:
                 cmds.parent(jnt,jnts[-1])
+                
+                try:
+                    cmds.connectAttr(jnts[-1]+'.scale',
+                                     jnt+'.inverseScale')
+                except:
+                    pass
             
             jnts.append(jnt)
             
@@ -239,66 +244,87 @@ class Spine():
                 cmds.parent(ik,ikjnts[-1])
                 
                 ikjnts.append(ik)
-            
         
         cmds.parent(jnts[0],plug)
         cmds.parent(fkcntsGRP[0],plug)
         
         #create controls
-        [masterGRP,masterCNT]=ucs.FourWay(prefix+'master_cnt',
-                                        group=True)
         [endGRP,endCNT]=ucs.Sphere(prefix+'end_cnt',group=True)
-        [startGRP,startCNT]=ucs.Sphere(prefix+'start_cnt',
-                                       group=True)
         [midGRP,midCNT]=ucs.Sphere(prefix+'mid_cnt',group=True)
         
-        cnts=[masterCNT,endCNT,startCNT,midCNT]
-        cntsGRP=[masterGRP,endGRP,startGRP,midGRP]
+        cnts=[endCNT,midCNT]
+        cntsGRP=[endGRP,midGRP]
+        ikcnts=[]
         
         cmds.container(asset,e=True,addNode=cnts)
         cmds.container(asset,e=True,addNode=cntsGRP)
         
-        #setup master control
-        cmds.xform(masterGRP,ws=True,translation=startTrans)
-        cmds.xform(masterGRP,ws=True,rotation=startRot)
+        #create master control
+        if spineType=='spine':
+            [masterGRP,masterCNT]=ucs.FourWay(prefix+'master_cnt',
+                                            group=True)
+            
+            cmds.container(asset,e=True,addNode=[masterGRP,masterCNT])
+            
+            #setup master control
+            cmds.xform(masterGRP,ws=True,translation=startTrans)
+            cmds.xform(masterGRP,ws=True,rotation=startRot)
+            
+            ut.ClosestOrient(jnts[0], masterGRP, align=True)
+            
+            cmds.parent(masterGRP,plug)
+            cmds.parent(fkcntsGRP[0],masterCNT)
+            
+            mNode=meta.SetData(('meta_'+masterCNT),'control',
+                               'master',module,None)
+            meta.SetTransform(masterCNT, mNode)
         
-        ut.ClosestOrient(jnts[0], masterGRP, align=True)
-        
-        cmds.parent(masterGRP,plug)
-        cmds.parent(fkcntsGRP[0],masterCNT)
-        
-        mNode=meta.SetData(('meta_'+masterCNT),'control',
-                           'master',module,None)
-        meta.SetTransform(cnt, mNode)
-        
-        #setup start control
-        cmds.xform(startGRP,ws=True,translation=startTrans)
-        cmds.xform(startGRP,ws=True,rotation=startRot)
-        
-        ut.ClosestOrient(jnts[0], startGRP, align=True)
-        
-        cmds.parent(startGRP,masterCNT)
-        
+        #create start joint
         cmds.select(cl=True)
         startJNT=cmds.joint(n=prefix+'start_jnt')
         
         cmds.container(asset,e=True,addNode=startJNT)
         
-        ut.Snap(startCNT,startJNT)
-        cmds.parent(startJNT,startCNT)
+        #setup start joint
+        cmds.xform(startJNT,ws=True,translation=startTrans)
+        cmds.xform(startJNT,ws=True,rotation=startRot)
         
-        data={'system':'ik','switch':fkcnts[-1]}
-        mNode=meta.SetData(('meta_'+startCNT),'control',
-                           'start',module,data)
-        meta.SetTransform(startCNT, mNode)
+        ut.ClosestOrient(jnts[0],startJNT, align=True)
+        
+        cmds.parent(startJNT,plug)
+        
+        #create start control
+        if spineType=='spine':
+            [startGRP,startCNT]=ucs.Sphere(prefix+'start_cnt',
+                                           group=True)
+            
+            cmds.container(asset,e=True,addNode=startCNT)
+            
+            #setup start control
+            ut.ClosestOrient(jnts[0], startGRP, align=True)
+            
+            cmds.parent(startGRP,masterCNT)
+            
+            ut.Snap(startJNT,startGRP)
+            cmds.parent(startJNT,startCNT)
+            
+            data={'system':'ik','switch':fkcnts[-1]}
+            mNode=meta.SetData(('meta_'+startCNT),'control',
+                               'start',module,data)
+            meta.SetTransform(startCNT, mNode)
+            
+            ikcnts.append(startCNT)
         
         #setup end control
         cmds.xform(endGRP,ws=True,translation=endTrans)
         cmds.xform(endGRP,ws=True,rotation=endRot)
         
-        ut.ClosestOrient(startGRP,endGRP, align=True)
+        ut.ClosestOrient(jnts[0],endGRP, align=True)
         
-        cmds.parent(endGRP,masterCNT)
+        if spineType=='spine':
+            cmds.parent(endGRP,masterCNT)
+        else:
+            cmds.parent(endGRP,plug)
         
         cmds.select(cl=True)
         endJNT=cmds.joint(n=prefix+'end_jnt')
@@ -313,8 +339,10 @@ class Spine():
                            'end',module,data)
         meta.SetTransform(endCNT, mNode)
         
+        ikcnts.append(endCNT)
+        
         #setup mid control
-        cmds.delete(cmds.parentConstraint(startGRP,endGRP,midGRP))
+        cmds.delete(cmds.parentConstraint(startJNT,endJNT,midGRP))
         
         midposGRP=cmds.group(empty=True,n=prefix+'midPos_grp')
         midaimatGRP=cmds.group(empty=True,n=prefix+'midAimAt_grp')
@@ -360,6 +388,8 @@ class Spine():
         mNode=meta.SetData(('meta_'+midCNT),'control',
                            'mid',module,data)
         meta.SetTransform(midCNT, mNode)
+        
+        ikcnts.append(midCNT)
         
         #create spine geo
         spineGEO=cmds.nurbsPlane(p=[0,0,0],ax=[0,1,0],
@@ -602,11 +632,98 @@ class Spine():
             cmds.connectAttr(stretch+'.outputR',
                              jnt+'.sx')
         
-        #continue with troubleshoot blending system
+        #visibility blending
+        for cnt in fkcnts:
+            cmds.connectAttr(fkikREV+'.outputX',cnt+'.v')
+        
+        for cnt in ikcnts:
+            cmds.connectAttr(extraCNT+'.FKIK',cnt+'.v')
+        
+        #position blending
+        pCon=cmds.pointConstraint(ikjnts[0],fkjnts[0],jnts[0])[0]
+        
+        cmds.connectAttr(fkikREV+'.outputX',
+                         pCon+'.'+fkjnts[0]+'W1')
+        cmds.connectAttr(extraCNT+'.FKIK',
+                         pCon+'.'+ikjnts[0]+'W0')
         
         #create hip
+        if hipsAttach and spineType=='spine':
+            #create hip jnt
+            cmds.select(cl=True)
+            jnt=cmds.joint(position=(0,0,0),name=prefix+'hip_jnt')
+            
+            ut.Snap(jnts[0],jnt)
+            cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
+            
+            cmds.container(asset,e=True,addNode=jnt)
+            
+            #setup jnt
+            cmds.move(-spineLength/3,0,0,jnt,r=True,os=True)
+            
+            #create hip control
+            [grp,cnt]=ucs.Circle(prefix+'hip_cnt', group=True)
+            
+            cmds.container(asset,e=True,addNode=[grp,cnt])
+            
+            #setup hip control
+            ut.Snap(jnt,grp)
+            ut.Snap(jnts[0], grp,orient=False)
+            
+            cmds.parent(jnt,cnt)
+            cmds.parent(grp,plug)
+            
+            cmds.move(-spineLength/3,0,0,cnt+'.cv[0:7]',
+                      r=True,os=True)
+            
+            #setup hip extra control
+            cmds.addAttr(extraCNT,ln='hipFollow',at='float',
+                         keyable=True,min=0,max=1)
+            
+            hipREV=cmds.shadingNode('reverse',asUtility=True,
+                                     n=prefix+'hipREV')
+            
+            cmds.connectAttr(extraCNT+'.hipFollow',
+                             hipREV+'.inputX')
+            
+            parentGRP=cmds.group(empty=True,
+                                 n=prefix+'hipParent_grp')
+            pointGRP=cmds.group(empty=True,
+                                n=prefix+'hipPoint_grp')
+            
+            cmds.container(asset,e=True,addNode=[parentGRP,
+                                                 pointGRP])
+            
+            ut.Snap(cnt,parentGRP)
+            ut.Snap(cnt,pointGRP)
+            
+            cmds.parent(parentGRP,jnts[0])
+            cmds.parent(pointGRP,plug)
+            cmds.pointConstraint(jnts[0],pointGRP,
+                                 maintainOffset=True)
+            
+            pCon=cmds.parentConstraint(parentGRP,pointGRP,grp)[0]
+            
+            cmds.connectAttr(extraCNT+'.hipFollow',
+                             pCon+'.'+parentGRP+'W0')
+            cmds.connectAttr(hipREV+'.outputX',
+                             pCon+'.'+pointGRP+'W1')
+            
+            #clean channel box
+            attrs=['tx','ty','tz','sx','sy','sz','v']
+            ut.ChannelboxClean(cnt, attrs)
         
         #clean channel box
+        attrs=['tx','ty','tz','sx','sy','sz','v']
+        for cnt in fkcnts:
+            ut.ChannelboxClean(cnt, attrs)
+        
+        attrs=['sx','sy','sz','v']
+        for cnt in ikcnts:
+            ut.ChannelboxClean(cnt, attrs)
+
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+        ut.ChannelboxClean(extraCNT, attrs)
 
 templateModule='meta_spine'
 

@@ -19,7 +19,8 @@ class Meta():
         for obj in objects:
             data=self.GetData(obj)
             
-            objs[obj]=float(data[attr])
+            if attr in data:
+                objs[obj]=float(data[attr])
         
         sortedList=sorted(objs.iteritems(),
                           key=operator.itemgetter(1))
