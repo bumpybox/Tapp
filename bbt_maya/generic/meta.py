@@ -7,6 +7,25 @@ class Meta():
         the meta data. 
     '''
     
+    def Filter(self,objects,filterData):
+        ''' Filters objects based on a dictionary.
+            objects is a list of nodes.
+            filterData is a dictionary,
+                eg {'system':'fk','index':'1'}
+            Returns a list of valid nodes.
+        '''
+        
+        objs=[]
+        
+        for obj in objects:
+            data=self.GetData(obj)
+            
+            shared_item = set(data.items()) & set(filterData.items())
+            if len(shared_item)==len(filterData):
+                objs.append(obj)
+        
+        return objs
+    
     def Sort(self,objects,attr):
         ''' Sorts objects based on a value attribute.
             objects is a list of objects.

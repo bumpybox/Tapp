@@ -29,8 +29,12 @@ def fkSwitch():
                     
                     cmds.setAttr(transformNode+'.FKIK',0)
             
+            #finding fk cnts
+            filterData={'system':'fk'}
+            fkcnts=meta.Filter(cnts, filterData)
+            
             #transforming fk cnts to their switch node
-            for cnt in meta.Sort(cnts, 'index'):
+            for cnt in meta.Sort(fkcnts, 'index'):
                 data=meta.GetData(cnt)
                 
                 switch=data['switch']
@@ -38,7 +42,7 @@ def fkSwitch():
                 
                 ut.Snap(switch, transformNode)
     else:
-        raise cmds.warning('Nothing is selected!')
+        cmds.warning('Nothing is selected!')
     
     cmds.undoInfo(closeChunk=True)
 
@@ -46,44 +50,43 @@ def ikSwitch():
     #undo enable
     cmds.undoInfo(openChunk=True)
     
-    #error checking for selection count
-    sel=cmds.ls(selection=True)
+    #class variables
+    meta=generic.Meta()
+    ut=utils.Transform()
     
-    if len(sel)>=1:
-        for selNode in sel:
+    #error checking for selection count
+    nodeSelection=cmds.ls(selection=True)
+    
+    if len(nodeSelection)>=1:
+        for node in nodeSelection:
             #travel upstream and finding the module
-            obj=cmds.listConnections('%s.metaParent' % selNode,type='network')
-            temp=cmds.listConnections('%s.metaParent' % obj[0],type='network')
-            module=temp[0]
+            module=meta.UpStream(node, 'module')
             
-            #finding the anim controls and align IK to FK
-            for node in cmds.listConnections('%s.message' % module,type='network'):
-                #setting blend to IK
-                if (cmds.attributeQuery('component',n=node,ex=True))==True and (cmds.getAttr('%s.component' % node))=='extra':
-                    FKIK=cmds.listConnections('%s.message' % node)
-                    
-                    if cmds.nodeType(FKIK[0])=='transform':
-                        cmds.setAttr('%s.FKIK' % FKIK[0],1)
-                    if cmds.nodeType(FKIK[1])=='transform':
-                        cmds.setAttr('%s.FKIK' % FKIK[1],1)
+            #finding cnts and switching to ik with extra control
+            cnts=meta.DownStream(module, 'control')
+            
+            for cnt in cnts:
+                data=meta.GetData(cnt)
                 
-                if (cmds.attributeQuery('switch',n=node,ex=True))==True:
-                    #cycle through module connections and finding controls with switches
-                    switch=cmds.listConnections('%s.switch' % node)
+                if data['component']=='extra':
+                    transformNode=meta.GetTransform(cnt)
                     
-                    if cmds.getAttr('%s.system' % node)=='ik' and switch!='':
-                        cnt=cmds.listConnections('%s.message' % node,type='transform')[0]
-                        
-                        pos=cmds.xform(switch,query=True,worldSpace=True,translation=True)
-                        cmds.move(pos[0],pos[1],pos[2],cnt,worldSpace=True)
-                        
-                        if (cmds.attributeQuery('zero',n=node,ex=True))==True and (cmds.getAttr('%s.zero' % node))=='true':
-                            cmds.xform(cnt,rotation=(0,0,0),objectSpace=True)
-                        else:
-                            rot=cmds.xform(switch,query=True,worldSpace=True,rotation=True)
-                            cmds.xform(cnt,rotation=(rot[0],rot[1],rot[2]),worldSpace=True)
+                    cmds.setAttr(transformNode+'.FKIK',1)
+            
+            #finding ik cnts
+            filterData={'system':'ik'}
+            ikcnts=meta.Filter(cnts, filterData)
+            
+            #transforming ik cnts to their switch node
+            for cnt in meta.Sort(ikcnts, 'index'):
+                data=meta.GetData(cnt)
+                
+                switch=data['switch']
+                transformNode=meta.GetTransform(cnt)
+                
+                ut.Snap(switch, transformNode)
     else:
-        raise RuntimeError, 'Nothing is selected!'
+        cmds.warning('Nothing is selected!')
     
     cmds.undoInfo(closeChunk=True)
 

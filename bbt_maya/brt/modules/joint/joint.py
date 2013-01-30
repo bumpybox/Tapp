@@ -4,12 +4,10 @@ from bbt_maya import generic
 from bbt_maya.brt.modules import utils
 
 class Joint():
-    ''' Class for all joint related functions. '''
+    ''' Class for all joint module related functions. '''
     
     def Create(self):
-        pass
-    
-    def Import(self):
+        ''' Create or Imports the template module to rig '''
         pass
     
     def Attach(self,sourceModule,targetModule):

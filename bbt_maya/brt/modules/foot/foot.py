@@ -5,12 +5,10 @@ from bbt_maya.brt.modules import utils
 from bbt_maya.python import ZvParentMaster as zv
 
 class Foot():
-    ''' Class for all foot related functions. '''
+    ''' Class for all foot module related functions. '''
     
     def Create(self):
-        pass
-    
-    def Import(self):
+        ''' Create or Imports the template module to rig '''
         pass
     
     def Attach(self,sourceModule,targetModule):

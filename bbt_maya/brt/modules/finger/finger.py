@@ -7,7 +7,7 @@ from bbt_maya import generic
 from bbt_maya.brt.modules import utils
 
 class Finger():
-    ''' Class for all finger related functions. '''
+    ''' Class for all finger module related functions. '''
     
     def Create(self,jointAmount):
         ''' Creates the finger module. '''

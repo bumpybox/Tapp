@@ -6,12 +6,10 @@ from bbt_maya.brt.modules import utils
 from bbt_maya.python import ZvParentMaster as zv
 
 class Limb():
-    ''' Class for all limb related functions. '''
+    ''' Class for all limb module related functions. '''
     
     def Create(self):
-        pass
-    
-    def Import(self):
+        ''' Create or Imports the template module to rig '''
         pass
     
     def Attach(self,sourceModule,targetModule):
