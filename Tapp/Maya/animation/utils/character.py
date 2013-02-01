@@ -1,15 +1,15 @@
 import maya.cmds as cmds
 
-from bbt_maya import generic
-from bbt_maya.brt.modules import utils
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 def fkSwitch():
     #undo enable
     cmds.undoInfo(openChunk=True)
     
     #class variables
-    meta=generic.Meta()
-    ut=utils.Transform()
+    meta=mum.Meta()
+    ut=mruu.Transform()
     
     #error checking for selection count
     nodeSelection=cmds.ls(selection=True)
@@ -51,8 +51,8 @@ def ikSwitch():
     cmds.undoInfo(openChunk=True)
     
     #class variables
-    meta=generic.Meta()
-    ut=utils.Transform()
+    meta=mum.Meta()
+    ut=mruu.Transform()
     
     #error checking for selection count
     nodeSelection=cmds.ls(selection=True)
@@ -118,33 +118,6 @@ def selectCharacter():
             cmds.select(cnt,add=True)
     
     cmds.undoInfo(closeChunk=True)
-    
-def rootFind(module):
-    if (cmds.getAttr('%s.type' % module))=='root':
-        return module
-    else:
-        return rootFind(cmds.listConnections('%s.metaParent' % module)[0])
-
-def childControls(module):
-    controls=list()
-    
-    for meta in cmds.listConnections('%s.message' % module,type='network'):
-        if (cmds.getAttr('%s.type' % meta))=='control':
-            controls+=cmds.listConnections('%s.message' % meta,type='transform')
-        if (cmds.getAttr('%s.type' % meta))=='module':
-            controls+=childControls(meta)
-    
-    return controls
-
-def childModules(module):
-    modules=list()
-    
-    for meta in cmds.listConnections('%s.message' % module,type='network'):
-        if (cmds.getAttr('%s.type' % meta))=='module':
-            modules.append(meta)
-            modules+=childModules(meta)
-    
-    return modules
 
 def keyLimb():
     #undo enable

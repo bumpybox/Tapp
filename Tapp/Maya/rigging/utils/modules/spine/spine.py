@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from Tapp.Maya import utils as mu
-from Tapp.Maya.rigging.utils import utils as mru
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 class Spine():
     ''' Class for all spine module related functions. '''
@@ -17,13 +17,13 @@ class Spine():
         pass
     
     def Rig(self,module):
-        ''' Rigs the provided module. '''
+        ''' Rigs the provided spine module. '''
         
         #class variables
-        meta=mu.meta.Meta()
-        ut=mru.Transform()
-        ucs=mru.ControlShape()
-        um=mru.Math()
+        meta=mum.Meta()
+        ut=mruu.Transform()
+        ucs=mruu.ControlShape()
+        um=mruu.Math()
         
         #collect all components
         controls=meta.DownStream(module,'control')
@@ -360,6 +360,9 @@ class Spine():
         meta.SetTransform(endCNT, mNode)
         
         ikcnts.append(endCNT)
+        
+        data={'switch':endJNT}
+        meta.ModifyData(fkcnts[-1], data)
         
         #setup mid control
         cmds.delete(cmds.parentConstraint(startJNT,endJNT,midGRP))

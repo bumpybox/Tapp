@@ -1,9 +1,9 @@
 import maya.cmds as cmds
 import maya.mel as mel
 
-from Tapp.Maya import utils as mu
-from Tapp.Maya.rigging.utils import utils as mru
-from Tapp.Maya.utils import ZvParentMaster as zv
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.utils.ZvParentMaster as muz
 
 class Limb():
     ''' Class for all limb module related functions. '''
@@ -22,10 +22,10 @@ class Limb():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=mu.meta.Meta()
-        ut=mru.Transform()
-        ucs=mru.ControlShape()
-        um=mru.Math()
+        meta=mum.Meta()
+        ut=mruu.Transform()
+        ucs=mruu.ControlShape()
+        um=mruu.Math()
         tj=TwistJoints()
         
         #collect all components
@@ -355,7 +355,7 @@ class Limb():
               extraCNT]
         
         #setup polevectorCNT
-        data={'system':'ik','switch':midFk}
+        data={'system':'ik','switch':midFk,'index':2}
         mNode=meta.SetData(('meta_'+polevectorCNT),'control',
                            'polevector', module,data)
         meta.SetTransform(polevectorCNT, mNode)
@@ -372,7 +372,7 @@ class Limb():
         
         cmds.container(asset,e=True,addNode=[grp,phgrp,sngrp])
         
-        curve=cmds.curve(d=1,p=[(0,0,0),(1,0,0)])
+        curve=cmds.curve(d=1,p=[(0,0,0),(0,0,0)])
         polevectorSHP=cmds.listRelatives(curve,s=True)[0]
         cmds.setAttr(polevectorSHP+'.overrideEnabled',1)
         cmds.setAttr(polevectorSHP+'.overrideDisplayType',2)
@@ -397,7 +397,7 @@ class Limb():
         polevectorSHP=cmds.rename(curve,prefix+'polevector_shp')
         
         #setup endIkCNT
-        data={'system':'ik','switch':endFk}
+        data={'system':'ik','switch':endFk,'index':1}
         mNode=meta.SetData(('meta_'+endIkCNT),'control','end',
                            module,data)
         meta.SetTransform(endIkCNT, mNode)
@@ -411,12 +411,12 @@ class Limb():
         ut.Snap(endFk,grp)
         
         cmds.select([stretch02REF,endIkCNT],r=True)
-        zv.attach()
+        muz.attach()
         
         cmds.container(asset,e=True,addNode=[grp,phgrp,sngrp])
         
         #setup startFkCNT
-        data={'system':'fk','switch':startIk}
+        data={'system':'fk','switch':startIk,'index':1}
         mNode=meta.SetData(('meta_'+startFkCNT),'control','start',
                            module,data)
         meta.SetTransform(startFkCNT, mNode)
@@ -431,7 +431,7 @@ class Limb():
         cmds.container(asset,e=True,addNode=grp)
         
         #setup midFkCNT
-        data={'system':'fk','switch':midIk}
+        data={'system':'fk','switch':midIk,'index':2}
         mNode=meta.SetData(('meta_'+midFkCNT),'control','mid',
                            module,data)
         meta.SetTransform(midFkCNT,mNode)
@@ -446,7 +446,7 @@ class Limb():
         cmds.container(asset,e=True,addNode=grp)
         
         #setup endFkCNT
-        data={'system':'fk','switch':endIkCNT}
+        data={'system':'fk','switch':endIkCNT,'index':3}
         mNode=meta.SetData(('meta_'+endFkCNT),'control','end',
                            module,data)
         meta.SetTransform(endFkCNT,mNode)
@@ -634,7 +634,7 @@ class TwistJoints():
         ''' Creates twist joints from start to end. '''
         
         #class variables
-        ut=mru.Transform()
+        ut=mruu.Transform()
         
         #clear selection
         cmds.select(cl=True)

@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from Tapp.Maya import utils as mu
-from Tapp.Maya.rigging.utils import utils as mru
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 class Joint():
     ''' Class for all joint module related functions. '''
@@ -20,8 +20,8 @@ class Joint():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=mu.meta.Meta()
-        ucs=mru.ControlShape()
+        meta=mum.Meta()
+        ucs=mruu.ControlShape()
         
         #collect all components
         controls=meta.DownStream(module,'control')

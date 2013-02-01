@@ -10,12 +10,11 @@ __author__ = 'Paolo Dominici (paolodominici@gmail.com)'
 __version__ = '1.3.0'
 __date__ = '2011/07/16'
 __copyright__ = 'Copyright (c) 2006-2011 Paolo Dominici'
-__name__='bbt_maya.python.ZvParentMaster'
 
 from maya import cmds, mel
 import os, sys, math
 
-import bbt_maya
+import Tapp.Maya.utils as mu
 
 ############################
 ## CUSTOMIZABLE CONSTANTS ##
@@ -824,21 +823,21 @@ def ZvParentMaster(posX=56, posY=180, width=_defaultSize[0], height=_defaultSize
 	cmds.columnLayout(adj=True, rs=0, bgc=(0.3, 0.3, 0.3))
 	
 	#### PULSANTI ####
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_attach.xpm', c=lambda:bbt_maya.python.ZvParentMaster.attach(), ann='Attach objects')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_attach.xpm', c=lambda:mu.ZvParentMaster.attach(), ann='Attach objects')
 	cmds.popupMenu(mm=True)
-	cmds.menuItem(l='Create parent groups - translation', c=lambda:bbt_maya.python.ZvParentMaster.createParentGroups(True, False), rp='NE')
-	cmds.menuItem(l='Create parent groups - available attrs', c=lambda:bbt_maya.python.ZvParentMaster.createParentGroups(), rp='E')
-	cmds.menuItem(l='Create parent groups - rotation', c=lambda:bbt_maya.python.ZvParentMaster.createParentGroups(False, True), rp='SE')
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_detach.xpm', c=lambda:bbt_maya.python.ZvParentMaster.detach(), ann='Detach objects')
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_destroy.xpm', c=lambda:bbt_maya.python.ZvParentMaster.destroy(), ann='Destroy constraints')
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_fixsnap.xpm', c=lambda:bbt_maya.python.ZvParentMaster.fixSnap(), ann='Fix snap')
+	cmds.menuItem(l='Create parent groups - translation', c=lambda:mu.ZvParentMaster.createParentGroups(True, False), rp='NE')
+	cmds.menuItem(l='Create parent groups - available attrs', c=lambda:mu.ZvParentMaster.createParentGroups(), rp='E')
+	cmds.menuItem(l='Create parent groups - rotation', c=lambda:mu.ZvParentMaster.createParentGroups(False, True), rp='SE')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_detach.xpm', c=lambda:mu.ZvParentMaster.detach(), ann='Detach objects')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_destroy.xpm', c=lambda:mu.ZvParentMaster.destroy(), ann='Destroy constraints')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_fixsnap.xpm', c=lambda:mu.ZvParentMaster.fixSnap(), ann='Fix snap')
 	cmds.popupMenu(mm=True)
-	cmds.menuItem(l='Fix snaps in the active range', c=lambda:bbt_maya.python.ZvParentMaster.fixSnap(True), rp='E')
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_select.xpm', c=lambda:bbt_maya.python.ZvParentMaster.selectConstraintNodes(), ann='Select constraints and snap groups')
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_timeline.xpm', c=lambda:bbt_maya.python.ZvParentMaster.timeline(), ann='Constraint timeline')
+	cmds.menuItem(l='Fix snaps in the active range', c=lambda:mu.ZvParentMaster.fixSnap(True), rp='E')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_select.xpm', c=lambda:mu.ZvParentMaster.selectConstraintNodes(), ann='Select constraints and snap groups')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_timeline.xpm', c=lambda:mu.ZvParentMaster.timeline(), ann='Constraint timeline')
 	cmds.popupMenu(mm=True)
-	cmds.menuItem(l='<- Prev', c=lambda:bbt_maya.python.ZvParentMaster.navigate(-1), rp='W')
-	cmds.menuItem(l='Next ->', c=lambda:bbt_maya.python.ZvParentMaster.navigate(1), rp='E')
+	cmds.menuItem(l='<- Prev', c=lambda:mu.ZvParentMaster.navigate(-1), rp='W')
+	cmds.menuItem(l='Next ->', c=lambda:mu.ZvParentMaster.navigate(1), rp='E')
 	cmds.setParent('..')
 	
 	cmds.showWindow(winName)

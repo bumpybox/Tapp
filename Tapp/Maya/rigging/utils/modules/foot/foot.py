@@ -1,8 +1,8 @@
 import maya.cmds as cmds
 
-from Tapp.Maya import utils as mu
-from Tapp.Maya.rigging.utils import utils as mru
-from Tapp.Maya.utils import ZvParentMaster as zv
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.utils.ZvParentMaster as muz
 
 class Foot():
     ''' Class for all foot module related functions. '''
@@ -21,10 +21,10 @@ class Foot():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=mu.meta.Meta()
-        ut=mru.Transform()
-        ucs=mru.ControlShape()
-        um=mru.Math()
+        meta=mum.Meta()
+        ut=mruu.Transform()
+        ucs=mruu.ControlShape()
+        um=mruu.Math()
         
         #collect all components
         controls=meta.DownStream(module,'control')
@@ -487,10 +487,10 @@ class Foot():
             ikPlug=min(plugs, key=plugs.get)
             
             cmds.select(ikPlug,r=True)
-            zv.detach()
+            muz.detach()
             
             cmds.select(ikPlug,ballCNT,r=True)
-            zv.attach()
+            muz.attach()
             
             #setup controls
             mNode=meta.UpStream(ikPlug, 'module')
@@ -506,7 +506,7 @@ class Foot():
                     tn=meta.GetTransform(cnt)
                     
                     cmds.select(rbankParent,tn,r=True)
-                    zv.attach()
+                    muz.attach()
                 
                 #setup extra control
                 if data['component']=='extra':
@@ -522,7 +522,7 @@ class Foot():
                     tn=meta.GetTransform(socket)
                     
                     cmds.select(plug,tn,r=True)
-                    zv.attach()
+                    muz.attach()
             
             #parenting meta nodes
             cmds.connectAttr(mNode+'.message',module+'.metaParent')

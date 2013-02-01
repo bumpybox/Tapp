@@ -52,9 +52,49 @@ class Meta():
         #return
         return sortedObjs
     
-    def SetData(self,name,nodeType,component,metaParent,*args):
+    def ModifyData(self,node,data):
+        ''' Modify data on existing nodes.
+            data is a dictionary.
+            node is a transform or meta node.
+        '''
+        
+        if cmds.nodeType(node)=='transform':
+            
+            #getting meta node
+            mNode=self.GetMetaNode(node)
+            
+            self.__modifyData__(mNode, data)
+        
+        if cmds.nodeType(node)=='network':
+            
+            self.__modifyData__(node, data)
+    
+    def __modifyData__(self,mNode,data):
+        ''' Support function for ModifyData. '''
+        
+        mData=self.GetData(mNode)
+        
+        for attr in data:
+            
+            #checking existance of attribute
+            if attr in mData.keys():
+                
+                if attr=='metaParent' or attr=='switch':
+                    cmds.connectAttr(data[attr]+'.message',
+                                     mNode+'.'+attr,
+                                     force=True)
+                else:
+                    cmds.setAttr(mNode+'.'+attr,str(data[attr]),
+                                 type='string')
+            else:
+                cmds.addAttr(mNode,longName=attr,
+                             dataType='string')
+                cmds.setAttr('%s.%s' % (mNode,attr),data[attr],
+                             type='string')
+    
+    def SetData(self,name,nodeType,component,metaParent,data):
         ''' Create a network node with the requested data 
-            args should be passed in as a dictionary
+            data should be passed in as a dictionary
         '''
         
         #create network node
@@ -79,17 +119,17 @@ class Meta():
                              '%s.metaParent' % node)
         
         #add extra data
-        if args[0]!=None:
-            for arg in args[0]:
-                if arg=='switch':
-                    cmds.addAttr(node,longName=arg,
+        if data!=None:
+            for attr in data:
+                if attr=='switch':
+                    cmds.addAttr(node,longName=attr,
                                  attributeType='message')
-                    cmds.connectAttr('%s.message' % args[0][arg],
+                    cmds.connectAttr('%s.message' % data[attr],
                                      '%s.switch' % node)
                 else:
-                    cmds.addAttr(node,longName=arg,
+                    cmds.addAttr(node,longName=attr,
                                  dataType='string')
-                    cmds.setAttr('%s.%s' % (node,arg),args[0][arg],
+                    cmds.setAttr('%s.%s' % (node,attr),data[attr],
                                  type='string')
         
         return node
@@ -115,7 +155,13 @@ class Meta():
         
         return cmds.listConnections('%s.message' % node,
                                     type='transform')[0]
-
+    
+    def GetMetaNode(self,node):
+        ''' Returns the meta mode attached to a transform node. '''
+        
+        return cmds.listConnections('%s.metaParent' % node,
+                                    type='network')[0]
+    
     def GetData(self,node):
         ''' Returns the meta data as a dictionary for
         the requested node. 
