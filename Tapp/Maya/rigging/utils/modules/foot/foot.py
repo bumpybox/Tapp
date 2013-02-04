@@ -277,7 +277,7 @@ class Foot():
         cmds.container(asset,e=True,addNode=[grp])
         
         #setup heelCNT
-        data={'system':'ik','switch':zeroCNT}
+        data={'system':'ik','switch':zeroCNT,'index':8}
         mNode=meta.SetData(('meta_'+heelCNT),'control','heel',
                            module,data)
         meta.SetTransform(heelCNT, mNode)
@@ -295,8 +295,13 @@ class Foot():
         
         cmds.container(asset,e=True,addNode=[heelGRP,grp])
         
+        #setup zeroCNT
+        ut.Snap(heelCNT, zeroCNT)
+        
+        cmds.parent(zeroCNT,plug)
+        
         #setup toetipCNT
-        data={'system':'ik','switch':zeroCNT}
+        data={'system':'ik','switch':zeroCNT,'index':7}
         mNode=meta.SetData(('meta_'+toetipCNT),'control','toetip',
                            module,data)
         meta.SetTransform(toetipCNT, mNode)
@@ -315,7 +320,7 @@ class Foot():
         cmds.container(asset,e=True,addNode=[toetipGRP,grp])
         
         #setup ballCNT
-        data={'system':'ik','switch':zeroCNT}
+        data={'system':'ik','switch':zeroCNT,'index':6}
         mNode=meta.SetData(('meta_'+ballCNT),'control','ball',
                            module,data)
         meta.SetTransform(ballCNT, mNode)
@@ -333,7 +338,7 @@ class Foot():
         cmds.container(asset,e=True,addNode=[ballGRP,grp])
         
         #setup toeIkCNT
-        data={'system':'ik','switch':toeFK}
+        data={'system':'ik','switch':toeFK,'index':5}
         mNode=meta.SetData(('meta_'+toeIkCNT),'control','toe',
                            module,data)
         meta.SetTransform(toeIkCNT, mNode)
@@ -348,12 +353,16 @@ class Foot():
         cmds.container(asset,e=True,addNode=[toeIkGRP,grp])
         
         #setup footCNT
-        data={'system':'ik','switch':zeroCNT}
+        footCNTzero=cmds.group(empty=True,n=footCNT+'_zero')
+        
+        ut.Snap(footCNT,footCNTzero)
+        
+        data={'system':'ik','switch':footCNTzero,'index':4}
         mNode=meta.SetData(('meta_'+footCNT),'control','foot',
                            module,data)
         meta.SetTransform(footCNT, mNode)
         
-        grp=cmds.group(footCNT,n=(footCNT+'_grp'))
+        grp=cmds.group(footCNT,footCNTzero,n=(footCNT+'_grp'))
         cmds.parent(grp,rbankParent)
         
         cmds.xform(grp,ws=True,rotation=heelRot)
@@ -363,10 +372,10 @@ class Foot():
         cmds.rotate(-90,0,0,grp,r=True,os=True)
         cmds.rotate(0,0,-90,grp,r=True,os=True)
         
-        cmds.container(asset,e=True,addNode=[grp])
+        cmds.container(asset,e=True,addNode=[grp,footCNTzero])
         
         #setup toeFkCNT
-        data={'system':'fk','switch':toeIK}
+        data={'system':'fk','switch':toeIK,'index':4}
         mNode=meta.SetData(('meta_'+toeFkCNT),'control','toe',
                            module,data)
         meta.SetTransform(toeFkCNT, mNode)
@@ -492,6 +501,16 @@ class Foot():
             cmds.select(ikPlug,ballCNT,r=True)
             muz.attach()
             
+            #create fk foot align
+            footFKalign=cmds.group(empty=True,
+                                   n=footIK+'_align')
+            
+            cmds.container(asset,e=True,addNode=[footFKalign])
+            
+            ut.Snap(footIK,footFKalign)
+            
+            cmds.parent(footFKalign,footIK)
+            
             #setup controls
             mNode=meta.UpStream(ikPlug, 'module')
             cnts=meta.DownStream(mNode,'control')
@@ -513,6 +532,16 @@ class Foot():
                     tn=meta.GetTransform(cnt)
                     
                     cmds.connectAttr(tn+'.FKIK',asset+'.FKIK')
+                
+                #setup end fk control
+                if 'system' in data and data['system']=='fk' \
+                and data['component']=='end':
+                    data={'switch':footFKalign}
+                    meta.ModifyData(cnt, data)
+                    
+                    tn=meta.GetTransform(cnt)
+                    
+                    ut.Snap(tn,footFKalign,point=False)
             
             #attaching plug
             for socket in sockets:
@@ -526,13 +555,28 @@ class Foot():
             
             #parenting meta nodes
             cmds.connectAttr(mNode+'.message',module+'.metaParent')
+            
+            cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
+            
+            for cnt in cnts:
+                metaNode=meta.GetMetaNode(cnt)
+                
+                cmds.connectAttr(mNode+'.message',metaNode+'.metaParent',
+                                 force=True)
         else:
             pointCon=cmds.pointConstraint(footIK,footFK,footJNT)[0]
             
             cmds.connectAttr(fkikREV+'.outputX',
                              pointCon+'.'+footFK+'W1')
-            cmds.connectAttr(footCNT+'.FKIK',
+            cmds.connectAttr(asset+'.FKIK',
                              pointCon+'.'+footIK+'W0')
+        
+        #clean channel box
+        cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
+        attrs=['tx','ty','tz','sx','sy','sz','v']
+        
+        for cnt in cnts:
+            ut.ChannelboxClean(cnt, attrs)
 
 templateModule='meta_foot'
 

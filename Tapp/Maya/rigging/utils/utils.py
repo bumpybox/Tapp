@@ -261,7 +261,7 @@ class Transform():
     ''' Class for all transform related functions. '''
     
     def Snap(self,source,target,point=True,orient=True):
-        ''' Snaps source object to target object.
+        ''' Snaps target object to source object.
         If point is True, translation will snap.
         If orient is True, orientation will snap.
         '''
