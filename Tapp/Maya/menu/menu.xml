@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<menu name="Tapp">
-	<node type="subMenu" name="Tools">
-		<node type="command" name="Repository Change" comment="Launch Repository Change" cmd="import Tapp.Maya.utils.repository as mur;repo=mur.Repository();repo.Change()" mode="python"></node>
-	</node>
-</menu>
