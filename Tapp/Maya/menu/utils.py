@@ -11,15 +11,15 @@ import maya.cmds as cmds
 
 def loadMenu():
     #    get user menu from menu.xml
-    menuXml_path    = 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Tapp/Maya/menu/menu.xml'
+    menuXml_path    = os.path.dirname(__file__)+'/menu.xml'
     
     #    get gMainWindow from mel command
     gMainWindow = mel.eval('$tmpVar=$gMainWindow')
     
     if os.path.exists(menuXml_path) :        
         menuLabel   = ''
-        menuName    = 'userMenu'
-        print ('Build Menu : ' + menuName)
+        menuName    = 'tappMenu'
+        #print ('Build Menu : ' + menuName)
 
         #    open xml document
         xmldoc                = xml.dom.minidom.parse(menuXml_path)
@@ -44,17 +44,12 @@ def loadMenu():
             
             #    build each menu
             for child in item.childNodes:
-                    if child.nodeType == 1 :
-                        #loadMenu_recursive(child)                     
-                        nodename    = child.nodeName
-                        nodetype    = child.attributes["type"].value
-                        
+                    if child.nodeType == 1 :                       
                         loadMenu_recursive(child, menuName)
                         
 
 def loadMenu_recursive(xmlDoc, menuName):
     if xmlDoc.nodeType == 1 :
-        nodename    = xmlDoc.nodeName
         nodetype    = xmlDoc.attributes["type"].value
         
         if nodetype == 'subMenu' :

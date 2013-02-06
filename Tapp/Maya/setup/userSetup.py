@@ -31,7 +31,7 @@ def tappInstall_browse(*args):
     else:
         cmds.deleteUI('tappInstall_UI')
         
-        #create the text file that contains the bumpybox tools directory path
+        #create the text file that contains the tapp directory path
         path=cmds.internalVar(upd=True)+'Tapp.config'
         
         f=open(path,'w')

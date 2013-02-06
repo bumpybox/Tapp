@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from bbt_maya import generic
-from bbt_maya.brt.modules import utils
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 class Joint():
     ''' Class for all joint module related functions. '''
@@ -20,8 +20,8 @@ class Joint():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=generic.Meta()
-        ucs=utils.ControlShape()
+        meta=mum.Meta()
+        ucs=mruu.ControlShape()
         
         #collect all components
         controls=meta.DownStream(module,'control')

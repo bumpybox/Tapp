@@ -241,19 +241,24 @@ class Foot():
         
         #create right bank
         rbankGRP=cmds.group(empty=True,n=prefix+'r_bank_grp')
+        rbankgrpGRP=cmds.group(rbankGRP,n=rbankGRP+'_grp')
         
-        cmds.container(asset,e=True,addNode=[rbankGRP])
+        cmds.container(asset,e=True,addNode=[rbankGRP,rbankgrpGRP])
         
         #setup right bank
-        rbankParent=cmds.group(rbankGRP,n=rbankGRP+'_grp')
+        rbankParent=cmds.group(empty=True,n=rbankGRP+'_parent')
+        ut.Snap(plug,rbankParent)
+        
+        cmds.parent(rbankgrpGRP,rbankParent)
+        
         phgrp=cmds.group(rbankParent,n=(rbankParent+'_PH'))
         sngrp=cmds.group(rbankParent,n=(rbankParent+'_SN'))
         
-        cmds.xform(rbankParent,ws=True,translation=rbankTrans)
-        cmds.xform(rbankParent,ws=True,rotation=rbankRot)
+        cmds.xform(rbankgrpGRP,ws=True,translation=rbankTrans)
+        cmds.xform(rbankgrpGRP,ws=True,rotation=rbankRot)
         
-        cmds.rotate(-90,0,0,rbankParent,r=True,os=True)
-        cmds.rotate(0,0,-90,rbankParent,r=True,os=True)
+        cmds.rotate(-90,0,0,rbankgrpGRP,r=True,os=True)
+        cmds.rotate(0,0,-90,rbankgrpGRP,r=True,os=True)
         
         cmds.container(asset,e=True,addNode=[rbankParent,phgrp,
                                              sngrp])
@@ -526,6 +531,8 @@ class Foot():
                     
                     cmds.select(rbankParent,tn,r=True)
                     muz.attach()
+                    
+                    cmds.scaleConstraint(tn,rbankParent)
                 
                 #setup extra control
                 if data['component']=='extra':
@@ -552,6 +559,8 @@ class Foot():
                     
                     cmds.select(plug,tn,r=True)
                     muz.attach()
+                    
+                    cmds.scaleConstraint(tn,plug)
             
             #parenting meta nodes
             cmds.connectAttr(mNode+'.message',module+'.metaParent')

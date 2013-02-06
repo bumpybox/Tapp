@@ -3,8 +3,8 @@ import collections
 import maya.cmds as cmds
 import maya.mel as mel
 
-from bbt_maya import generic
-from bbt_maya.brt.modules import utils
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 class Finger():
     ''' Class for all finger module related functions. '''
@@ -13,8 +13,8 @@ class Finger():
         ''' Creates the finger module. '''
         
         #class variables
-        meta=generic.Meta()
-        ucs=utils.ControlShape()
+        meta=mum.Meta()
+        ucs=mruu.ControlShape()
         
         #creating asset
         asset=cmds.container(n='finger')
@@ -131,9 +131,9 @@ class Finger():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=generic.Meta()
-        ut=utils.Transform()
-        ucs=utils.ControlShape()
+        meta=mum.Meta()
+        ut=mruu.Transform()
+        ucs=mruu.ControlShape()
         
         #collect all components
         controls=meta.DownStream(module,'control')

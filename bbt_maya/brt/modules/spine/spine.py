@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-from bbt_maya import generic
-from bbt_maya.brt.modules import utils
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.utils.utils as mruu
 
 class Spine():
     ''' Class for all spine module related functions. '''
@@ -20,10 +20,10 @@ class Spine():
         ''' Rigs the provided module. '''
         
         #class variables
-        meta=generic.Meta()
-        ut=utils.Transform()
-        ucs=utils.ControlShape()
-        um=utils.Math()
+        meta=mum.Meta()
+        ut=mruu.Transform()
+        ucs=mruu.ControlShape()
+        um=mruu.Math()
         
         #collect all components
         controls=meta.DownStream(module,'control')

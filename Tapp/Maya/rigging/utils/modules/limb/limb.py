@@ -181,6 +181,8 @@ class Limb():
         cmds.rotate(rot[0],rot[1],rot[2],startJoint,
                     worldSpace=True,pcp=True)
         
+        cmds.parent(startJoint,plug)
+        
         cmds.makeIdentity(startJoint,apply=True,t=1,r=1,s=1,n=0)
         
         cmds.delete(grp)
@@ -216,7 +218,6 @@ class Limb():
         endIk=cmds.duplicate(endJoint,st=True,po=True,
                              n=prefix+'ik03')[0]
         
-        cmds.parent(startIk,plug)
         cmds.parent(midIk,startIk)
         cmds.parent(endIk,midIk)
         
@@ -298,7 +299,10 @@ class Limb():
         sngrp=cmds.group(stretch02REF,n=(stretch02REF+'_SN'))
         
         ut.Snap(endJoint,phgrp)
-        cmds.parentConstraint(stretch02REF,stretch02)
+        ut.Snap(endJoint,stretch02)
+        cmds.pointConstraint(stretch02REF,stretch02)
+        
+        cmds.scaleConstraint(plug,phgrp)
         
         cmds.container(asset,e=True,
                        addNode=[stretch01,stretch02,stretchDIST,
