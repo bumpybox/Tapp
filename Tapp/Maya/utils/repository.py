@@ -34,3 +34,13 @@ class Repository():
             sys.path.append(repoPath)
             
             cmds.evalDeferred('import Tapp')
+    
+    def Read(self):
+        cmds.confirmDialog(title='Tapp Repository Path',message=self.__read__(),button='OK')
+    
+    def __read__(self):
+        path=cmds.internalVar(upd=True)+'Tapp.config'
+        
+        f=open(path,'r')
+        
+        return f.read()

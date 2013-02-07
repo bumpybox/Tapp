@@ -1,27 +1,33 @@
 import os
+import sys
 from PyQt4 import QtCore, QtGui
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omu
 import sip
 
+import modules
+
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
     ptr = omu.MQtUtil.mainWindow()
     return sip.wrapinstance(long(ptr), QtCore.QObject)
     
-class brtDialog(QtGui.QDialog):
+class tmrDialog(QtGui.QDialog):
     
     def __init__(self, parent=maya_main_window()):
         QtGui.QDialog.__init__(self, parent)
         
-        self.setObjectName('brtDialog')
-        self.setWindowTitle('Bumpybox Rigging Tools')
+        self.setObjectName('tmrDialog')
+        self.setWindowTitle('Tapp Maya Rigging')
         
         self.createLayout()
         self.createConnections()
         
         self.setFixedSize(287,371)
+        
+        self.create_pathLineEdit.setText(os.path.dirname(__file__).replace('\\','/')+'/modules')
+        self.refreshList()
     
     def createLayout(self):
         #///create create tab///
@@ -32,8 +38,8 @@ class brtDialog(QtGui.QDialog):
         create_tab.setLayout(tab_layout)
         
         #list widget
-        self.create_templateList=QtGui.QListWidget()
-        tab_layout.addWidget(self.create_templateList,0,0,1,2)
+        self.create_moduleList=QtGui.QListWidget()
+        tab_layout.addWidget(self.create_moduleList,0,0,1,2)
         
         #path browser       
         self.create_pathButton=QtGui.QPushButton('Path:')
@@ -183,31 +189,65 @@ class brtDialog(QtGui.QDialog):
         #///character connections///
         self.connect(self.create_pathButton, QtCore.SIGNAL('clicked()'),self.browsePath)
         self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
+        self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
     
     def browsePath(self):
-        templatePath=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
-        self.create_pathLineEdit.setText(templatePath)
+        path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
+        self.create_pathLineEdit.setText(path)
         self.refreshList()
     
     def refreshList(self):
-        directory=str(self.create_pathLineEdit.text())
+        path=str(self.create_pathLineEdit.text())
         
-        templates = []
-        for files in os.walk(directory)[2]:
-            for name in files:
-                if name.endswith('.template'):
-                    templates.append(name)
+        modules = []
+        for f in os.listdir(path):
+            if f.endswith('.py') and f!='__init__.py':
+                    modules.append(f)
         
-        self.create_templateList.clear()
-        for item in templates:
-            self.create_templateList.addItem(item)
+        self.create_moduleList.clear()
+        for module in modules:
+            self.create_moduleList.addItem(module)
+    
+    def CreateImport(self):
+        path=str(self.create_pathLineEdit.text())
+        modulePath=str(self.create_moduleList.selectedItems()[0].text())
+        
+        self.__createImport__(path+'/'+modulePath)
+        
+        modules.Create()
+    
+    def __createImport__(self,modulePath):
+        f = os.path.basename( modulePath )
+        d = os.path.dirname( modulePath )
+     
+        toks = f.split( '.' )
+        modname = toks[0]
+     
+        # Check if dirrectory is really a directory
+        if( os.path.exists( d ) ):
+     
+        # Check if the file directory already exists in the sys.path array
+            paths = sys.path
+            pathfound = 0
+            for path in paths:
+                if(d == path):
+                    pathfound = 1
+     
+        # If the dirrectory is not part of sys.path add it
+            if not pathfound:
+                sys.path.append( d )
+     
+        # exec works like MEL's eval but you need to add in globals() 
+        # at the end to make sure the file is imported into the global 
+        # namespace else it will only be in the scope of this function
+        exec ('import ' + modname+' as modules') in globals()
 
 def show():
     #closing previous dialog
     for widget in QtGui.qApp.allWidgets():
-        if widget.objectName()=='brtDialog':
+        if widget.objectName()=='tmrDialog':
             widget.close()
     
     #showing new dialog
-    win=brtDialog()
+    win=tmrDialog()
     win.show()
