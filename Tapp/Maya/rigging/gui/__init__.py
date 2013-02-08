@@ -6,7 +6,8 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as omu
 import sip
 
-import modules
+import Tapp.Maya.rigging.modules as modules
+import create
 
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
@@ -26,7 +27,7 @@ class tmrDialog(QtGui.QDialog):
         
         self.setFixedSize(287,371)
         
-        self.create_pathLineEdit.setText(os.path.dirname(__file__).replace('\\','/')+'/modules')
+        self.create_pathLineEdit.setText(os.path.dirname(modules.__file__))
         self.refreshList()
     
     def createLayout(self):
@@ -212,35 +213,7 @@ class tmrDialog(QtGui.QDialog):
         path=str(self.create_pathLineEdit.text())
         modulePath=str(self.create_moduleList.selectedItems()[0].text())
         
-        self.__createImport__(path+'/'+modulePath)
-        
-        modules.Create()
-    
-    def __createImport__(self,modulePath):
-        f = os.path.basename( modulePath )
-        d = os.path.dirname( modulePath )
-     
-        toks = f.split( '.' )
-        modname = toks[0]
-     
-        # Check if dirrectory is really a directory
-        if( os.path.exists( d ) ):
-     
-        # Check if the file directory already exists in the sys.path array
-            paths = sys.path
-            pathfound = 0
-            for path in paths:
-                if(d == path):
-                    pathfound = 1
-     
-        # If the dirrectory is not part of sys.path add it
-            if not pathfound:
-                sys.path.append( d )
-     
-        # exec works like MEL's eval but you need to add in globals() 
-        # at the end to make sure the file is imported into the global 
-        # namespace else it will only be in the scope of this function
-        exec ('import ' + modname+' as modules') in globals()
+        create.Import(path+'/'+modulePath)
 
 def show():
     #closing previous dialog

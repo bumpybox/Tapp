@@ -1,3 +1,5 @@
+import os
+
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -5,17 +7,25 @@ import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils.utils as mruu
 import Tapp.Maya.utils.ZvParentMaster as muz
 
-def Create(self):
-    ''' Create or Imports the template module to rig '''
+def Create():
+    ''' Imports the template module to rig.
+        returns imported nodes.
+    '''
+    
+    path=os.path.realpath(__file__)
+    
+    filePath=path.replace('\\','/').split('.')[0]+'.ma'
+    
+    return cmds.file(filePath,i=True,defaultNamespace=True,
+                     returnNewNodes=True)
+
+def Attach(sourceModule,targetModule):
     pass
 
-def Attach(self,sourceModule,targetModule):
+def Detach(module):
     pass
 
-def Detach(self,module):
-    pass
-
-def Rig(self,module):
+def Rig(module):
     ''' Rigs the provided module. '''
     
     #class variables
