@@ -19,7 +19,7 @@ cmds.menuItem(label='Tapp Maya Rigging',parent=subMenu,command=cmd)
 #repository menu
 subMenu=cmds.menuItem(label='repository',subMenu=True,parent=tappMenu)
 
-cmd='import Tapp.Maya.utils.repository as mur;repo=mur.Repository();repo.Change()'
+cmd='import Tapp.Maya.utils.repository as mur;mur.Change()'
 cmds.menuItem(label='Repository Change',parent=subMenu,command=cmd)
-cmd='import Tapp.Maya.utils.repository as mur;repo=mur.Repository();repo.Read()'
+cmd='import Tapp.Maya.utils.repository as mur;mur.Read()'
 cmds.menuItem(label='Repository Read',parent=subMenu,command=cmd)

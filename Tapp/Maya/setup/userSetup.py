@@ -57,8 +57,10 @@ def tapp():
             if not path in sys.path:
                 sys.path.append(path)
         
-        #run setup
-        cmds.evalDeferred('import Tapp')
+            #run setup
+            cmds.evalDeferred('import Tapp')
+        else:
+            tappInstall_UI()
     else:
         tappInstall_UI()
 
