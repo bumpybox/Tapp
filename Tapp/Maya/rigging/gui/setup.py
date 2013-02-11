@@ -33,35 +33,5 @@ def __importModule__(modulePath):
     # namespace else it will only be in the scope of this function
     exec ('import ' + modname+' as modules') in globals()
 
-def Create(module):
-    
-    modulesPath=mrc.config['modules'].replace('\\','/')
-    
-    __importModule__(modulesPath+'/'+module+'.py')
-    
-    modules.Create()
-
-def Rig():
-    ''' Rigs all modules in the scene. '''
-    
-    modules=[]
-    for meta in cmds.ls(type='network'):
-        data=mum.GetData(meta)
-        
-        if data['type']=='root':
-            modules.append(meta)
-    
-    for module in modules:
-        __rig__(module)
-
-def __rig__(module):
-    ''' Rigs the provided module. '''
-    
-    data=mum.GetData(module)
-    moduleName=data['component']
-    
-    modulesPath=mrc.config['modules'].replace('\\','/')
-    
-    __importModule__(modulesPath+'/'+moduleName+'.py')
-    
-    modules.Rig(module)
+def Connect():
+    pass

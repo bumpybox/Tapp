@@ -3,7 +3,7 @@ import os
 import maya.cmds as cmds
 
 import Tapp.Maya.utils.meta as mum
-import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.rigging.utils as mru
 
 def Create():
     ''' Imports the template module to rig.
@@ -26,25 +26,19 @@ def Detach(module):
 def Rig(module):
     ''' Rigs the provided spine module. '''
     
-    #class variables
-    meta=mum.Meta()
-    ut=mruu.Transform()
-    ucs=mruu.ControlShape()
-    um=mruu.Math()
-    
     #collect all components
-    controls=meta.DownStream(module,'control')
+    controls=mum.DownStream(module,'control')
     
     for control in controls:
-        if meta.GetData(control)['component']=='start':
-            start=meta.GetTransform(control)
-        if meta.GetData(control)['component']=='line':
-            line=meta.GetTransform(control)
-        if meta.GetData(control)['component']=='end':
-            end=meta.GetTransform(control)
+        if mum.GetData(control)['component']=='start':
+            start=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='line':
+            line=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='end':
+            end=mum.GetTransform(control)
     
     #getting module data
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     jointAmount=data['joints']
     hipsAttach=data['hips']
@@ -60,7 +54,7 @@ def Rig(module):
     endRot=cmds.xform(end,worldSpace=True,query=True,
                       rotation=True)
     
-    spineLength=um.Distance(start, end)
+    spineLength=mru.Distance(start, end)
     
     jntsTrans=[]
     
@@ -88,12 +82,12 @@ def Rig(module):
         side='right'
     
     #establish index
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     index=data['index']
     
     for node in cmds.ls(type='network'):
-        data=meta.GetData(node)
+        data=mum.GetData(node)
         if 'index' in data.keys() and \
         'side' in data.keys() and \
         'component' in data.keys() and \
@@ -115,7 +109,7 @@ def Rig(module):
     #create module
     data={'side':side,'index':str(index),'system':'rig'}
     
-    module=meta.SetData(('meta'+suffix),'module','spine',None,
+    module=mum.SetData(('meta'+suffix),'module','spine',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -128,10 +122,10 @@ def Rig(module):
     
     cmds.xform(phgrp,worldSpace=True,translation=startTrans)
     
-    metaParent=meta.SetData('meta_'+plug,'plug',None,module,
+    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
                             None)
     
-    meta.SetTransform(plug, metaParent)
+    mum.SetTransform(plug, metaParent)
     
     cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
@@ -181,19 +175,19 @@ def Rig(module):
             
             cmds.delete(grp)
         else:
-            ut.Snap(jnts[-2],jnt,point=False)
+            mru.Snap(jnts[-2],jnt,point=False)
         
         #create sockets
         socket=cmds.spaceLocator(name=prefix+'socket'+
                                  str(count))[0]
         
-        ut.Snap(jnt,socket)
+        mru.Snap(jnt,socket)
         cmds.parent(socket,jnt)
         
         data={'index':count}
-        metaParent=meta.SetData('meta_'+socket,'socket',None,
+        metaParent=mum.SetData('meta_'+socket,'socket',None,
                                 module,data)
-        meta.SetTransform(socket, metaParent)
+        mum.SetTransform(socket, metaParent)
         
         sockets.append(socket)
         
@@ -204,13 +198,13 @@ def Rig(module):
         fk=cmds.joint(position=(pos[0],pos[1],pos[2]),
                               name=prefix+'fk'+str(count))
         
-        ut.Snap(jnt,fk)
+        mru.Snap(jnt,fk)
         cmds.makeIdentity(fk,apply=True,t=1,r=1,s=1,n=0)
         
         cmds.container(asset,e=True,addNode=fk)
         
         #create fk controls
-        [grp,cnt]=ucs.Square(prefix+'fk'+str(count)+'_cnt',
+        [grp,cnt]=mru.Square(prefix+'fk'+str(count)+'_cnt',
                        group=True)
         
         cmds.container(asset,e=True,addNode=[grp,cnt])
@@ -223,13 +217,13 @@ def Rig(module):
         ik=cmds.joint(position=(pos[0],pos[1],pos[2]),
                               name=prefix+'ik'+str(count))
         
-        ut.Snap(jnt,ik)
+        mru.Snap(jnt,ik)
         cmds.makeIdentity(ik,apply=True,t=1,r=1,s=1,n=0)
         
         cmds.container(asset,e=True,addNode=ik)
         
         #setup fk controls
-        ut.Snap(fk,grp)
+        mru.Snap(fk,grp)
         
         cmds.parent(fk,cnt)
         
@@ -239,9 +233,9 @@ def Rig(module):
         fkjnts.append(fk)
         
         data={'system':'fk','switch':ik,'index':count}
-        mNode=meta.SetData(('meta_'+cnt),'control',
+        mNode=mum.SetData(('meta_'+cnt),'control',
                            'joint',module,data)
-        meta.SetTransform(cnt, mNode)
+        mum.SetTransform(cnt, mNode)
         
         #setup ik jnts
         if count<jointAmount+1:
@@ -256,7 +250,7 @@ def Rig(module):
         
         #create ik controls
         if count<=jointAmount and count>1:
-            [grp,cnt]=ucs.Sphere(prefix+'ik'+str(count-1)+'_cnt',
+            [grp,cnt]=mru.Sphere(prefix+'ik'+str(count-1)+'_cnt',
                            group=True)
             
             cmds.container(asset,e=True,addNode=[grp,cnt])
@@ -266,16 +260,16 @@ def Rig(module):
             ikfinecnts.append(cnt)
             
             #setup ik controls
-            ut.Snap(ik,grp)
+            mru.Snap(ik,grp)
             
             data={'system':'ik','switch':fk,'index':count+3}
-            mNode=meta.SetData(('meta_'+cnt),'control',
+            mNode=mum.SetData(('meta_'+cnt),'control',
                                'joint',module,data)
-            meta.SetTransform(cnt, mNode)
+            mum.SetTransform(cnt, mNode)
         
         #create ik twist controls
         if count<=jointAmount and count>1:
-            [grp,cnt]=ucs.Circle(prefix+'ikTwist'+str(count-1)+'_cnt',
+            [grp,cnt]=mru.Circle(prefix+'ikTwist'+str(count-1)+'_cnt',
                            group=True)
             
             cmds.container(asset,e=True,addNode=[grp,cnt])
@@ -283,12 +277,12 @@ def Rig(module):
             iktwistcnts.append(cnt)
             
             #setup ik controls
-            ut.Snap(ik,grp)
+            mru.Snap(ik,grp)
             
             data={'system':'ik','switch':fk,'index':count+3+(jointAmount-1)}
-            mNode=meta.SetData(('meta_'+cnt),'control',
+            mNode=mum.SetData(('meta_'+cnt),'control',
                                'joint',module,data)
-            meta.SetTransform(cnt, mNode)
+            mum.SetTransform(cnt, mNode)
     
     cmds.parent(jnts[0],plug)
     cmds.parent(fkcntsGRP[0],plug)
@@ -296,8 +290,8 @@ def Rig(module):
     #create controls
     ikhighcnts=[]
     
-    [endGRP,endCNT]=ucs.Sphere(prefix+'end_cnt',group=True)
-    [midGRP,midCNT]=ucs.Sphere(prefix+'mid_cnt',group=True)
+    [endGRP,endCNT]=mru.Sphere(prefix+'end_cnt',group=True)
+    [midGRP,midCNT]=mru.Sphere(prefix+'mid_cnt',group=True)
     
     cnts=[endCNT,midCNT]
     cntsGRP=[endGRP,midGRP]
@@ -310,7 +304,7 @@ def Rig(module):
     
     #create master control
     if spineType=='spine':
-        [masterGRP,masterCNT]=ucs.FourWay(prefix+'master_cnt',
+        [masterGRP,masterCNT]=mru.FourWay(prefix+'master_cnt',
                                         group=True)
         
         cmds.container(asset,e=True,addNode=[masterGRP,masterCNT])
@@ -319,14 +313,14 @@ def Rig(module):
         cmds.xform(masterGRP,ws=True,translation=startTrans)
         cmds.xform(masterGRP,ws=True,rotation=startRot)
         
-        ut.ClosestOrient(jnts[0], masterGRP, align=True)
+        mru.ClosestOrient(jnts[0], masterGRP, align=True)
         
         cmds.parent(masterGRP,plug)
         cmds.parent(fkcntsGRP[0],masterCNT)
         
-        mNode=meta.SetData(('meta_'+masterCNT),'control',
+        mNode=mum.SetData(('meta_'+masterCNT),'control',
                            'master',module,None)
-        meta.SetTransform(masterCNT, mNode)
+        mum.SetTransform(masterCNT, mNode)
     
     #create start joint
     cmds.select(cl=True)
@@ -338,7 +332,7 @@ def Rig(module):
     cmds.xform(startJNT,ws=True,translation=startTrans)
     cmds.xform(startJNT,ws=True,rotation=startRot)
     
-    ut.ClosestOrient(jnts[0],startJNT, align=True)
+    mru.ClosestOrient(jnts[0],startJNT, align=True)
     
     cmds.parent(startJNT,plug)
     
@@ -346,7 +340,7 @@ def Rig(module):
     cmds.xform(endGRP,ws=True,translation=endTrans)
     cmds.xform(endGRP,ws=True,rotation=endRot)
     
-    ut.ClosestOrient(jnts[0],endGRP, align=True)
+    mru.ClosestOrient(jnts[0],endGRP, align=True)
     
     if spineType=='spine':
         cmds.parent(endGRP,masterCNT)
@@ -358,18 +352,18 @@ def Rig(module):
     
     cmds.container(asset,e=True,addNode=endJNT)
     
-    ut.Snap(endCNT,endJNT)
+    mru.Snap(endCNT,endJNT)
     cmds.parent(endJNT,endCNT)
     
     data={'system':'ik','switch':fkcnts[-1],'index':1}
-    mNode=meta.SetData(('meta_'+endCNT),'control',
+    mNode=mum.SetData(('meta_'+endCNT),'control',
                        'end',module,data)
-    meta.SetTransform(endCNT, mNode)
+    mum.SetTransform(endCNT, mNode)
     
     ikcnts.append(endCNT)
     
     data={'switch':endJNT}
-    meta.ModifyData(fkcnts[-1], data)
+    mum.ModifyData(fkcnts[-1], data)
     
     #setup mid control
     cmds.delete(cmds.parentConstraint(startJNT,endJNT,midGRP))
@@ -382,9 +376,9 @@ def Rig(module):
                                          midaimatGRP,
                                          midaimupGRP])
     
-    ut.Snap(midGRP,midposGRP)
-    ut.Snap(midGRP,midaimatGRP)
-    ut.Snap(midGRP,midaimupGRP)
+    mru.Snap(midGRP,midposGRP)
+    mru.Snap(midGRP,midaimatGRP)
+    mru.Snap(midGRP,midaimupGRP)
     
     cmds.move(spineLength/10.0,0,0,midaimatGRP,r=True,os=True)
     cmds.move(0,spineLength/10.0,0,midaimupGRP,r=True,os=True)
@@ -407,42 +401,42 @@ def Rig(module):
     
     cmds.container(asset,e=True,addNode=midJNT)
     
-    ut.Snap(midCNT,midJNT)
+    mru.Snap(midCNT,midJNT)
     cmds.parent(midJNT,midCNT)
     
     zeroGRP=cmds.group(empty=True,n=prefix+'zero_grp')
     
     cmds.container(asset,e=True,addNode=zeroGRP)
     
-    ut.Snap(midGRP,zeroGRP)
+    mru.Snap(midGRP,zeroGRP)
     cmds.parent(zeroGRP,midGRP)
     
     data={'system':'ik','switch':zeroGRP,'index':2}
-    mNode=meta.SetData(('meta_'+midCNT),'control',
+    mNode=mum.SetData(('meta_'+midCNT),'control',
                        'mid',module,data)
-    meta.SetTransform(midCNT, mNode)
+    mum.SetTransform(midCNT, mNode)
     
     ikcnts.append(midCNT)
     
     #create start control
     if spineType=='spine':
-        [startGRP,startCNT]=ucs.Sphere(prefix+'start_cnt',
+        [startGRP,startCNT]=mru.Sphere(prefix+'start_cnt',
                                        group=True)
         
         cmds.container(asset,e=True,addNode=startCNT)
         
         #setup start control
-        ut.ClosestOrient(jnts[0], startGRP, align=True)
+        mru.ClosestOrient(jnts[0], startGRP, align=True)
         
         cmds.parent(startGRP,masterCNT)
         
-        ut.Snap(startJNT,startGRP)
+        mru.Snap(startJNT,startGRP)
         cmds.parent(startJNT,startCNT)
         
         data={'system':'ik','switch':fkcnts[0],'index':3}
-        mNode=meta.SetData(('meta_'+startCNT),'control',
+        mNode=mum.SetData(('meta_'+startCNT),'control',
                            'start',module,data)
-        meta.SetTransform(startCNT, mNode)
+        mum.SetTransform(startCNT, mNode)
         
         ikcnts.append(startCNT)
         ikhighcnts.append(startCNT)
@@ -457,10 +451,10 @@ def Rig(module):
     cmds.container(asset,e=True,addNode=spineGEO)
     
     #setup spine geo
-    ut.Snap(midCNT,spineGEO)
+    mru.Snap(midCNT,spineGEO)
     
     temp=cmds.group(empty=True)
-    ut.Snap(midCNT,temp)
+    mru.Snap(midCNT,temp)
     cmds.move(0,0,spineLength,temp,os=True,r=True)
     
     cmds.delete(cmds.aimConstraint(endCNT,spineGEO,
@@ -553,16 +547,16 @@ def Rig(module):
             cmds.poleVectorConstraint(upGRP,ikHandle[0])
     
     #create extra control
-    extraCNT=ucs.Pin('extra_cnt')
+    extraCNT=mru.Pin('extra_cnt')
     
-    mNode=meta.SetData(('meta_'+extraCNT),'control',
+    mNode=mum.SetData(('meta_'+extraCNT),'control',
                        'extra',module,None)
-    meta.SetTransform(extraCNT, mNode)
+    mum.SetTransform(extraCNT, mNode)
     
     cmds.container(asset,e=True,addNode=extraCNT)
     
     #setup extra control
-    ut.Snap(endCNT,extraCNT)
+    mru.Snap(endCNT,extraCNT)
     
     cmds.rotate(0,-90,0,extraCNT,os=True,r=True)
     
@@ -758,7 +752,7 @@ def Rig(module):
         cmds.select(cl=True)
         jnt=cmds.joint(position=(0,0,0),name=prefix+'hip_jnt')
         
-        ut.Snap(jnts[0],jnt)
+        mru.Snap(jnts[0],jnt)
         cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
         
         cmds.container(asset,e=True,addNode=jnt)
@@ -767,13 +761,13 @@ def Rig(module):
         cmds.move(-spineLength/3,0,0,jnt,r=True,os=True)
         
         #create hip control
-        [grp,cnt]=ucs.Circle(prefix+'hip_cnt', group=True)
+        [grp,cnt]=mru.Circle(prefix+'hip_cnt', group=True)
         
         cmds.container(asset,e=True,addNode=[grp,cnt])
         
         #setup hip control
-        ut.Snap(jnt,grp)
-        ut.Snap(jnts[0], grp,orient=False)
+        mru.Snap(jnt,grp)
+        mru.Snap(jnts[0], grp,orient=False)
         
         cmds.parent(jnt,cnt)
         cmds.parent(grp,plug)
@@ -799,8 +793,8 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=[parentGRP,
                                              pointGRP])
         
-        ut.Snap(cnt,parentGRP)
-        ut.Snap(cnt,pointGRP)
+        mru.Snap(cnt,parentGRP)
+        mru.Snap(cnt,pointGRP)
         
         cmds.parent(parentGRP,jnts[0])
         cmds.parent(pointGRP,plug)
@@ -816,23 +810,23 @@ def Rig(module):
         
         #clean channel box
         attrs=['tx','ty','tz','sx','sy','sz','v']
-        ut.ChannelboxClean(cnt, attrs)
+        mru.ChannelboxClean(cnt, attrs)
     
     #clean channel box
     attrs=['tx','ty','tz','sx','sy','sz','v']
     for cnt in fkcnts:
-        ut.ChannelboxClean(cnt, attrs)
+        mru.ChannelboxClean(cnt, attrs)
     
     attrs=['sx','sy','sz','v']
     for cnt in ikcnts:
-        ut.ChannelboxClean(cnt, attrs)
+        mru.ChannelboxClean(cnt, attrs)
 
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
-    ut.ChannelboxClean(extraCNT, attrs)
+    mru.ChannelboxClean(extraCNT, attrs)
     
     attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
     for cnt in iktwistcnts:
-        ut.ChannelboxClean(cnt,attrs)
+        mru.ChannelboxClean(cnt,attrs)
 '''
 templateModule='meta_spine'
 

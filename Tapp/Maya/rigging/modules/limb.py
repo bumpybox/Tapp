@@ -4,7 +4,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.utils.meta as mum
-import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.rigging.utils as mru
 import Tapp.Maya.utils.ZvParentMaster as muz
 
 def Create():
@@ -28,23 +28,18 @@ def Detach(module):
 def Rig(module):
     ''' Rigs the provided module. '''
     
-    #class variables
-    meta=mum.Meta()
-    ut=mruu.Transform()
-    ucs=mruu.ControlShape()
-    um=mruu.Math()
     tj=TwistJoints()
     
     #collect all components
-    controls=meta.DownStream(module,'control')
+    controls=mum.DownStream(module,'control')
     
     for control in controls:
-        if meta.GetData(control)['component']=='start':
-            start=meta.GetTransform(control)
-        if meta.GetData(control)['component']=='mid':
-            mid=meta.GetTransform(control)
-        if meta.GetData(control)['component']=='end':
-            end=meta.GetTransform(control)
+        if mum.GetData(control)['component']=='start':
+            start=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='mid':
+            mid=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='end':
+            end=mum.GetTransform(control)
     
     #getting transform data
     startTrans=cmds.xform(start,worldSpace=True,query=True,
@@ -59,7 +54,7 @@ def Rig(module):
                       rotation=True)
     
     #getting module data
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     upperTwist=data['upperTwist']
     upperTwistJoints=data['upperTwistJoints']
@@ -80,12 +75,12 @@ def Rig(module):
         side='right'
     
     #establish index
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     index=data['index']
     
     for node in cmds.ls(type='network'):
-        data=meta.GetData(node)
+        data=mum.GetData(node)
         if 'index' in data.keys() and \
         'side' in data.keys() and \
         'component' in data.keys() and \
@@ -108,7 +103,7 @@ def Rig(module):
     #create module
     data={'side':side,'index':str(index),'system':'rig'}
     
-    module=meta.SetData(('meta'+suffix),'module','limb',None,
+    module=mum.SetData(('meta'+suffix),'module','limb',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -136,10 +131,10 @@ def Rig(module):
     
     cmds.xform(phgrp,worldSpace=True,translation=startTrans)
     
-    metaParent=meta.SetData('meta_'+plug,'plug',None,module,
+    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
                             None)
     
-    meta.SetTransform(plug, metaParent)
+    mum.SetTransform(plug, metaParent)
     
     cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
@@ -158,25 +153,25 @@ def Rig(module):
     cmds.parent(endSocket,endJoint)
     
     data={'index':1}
-    metaParent=meta.SetData('meta_'+startSocket,'socket',None,
+    metaParent=mum.SetData('meta_'+startSocket,'socket',None,
                             module,data)
-    meta.SetTransform(startSocket, metaParent)
+    mum.SetTransform(startSocket, metaParent)
     
     data={'index':2}
-    metaParent=meta.SetData('meta_'+midSocket,'socket',None,
+    metaParent=mum.SetData('meta_'+midSocket,'socket',None,
                             module,data)
-    meta.SetTransform(midSocket, metaParent)
+    mum.SetTransform(midSocket, metaParent)
     
     data={'index':3}
-    metaParent=meta.SetData('meta_'+endSocket,'socket',None,
+    metaParent=mum.SetData('meta_'+endSocket,'socket',None,
                             module,data)
-    meta.SetTransform(endSocket, metaParent)
+    mum.SetTransform(endSocket, metaParent)
     
     cmds.container(asset,e=True,addNode=[startSocket,midSocket,
                                          endSocket])
     
     #finding the upVector for the joints
-    crs=um.CrossProduct(startTrans,midTrans,endTrans)
+    crs=mru.CrossProduct(startTrans,midTrans,endTrans)
     
     #setup start joint
     grp=cmds.group(empty=True)
@@ -215,7 +210,7 @@ def Rig(module):
     #setup end joint
     cmds.xform(endJoint,worldSpace=True,rotation=endRot)
     
-    ut.ClosestOrient(midJoint, endJoint)
+    mru.ClosestOrient(midJoint, endJoint)
     
     #create ik chain
     startIk=cmds.duplicate(startJoint,st=True,po=True,
@@ -285,9 +280,9 @@ def Rig(module):
     stretch02REF=cmds.createNode('transform',ss=True,
                               n=prefix+'stretch02REF')
     data={'system':'ik'}
-    mNode=meta.SetData(('meta_'+stretch02REF),'plug',None,
+    mNode=mum.SetData(('meta_'+stretch02REF),'plug',None,
                        module,data)
-    meta.SetTransform(stretch02REF, mNode)
+    mum.SetTransform(stretch02REF, mNode)
     
     stretchDIST=cmds.shadingNode('distanceBetween',
                                  asUtility=True,
@@ -305,8 +300,8 @@ def Rig(module):
     phgrp=cmds.group(stretch02REF,n=(stretch02REF+'_PH'))
     sngrp=cmds.group(stretch02REF,n=(stretch02REF+'_SN'))
     
-    ut.Snap(endJoint,phgrp)
-    ut.Snap(endJoint,stretch02)
+    mru.Snap(endJoint,phgrp)
+    mru.Snap(endJoint,stretch02)
     cmds.pointConstraint(stretch02REF,stretch02)
     
     cmds.scaleConstraint(plug,phgrp)
@@ -355,21 +350,21 @@ def Rig(module):
                      '%s.sx' % midIk,force=True)
     
     #creating controls       
-    polevectorCNT=ucs.Sphere(prefix+'polevector_cnt')
-    endIkCNT=ucs.Sphere(prefix+'endIk_cnt')
-    startFkCNT=ucs.Box(prefix+'startFk_cnt')
-    midFkCNT=ucs.Box(prefix+'midFk_cnt')
-    endFkCNT=ucs.Box(prefix+'endFk_cnt')
-    extraCNT=ucs.Pin(prefix+'extra_cnt')
+    polevectorCNT=mru.Sphere(prefix+'polevector_cnt')
+    endIkCNT=mru.Sphere(prefix+'endIk_cnt')
+    startFkCNT=mru.Box(prefix+'startFk_cnt')
+    midFkCNT=mru.Box(prefix+'midFk_cnt')
+    endFkCNT=mru.Box(prefix+'endFk_cnt')
+    extraCNT=mru.Pin(prefix+'extra_cnt')
     
     cnts=[polevectorCNT,endIkCNT,startFkCNT,midFkCNT,endFkCNT,
           extraCNT]
     
     #setup polevectorCNT
     data={'system':'ik','switch':midFk,'index':2}
-    mNode=meta.SetData(('meta_'+polevectorCNT),'control',
+    mNode=mum.SetData(('meta_'+polevectorCNT),'control',
                        'polevector', module,data)
-    meta.SetTransform(polevectorCNT, mNode)
+    mum.SetTransform(polevectorCNT, mNode)
     
     grp=cmds.group(polevectorCNT,n=(polevectorCNT+'_grp'))
     cmds.parent(grp,plug)
@@ -377,7 +372,7 @@ def Rig(module):
     phgrp=cmds.group(polevectorCNT,n=(polevectorCNT+'_PH'))
     sngrp=cmds.group(polevectorCNT,n=(polevectorCNT+'_SN'))
     
-    ut.Snap(polevector,grp)
+    mru.Snap(polevector,grp)
     
     cmds.parent(polevector,polevectorCNT)
     
@@ -390,7 +385,7 @@ def Rig(module):
     
     cmds.select(curve+'.cv[0]',r=True)
     cluster=mel.eval('newCluster " -envelope 1";')
-    ut.Snap(polevector,cluster[1])
+    mru.Snap(polevector,cluster[1])
     cmds.parent(cluster[1],polevector)
     
     cmds.container(asset,e=True,addNode=[curve,cluster[0],
@@ -399,7 +394,7 @@ def Rig(module):
     
     cmds.select(curve+'.cv[1]',r=True)
     cluster=mel.eval('newCluster " -envelope 1";')
-    ut.Snap(midIk,cluster[1])
+    mru.Snap(midIk,cluster[1])
     cmds.parent(cluster[1],midIk)
     
     cmds.container(asset,e=True,addNode=[cluster[0],
@@ -409,9 +404,9 @@ def Rig(module):
     
     #setup endIkCNT
     data={'system':'ik','switch':endFk,'index':1}
-    mNode=meta.SetData(('meta_'+endIkCNT),'control','end',
+    mNode=mum.SetData(('meta_'+endIkCNT),'control','end',
                        module,data)
-    meta.SetTransform(endIkCNT, mNode)
+    mum.SetTransform(endIkCNT, mNode)
     
     grp=cmds.group(endIkCNT,n=(endIkCNT+'_grp'))
     cmds.parent(grp,plug)
@@ -419,7 +414,7 @@ def Rig(module):
     phgrp=cmds.group(endIkCNT,n=(endIkCNT+'_PH'))
     sngrp=cmds.group(endIkCNT,n=(endIkCNT+'_SN'))
     
-    ut.Snap(endFk,grp)
+    mru.Snap(endFk,grp)
     
     cmds.select([stretch02REF,endIkCNT],r=True)
     muz.attach()
@@ -428,14 +423,14 @@ def Rig(module):
     
     #setup startFkCNT
     data={'system':'fk','switch':startIk,'index':1}
-    mNode=meta.SetData(('meta_'+startFkCNT),'control','start',
+    mNode=mum.SetData(('meta_'+startFkCNT),'control','start',
                        module,data)
-    meta.SetTransform(startFkCNT, mNode)
+    mum.SetTransform(startFkCNT, mNode)
     
     grp=cmds.group(startFkCNT,n=(startFkCNT+'_grp'))
     cmds.parent(grp,plug)
     
-    ut.Snap(startFk, grp)
+    mru.Snap(startFk, grp)
     
     cmds.parent(startFk,startFkCNT)
     
@@ -443,14 +438,14 @@ def Rig(module):
     
     #setup midFkCNT
     data={'system':'fk','switch':midIk,'index':2}
-    mNode=meta.SetData(('meta_'+midFkCNT),'control','mid',
+    mNode=mum.SetData(('meta_'+midFkCNT),'control','mid',
                        module,data)
-    meta.SetTransform(midFkCNT,mNode)
+    mum.SetTransform(midFkCNT,mNode)
     
     grp=cmds.group(midFkCNT,n=(midFkCNT+'_grp'))
     cmds.parent(grp,startFk)
     
-    ut.Snap(midFk, grp)
+    mru.Snap(midFk, grp)
     
     cmds.parent(midFk,midFkCNT)
     
@@ -458,23 +453,23 @@ def Rig(module):
     
     #setup endFkCNT
     data={'system':'fk','switch':endIkCNT,'index':3}
-    mNode=meta.SetData(('meta_'+endFkCNT),'control','end',
+    mNode=mum.SetData(('meta_'+endFkCNT),'control','end',
                        module,data)
-    meta.SetTransform(endFkCNT,mNode)
+    mum.SetTransform(endFkCNT,mNode)
     
     grp=cmds.group(endFkCNT,n=(endFkCNT+'_grp'))
     cmds.parent(grp,midFk)
     
-    ut.Snap(endFk, grp)
+    mru.Snap(endFk, grp)
     
     cmds.parent(endFk,endFkCNT)
     
     cmds.container(asset,e=True,addNode=grp)
     
     #setup extraCNT
-    mNode=meta.SetData(('meta_'+extraCNT),'control','extra',
+    mNode=mum.SetData(('meta_'+extraCNT),'control','extra',
                        module,None)
-    meta.SetTransform(extraCNT,mNode)
+    mum.SetTransform(extraCNT,mNode)
     
     cmds.addAttr(extraCNT,ln='FKIK',at='float',keyable=True,
                  min=0,max=1)
@@ -486,7 +481,7 @@ def Rig(module):
     cmds.connectAttr(extraCNT+'.stretch',stretchBLD+'.blender',
                      force=True)
     
-    ut.Snap(endFk,extraCNT)
+    mru.Snap(endFk,extraCNT)
     
     cmds.parent(extraCNT,endJoint)
     cmds.rotate(0,90,0,extraCNT,r=True,os=True)
@@ -494,8 +489,8 @@ def Rig(module):
     cmds.scaleConstraint(plug,extraCNT)
     
     #create twist controls
-    startIkTwistCNT=ucs.Circle(prefix+'startIkTwist_cnt')
-    midIkTwistCNT=ucs.Circle(prefix+'midIkTwist_cnt')
+    startIkTwistCNT=mru.Circle(prefix+'startIkTwist_cnt')
+    midIkTwistCNT=mru.Circle(prefix+'midIkTwist_cnt')
     
     cnts.append(startIkTwistCNT)
     cnts.append(midIkTwistCNT)
@@ -512,11 +507,11 @@ def Rig(module):
     #setup startIkTwistCNT        
     data={'system':'ik','switch':startFk,'worldspace':'false',
           'index':1}
-    mNode=meta.SetData(('meta_'+startIkTwistCNT),'control',
+    mNode=mum.SetData(('meta_'+startIkTwistCNT),'control',
                        'iktwist',module,data)
-    meta.SetTransform(startIkTwistCNT,mNode)
+    mum.SetTransform(startIkTwistCNT,mNode)
     
-    ut.Snap(startIk,startIkTwistCNT)
+    mru.Snap(startIk,startIkTwistCNT)
     
     cmds.parent(startIkTwistJNT,startIkTwistCNT)
     cmds.parent(startIkTwistCNT,startIk)
@@ -524,11 +519,11 @@ def Rig(module):
     #setup midIkTwistCNT
     data={'system':'ik','switch':midFk,'worldspace':'false',
           'index':2}
-    mNode=meta.SetData(('meta_'+midIkTwistCNT),'control',
+    mNode=mum.SetData(('meta_'+midIkTwistCNT),'control',
                        'iktwist',module,data)
-    meta.SetTransform(midIkTwistCNT,mNode)
+    mum.SetTransform(midIkTwistCNT,mNode)
     
-    ut.Snap(midIk,midIkTwistCNT)
+    mru.Snap(midIk,midIkTwistCNT)
     
     cmds.parent(midIkTwistJNT,midIkTwistCNT)
     cmds.parent(midIkTwistCNT,midIk)
@@ -586,7 +581,7 @@ def Rig(module):
     if upperTwist==True or lowerTwist==True:
         averageJNT=cmds.joint(p=[0,0,0],n=prefix+'average_jnt')
         
-        ut.Snap(midFk,averageJNT)
+        mru.Snap(midFk,averageJNT)
         cmds.parent(averageJNT,midJoint)
         
         orientCon=cmds.orientConstraint(startJoint,midJoint,
@@ -615,22 +610,22 @@ def Rig(module):
     
     #channelbox cleanup
     attrs=['rx','ry','rz','sx','sy','sz','v']
-    ut.ChannelboxClean(polevectorCNT, attrs)
+    mru.ChannelboxClean(polevectorCNT, attrs)
     
     attrs=['sx','sy','sz','v']
-    ut.ChannelboxClean(endIkCNT, attrs)
+    mru.ChannelboxClean(endIkCNT, attrs)
     
     attrs=['tx','ty','tz','sx','sy','sz','v']
-    ut.ChannelboxClean(startFkCNT, attrs)
-    ut.ChannelboxClean(midFkCNT, attrs)
-    ut.ChannelboxClean(endFkCNT, attrs)
+    mru.ChannelboxClean(startFkCNT, attrs)
+    mru.ChannelboxClean(midFkCNT, attrs)
+    mru.ChannelboxClean(endFkCNT, attrs)
     
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
-    ut.ChannelboxClean(extraCNT, attrs)
+    mru.ChannelboxClean(extraCNT, attrs)
     
     attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
-    ut.ChannelboxClean(startIkTwistCNT, attrs)
-    ut.ChannelboxClean(midIkTwistCNT, attrs)
+    mru.ChannelboxClean(startIkTwistCNT, attrs)
+    mru.ChannelboxClean(midIkTwistCNT, attrs)
     
     #adding controls and publish to asset
     for cnt in cnts:
@@ -643,9 +638,6 @@ class TwistJoints():
     def Rig(self,start,end,startMatrix,endMatrix,bendControl,
             attrControl,scaleRoot,amount,prefix):
         ''' Creates twist joints from start to end. '''
-        
-        #class variables
-        ut=mruu.Transform()
         
         #clear selection
         cmds.select(cl=True)
@@ -673,7 +665,7 @@ class TwistJoints():
             jnts.append(jnt)
             nodes.append(jnt)
         
-        ut.Snap(start, jnts[0])
+        mru.Snap(start, jnts[0])
         
         #setup joints
         ikHandle=cmds.ikHandle(sol='ikSplineSolver',
@@ -700,7 +692,7 @@ class TwistJoints():
         bend01=cmds.joint(p=[0,0,0],n=prefix+'bend01_jnt')
         bend01GRP=cmds.group(bend01,n=prefix+'bend01_grp')
         cmds.xform(bend01GRP,ws=True,translation=pos)        
-        ut.Snap(start,bend01GRP,point=False)
+        mru.Snap(start,bend01GRP,point=False)
         
         nodes.append(bend01)
         nodes.append(bend01GRP)
@@ -711,7 +703,7 @@ class TwistJoints():
         bend02=cmds.joint(p=[0,0,0],n=prefix+'bend02_jnt')
         bend02GRP=cmds.group(bend02,n=prefix+'bend02_grp')
         cmds.xform(bend02GRP,ws=True,translation=pos)        
-        ut.Snap(start,bend02GRP,point=False)
+        mru.Snap(start,bend02GRP,point=False)
         
         nodes.append(bend02)
         nodes.append(bend02GRP)
@@ -728,8 +720,8 @@ class TwistJoints():
         cmds.skinPercent(skin,ikHandle[2]+'.cv[3]',
                          transformValue=[(start, 1)])
         
-        ut.Snap(bendControl,bend01GRP)
-        ut.Snap(bendControl,bend02GRP)
+        mru.Snap(bendControl,bend01GRP)
+        mru.Snap(bendControl,bend02GRP)
         
         cmds.parent(bend01GRP,bendControl)
         cmds.parent(bend02GRP,bendControl)

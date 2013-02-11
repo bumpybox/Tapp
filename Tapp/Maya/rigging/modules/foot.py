@@ -3,7 +3,7 @@ import os
 import maya.cmds as cmds
 
 import Tapp.Maya.utils.meta as mum
-import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.rigging.utils as mru
 import Tapp.Maya.utils.ZvParentMaster as muz
 
 def Create():
@@ -27,30 +27,24 @@ def Detach(module):
 def Rig(module):
     ''' Rigs the provided module. '''
     
-    #class variables
-    meta=mum.Meta()
-    ut=mruu.Transform()
-    ucs=mruu.ControlShape()
-    um=mruu.Math()
-    
     #collect all components
-    controls=meta.DownStream(module,'control')
+    controls=mum.DownStream(module,'control')
     
     for control in controls:
-        data=meta.GetData(control)
+        data=mum.GetData(control)
         
         if data['component']=='foot':
-            foot=meta.GetTransform(control)
+            foot=mum.GetTransform(control)
         if data['component']=='toe':
-            toe=meta.GetTransform(control)
+            toe=mum.GetTransform(control)
         if data['component']=='toetip':
-            toetip=meta.GetTransform(control)
+            toetip=mum.GetTransform(control)
         if data['component']=='heel':
-            heel=meta.GetTransform(control)
+            heel=mum.GetTransform(control)
         if data['component']=='bank' and data['side']=='right':
-            rbank=meta.GetTransform(control)
+            rbank=mum.GetTransform(control)
         if data['component']=='bank' and data['side']=='left':
-            lbank=meta.GetTransform(control)
+            lbank=mum.GetTransform(control)
     
     #getting transform data
     footTrans=cmds.xform(foot,worldSpace=True,query=True,
@@ -73,7 +67,7 @@ def Rig(module):
                           rotation=True)
     
     #getting module data
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     attachToLeg=data['attachToLeg']
     
@@ -88,12 +82,12 @@ def Rig(module):
         side='right'
     
     #establish index
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     index=data['index']
     
     for node in cmds.ls(type='network'):
-        data=meta.GetData(node)
+        data=mum.GetData(node)
         if 'index' in data.keys() and \
         'side' in data.keys() and \
         data['type']=='module' and \
@@ -114,7 +108,7 @@ def Rig(module):
     #create module
     data={'side':side,'index':str(index),'system':'rig'}
     
-    module=meta.SetData(('meta'+suffix),'module','foot',None,
+    module=mum.SetData(('meta'+suffix),'module','foot',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -137,10 +131,10 @@ def Rig(module):
     
     cmds.xform(phgrp,worldSpace=True,translation=footTrans)
     
-    metaParent=meta.SetData('meta_'+plug,'plug',None,module,
+    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
                             None)
     
-    meta.SetTransform(plug, metaParent)
+    mum.SetTransform(plug, metaParent)
     
     cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
@@ -156,18 +150,18 @@ def Rig(module):
     cmds.parent(socket02,toeJNT)
     
     data={'index':1}
-    metaParent=meta.SetData('meta_'+socket01,'socket',None,
+    metaParent=mum.SetData('meta_'+socket01,'socket',None,
                             module,data)
-    meta.SetTransform(socket01, metaParent)
+    mum.SetTransform(socket01, metaParent)
     data={'index':2}
-    metaParent=meta.SetData('meta_'+socket02,'socket',None,
+    metaParent=mum.SetData('meta_'+socket02,'socket',None,
                             module,data)
-    meta.SetTransform(socket02, metaParent)
+    mum.SetTransform(socket02, metaParent)
     
     cmds.container(asset,e=True,addNode=[socket01,socket02])
     
     #finding the upVector for the joints
-    crs=um.CrossProduct(footTrans,toeTrans,toetipTrans)
+    crs=mru.CrossProduct(footTrans,toeTrans,toetipTrans)
     
     #setup foot joint
     grp=cmds.group(empty=True)
@@ -234,12 +228,12 @@ def Rig(module):
     zeroCNT=cmds.createNode('transform',ss=True,
                             n=prefix+'zero_cnt')
     
-    ballCNT=ucs.Circle(prefix+'ball_cnt')
-    toeIkCNT=ucs.Circle(prefix+'toeIk_cnt')
-    toetipCNT=ucs.Sphere(prefix+'toetip_cnt')
-    heelCNT=ucs.Sphere(prefix+'heel_cnt')
-    footCNT=ucs.Sphere(prefix+'foot_cnt')
-    toeFkCNT=ucs.Square(prefix+'toeFk_cnt')
+    ballCNT=mru.Circle(prefix+'ball_cnt')
+    toeIkCNT=mru.Circle(prefix+'toeIk_cnt')
+    toetipCNT=mru.Sphere(prefix+'toetip_cnt')
+    heelCNT=mru.Sphere(prefix+'heel_cnt')
+    footCNT=mru.Sphere(prefix+'foot_cnt')
+    toeFkCNT=mru.Square(prefix+'toeFk_cnt')
     
     cmds.container(asset,e=True,addNode=[ballCNT,toeIkCNT,
                                          toetipCNT,heelCNT,
@@ -254,7 +248,7 @@ def Rig(module):
     
     #setup right bank
     rbankParent=cmds.group(empty=True,n=rbankGRP+'_parent')
-    ut.Snap(plug,rbankParent)
+    mru.Snap(plug,rbankParent)
     
     cmds.parent(rbankgrpGRP,rbankParent)
     
@@ -290,9 +284,9 @@ def Rig(module):
     
     #setup heelCNT
     data={'system':'ik','switch':zeroCNT,'index':8}
-    mNode=meta.SetData(('meta_'+heelCNT),'control','heel',
+    mNode=mum.SetData(('meta_'+heelCNT),'control','heel',
                        module,data)
-    meta.SetTransform(heelCNT, mNode)
+    mum.SetTransform(heelCNT, mNode)
     
     heelGRP=cmds.group(heelCNT,n=(heelCNT+'_grp'))
     grp=cmds.group(heelGRP,n=(heelGRP+'_grp'))
@@ -308,15 +302,15 @@ def Rig(module):
     cmds.container(asset,e=True,addNode=[heelGRP,grp])
     
     #setup zeroCNT
-    ut.Snap(heelCNT, zeroCNT)
+    mru.Snap(heelCNT, zeroCNT)
     
     cmds.parent(zeroCNT,plug)
     
     #setup toetipCNT
     data={'system':'ik','switch':zeroCNT,'index':7}
-    mNode=meta.SetData(('meta_'+toetipCNT),'control','toetip',
+    mNode=mum.SetData(('meta_'+toetipCNT),'control','toetip',
                        module,data)
-    meta.SetTransform(toetipCNT, mNode)
+    mum.SetTransform(toetipCNT, mNode)
     
     toetipGRP=cmds.group(toetipCNT,n=(toetipCNT+'_grp'))
     grp=cmds.group(toetipGRP,n=(toetipGRP+'_grp'))
@@ -333,9 +327,9 @@ def Rig(module):
     
     #setup ballCNT
     data={'system':'ik','switch':zeroCNT,'index':6}
-    mNode=meta.SetData(('meta_'+ballCNT),'control','ball',
+    mNode=mum.SetData(('meta_'+ballCNT),'control','ball',
                        module,data)
-    meta.SetTransform(ballCNT, mNode)
+    mum.SetTransform(ballCNT, mNode)
     
     cmds.scale(1.5,1.5,1.5,ballCNT)
     cmds.makeIdentity(ballCNT,apply=True, t=1, r=1, s=1, n=0)
@@ -343,7 +337,7 @@ def Rig(module):
     ballGRP=cmds.group(ballCNT,n=(ballCNT+'_grp'))
     grp=cmds.group(ballGRP,n=ballGRP+'_grp')
     
-    ut.Snap(toeJNT,grp)
+    mru.Snap(toeJNT,grp)
     
     cmds.parent(grp,toetipCNT)
     
@@ -351,14 +345,14 @@ def Rig(module):
     
     #setup toeIkCNT
     data={'system':'ik','switch':toeFK,'index':5}
-    mNode=meta.SetData(('meta_'+toeIkCNT),'control','toe',
+    mNode=mum.SetData(('meta_'+toeIkCNT),'control','toe',
                        module,data)
-    meta.SetTransform(toeIkCNT, mNode)
+    mum.SetTransform(toeIkCNT, mNode)
     
     toeIkGRP=cmds.group(toeIkCNT,n=(toeIkCNT+'_grp'))
     grp=cmds.group(toeIkGRP,n=(toeIkGRP+'_grp'))
     
-    ut.Snap(toeJNT,grp)
+    mru.Snap(toeJNT,grp)
     
     cmds.parent(grp,toetipCNT)
     
@@ -367,12 +361,12 @@ def Rig(module):
     #setup footCNT
     footCNTzero=cmds.group(empty=True,n=footCNT+'_zero')
     
-    ut.Snap(footCNT,footCNTzero)
+    mru.Snap(footCNT,footCNTzero)
     
     data={'system':'ik','switch':footCNTzero,'index':4}
-    mNode=meta.SetData(('meta_'+footCNT),'control','foot',
+    mNode=mum.SetData(('meta_'+footCNT),'control','foot',
                        module,data)
-    meta.SetTransform(footCNT, mNode)
+    mum.SetTransform(footCNT, mNode)
     
     grp=cmds.group(footCNT,footCNTzero,n=(footCNT+'_grp'))
     cmds.parent(grp,rbankParent)
@@ -388,14 +382,14 @@ def Rig(module):
     
     #setup toeFkCNT
     data={'system':'fk','switch':toeIK,'index':4}
-    mNode=meta.SetData(('meta_'+toeFkCNT),'control','toe',
+    mNode=mum.SetData(('meta_'+toeFkCNT),'control','toe',
                        module,data)
-    meta.SetTransform(toeFkCNT, mNode)
+    mum.SetTransform(toeFkCNT, mNode)
     
     grp=cmds.group(toeFkCNT,n=(toeFkCNT+'_grp'))
     cmds.parent(grp,plug)
     
-    ut.Snap(toeJNT,grp)
+    mru.Snap(toeJNT,grp)
     
     cmds.parent(toeFK,toeFkCNT)
     
@@ -494,15 +488,15 @@ def Rig(module):
         plugs={}
         
         for node in cmds.ls(type='network'):
-            data=meta.GetData(node)
+            data=mum.GetData(node)
             if data['type']=='module' and \
             data['component']=='limb':
-                nodes=meta.DownStream(node,'plug')
+                nodes=mum.DownStream(node,'plug')
                 for n in nodes:
-                    data=meta.GetData(n)
+                    data=mum.GetData(n)
                     if 'system' in data:
-                        tn=meta.GetTransform(n)
-                        plugs[tn]=um.Distance(tn, plug)
+                        tn=mum.GetTransform(n)
+                        plugs[tn]=mru.Distance(tn, plug)
         
         #attaching ik plug
         ikPlug=min(plugs, key=plugs.get)
@@ -519,22 +513,22 @@ def Rig(module):
         
         cmds.container(asset,e=True,addNode=[footFKalign])
         
-        ut.Snap(footIK,footFKalign)
+        mru.Snap(footIK,footFKalign)
         
         cmds.parent(footFKalign,footIK)
         
         #setup controls
-        mNode=meta.UpStream(ikPlug, 'module')
-        cnts=meta.DownStream(mNode,'control')
-        sockets=meta.DownStream(mNode,'socket')
+        mNode=mum.UpStream(ikPlug, 'module')
+        cnts=mum.DownStream(mNode,'control')
+        sockets=mum.DownStream(mNode,'socket')
         
         for cnt in cnts:
-            data=meta.GetData(cnt)
+            data=mum.GetData(cnt)
             
             #setup ik control
             if 'system' in data and data['system']=='ik' \
             and data['component']=='end':
-                tn=meta.GetTransform(cnt)
+                tn=mum.GetTransform(cnt)
                 
                 cmds.select(rbankParent,tn,r=True)
                 muz.attach()
@@ -543,7 +537,7 @@ def Rig(module):
             
             #setup extra control
             if data['component']=='extra':
-                tn=meta.GetTransform(cnt)
+                tn=mum.GetTransform(cnt)
                 
                 cmds.connectAttr(tn+'.FKIK',asset+'.FKIK')
             
@@ -551,18 +545,18 @@ def Rig(module):
             if 'system' in data and data['system']=='fk' \
             and data['component']=='end':
                 data={'switch':footFKalign}
-                meta.ModifyData(cnt, data)
+                mum.ModifyData(cnt, data)
                 
-                tn=meta.GetTransform(cnt)
+                tn=mum.GetTransform(cnt)
                 
-                ut.Snap(tn,footFKalign,point=False)
+                mru.Snap(tn,footFKalign,point=False)
         
         #attaching plug
         for socket in sockets:
-            data=meta.GetData(socket)
+            data=mum.GetData(socket)
             
             if data['index']=='3':
-                tn=meta.GetTransform(socket)
+                tn=mum.GetTransform(socket)
                 
                 cmds.select(plug,tn,r=True)
                 muz.attach()
@@ -575,7 +569,7 @@ def Rig(module):
         cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
         
         for cnt in cnts:
-            metaNode=meta.GetMetaNode(cnt)
+            metaNode=mum.GetMetaNode(cnt)
             
             cmds.connectAttr(mNode+'.message',metaNode+'.metaParent',
                              force=True)
@@ -592,7 +586,7 @@ def Rig(module):
     attrs=['tx','ty','tz','sx','sy','sz','v']
     
     for cnt in cnts:
-        ut.ChannelboxClean(cnt, attrs)
+        mru.ChannelboxClean(cnt, attrs)
 '''
 templateModule='meta_foot'
 

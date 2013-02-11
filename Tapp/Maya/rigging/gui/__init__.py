@@ -191,6 +191,7 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_pathButton, QtCore.SIGNAL('clicked()'),self.browsePath)
         self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
+        self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
     
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
@@ -207,13 +208,14 @@ class tmrDialog(QtGui.QDialog):
         
         self.create_moduleList.clear()
         for module in modules:
+            module=module.split('.')[0]
+            
             self.create_moduleList.addItem(module)
     
     def CreateImport(self):
-        path=str(self.create_pathLineEdit.text())
-        modulePath=str(self.create_moduleList.selectedItems()[0].text())
+        module=str(self.create_moduleList.selectedItems()[0].text())
         
-        create.Import(path+'/'+modulePath)
+        create.Create(module)
 
 def show():
     #closing previous dialog

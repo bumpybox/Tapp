@@ -4,14 +4,14 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.utils.meta as mum
-import Tapp.Maya.rigging.utils.utils as mruu
+import Tapp.Maya.rigging.utils as mru
 
 def Create():
     win=cmds.window(title='Number of finger joints?',w=270,h=100)
-    layout=cmds.columnLayout(parent=win)
-    field=cmds.intField(minValue=1,value=3,parent=layout)
+    layomru=cmds.columnLayout(parent=win)
+    field=cmds.intField(minValue=1,value=3,parent=layomru)
     
-    cmds.button(label='OK',parent=layout,command=lambda x:__create__(cmds.intField(field,query=True,value=True),win))
+    cmds.button(label='OK',parent=layomru,command=lambda x:__create__(cmds.intField(field,query=True,value=True),win))
     
     cmds.showWindow(win)
 
@@ -20,10 +20,6 @@ def __create__(jointAmount,window):
     
     #deletes window
     cmds.deleteUI(window)
-    
-    #class variables
-    meta=mum.Meta()
-    ucs=mruu.ControlShape()
     
     #creating asset
     asset=cmds.container(n='finger')
@@ -36,7 +32,7 @@ def __create__(jointAmount,window):
     #create module
     data={'system':'template'}
     
-    module=meta.SetData(('meta_finger'),'module','finger',None,
+    module=mum.SetData(('meta_finger'),'root','finger',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -50,14 +46,14 @@ def __create__(jointAmount,window):
     cnts=[]
     
     #create base control
-    base=ucs.Box('base_cnt')
+    base=mru.Box('base_cnt')
     
     cmds.container(asset,e=True,addNode=base)
     
     #setup base control
-    mNode=meta.SetData(('meta_'+base),'control','base',module,
+    mNode=mum.SetData(('meta_'+base),'control','base',module,
                         None)
-    meta.SetTransform(base, mNode)
+    mum.SetTransform(base, mNode)
     
     cnts.append(base)
     
@@ -66,15 +62,15 @@ def __create__(jointAmount,window):
     
     for count in xrange(1,jointAmount):
         #create control
-        cnt=ucs.Sphere('joint'+str(count)+'_cnt')
+        cnt=mru.Sphere('joint'+str(count)+'_cnt')
         
         cmds.container(asset,e=True,addNode=cnt)
         
         #setup control
         data={'index':count}
-        mNode=meta.SetData(('meta_'+cnt),'control','joint',
+        mNode=mum.SetData(('meta_'+cnt),'control','joint',
                            module,data)
-        meta.SetTransform(cnt, mNode)
+        mum.SetTransform(cnt, mNode)
         
         cmds.xform(cnt,ws=True,translation=[count*3,0,0])
         
@@ -84,14 +80,14 @@ def __create__(jointAmount,window):
         cnts.append(cnt)
     
     #create end control
-    end=ucs.Sphere('end_cnt')
+    end=mru.Sphere('end_cnt')
     
     cmds.container(asset,e=True,addNode=end)
     
     #setup end control
-    mNode=meta.SetData(('meta_'+end),'control','end',module,
+    mNode=mum.SetData(('meta_'+end),'control','end',module,
                         None)
-    meta.SetTransform(end, mNode)
+    mum.SetTransform(end, mNode)
     
     cmds.xform(end,ws=True,translation=[jointAmount*3,0,0])
     
@@ -139,26 +135,21 @@ def Detach(module):
 def Rig(module):
     ''' Rigs the provided module. '''
     
-    #class variables
-    meta=mum.Meta()
-    ut=mruu.Transform()
-    ucs=mruu.ControlShape()
-    
     #collect all components
-    controls=meta.DownStream(module,'control')
+    controls=mum.DownStream(module,'control')
     
     jnts=[]
     
     for control in controls:
-        if meta.GetData(control)['component']=='base':
-            base=meta.GetTransform(control)
-        if meta.GetData(control)['component']=='joint':
-            jnts.append(meta.GetTransform(control))
-        if meta.GetData(control)['component']=='end':
-            end=meta.GetTransform(control)
+        if mum.GetData(control)['component']=='base':
+            base=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='joint':
+            jnts.append(mum.GetTransform(control))
+        if mum.GetData(control)['component']=='end':
+            end=mum.GetTransform(control)
     
     #sorting jnts
-    jnts=meta.Sort(jnts, 'index')
+    jnts=mum.Sort(jnts, 'index')
     
     #getting transform data
     jntsTrans=[]
@@ -185,12 +176,12 @@ def Rig(module):
         side='right'
     
     #establish index
-    data=meta.GetData(module)
+    data=mum.GetData(module)
     
     index=data['index']
     
     for node in cmds.ls(type='network'):
-        data=meta.GetData(node)
+        data=mum.GetData(node)
         if 'index' in data.keys() and \
         'side' in data.keys() and \
         data['type']=='module' and \
@@ -211,7 +202,7 @@ def Rig(module):
     #create module
     data={'side':side,'index':str(index),'system':'rig'}
     
-    module=meta.SetData(('meta'+suffix),'module','finger',None,
+    module=mum.SetData(('meta'+suffix),'module','finger',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -235,10 +226,10 @@ def Rig(module):
     
     cmds.xform(phgrp,worldSpace=True,translation=baseTrans)
     
-    metaParent=meta.SetData('meta_'+plug,'plug',None,module,
+    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
                             None)
     
-    meta.SetTransform(plug, metaParent)
+    mum.SetTransform(plug, metaParent)
     
     cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
@@ -297,7 +288,7 @@ def Rig(module):
         
         cmds.delete(aimCon)
     
-    ut.Snap(jnts[len(jnts)-2], endGRP, point=False)
+    mru.Snap(jnts[len(jnts)-2], endGRP, point=False)
     
     #adding base joint to jnts
     q = collections.deque(jnts)
@@ -318,20 +309,20 @@ def Rig(module):
         count=jnts.index(jnt)+1
         
         #create control
-        cnt=ucs.Square(prefix+str(count)+'_cnt')
+        cnt=mru.Square(prefix+str(count)+'_cnt')
         
         cmds.container(asset,e=True,addNode=cnt)
         
         #setup control
         data={'index':count}
-        mNode=meta.SetData(('meta_'+cnt),'control','joint',
+        mNode=mum.SetData(('meta_'+cnt),'control','joint',
                            module,data)
-        meta.SetTransform(cnt, mNode)
+        mum.SetTransform(cnt, mNode)
         
         grp=cmds.group(cnt,n=(cnt+'_grp_grp'))
         cntGRP=cmds.group(cnt,n=(cnt+'_grp'))
         
-        ut.Snap(jnt,grp)
+        mru.Snap(jnt,grp)
         
         cmds.parent(jnt,cnt)
         
@@ -358,21 +349,21 @@ def Rig(module):
     cmds.delete(endGRP)
     
     #create base control
-    baseCNT=ucs.Pin(prefix+'base_cnt')
+    baseCNT=mru.Pin(prefix+'base_cnt')
     
     cmds.container(asset,e=True,addNode=baseCNT)
     
     #setup base control
-    mNode=meta.SetData(('meta_'+baseCNT),'control','base',
+    mNode=mum.SetData(('meta_'+baseCNT),'control','base',
                        module,None)
-    meta.SetTransform(baseCNT, mNode)
+    mum.SetTransform(baseCNT, mNode)
     
     grp=cmds.group(empty=True,n=(baseCNT+'_grp'))
     
     cmds.parent(baseCNT,grp)
     cmds.parent(grp,plug)
     
-    ut.Snap(cnts[0], grp)
+    mru.Snap(cnts[0], grp)
     cmds.xform(baseCNT+'.cv[0:11]',os=True,r=True,
                rotation=[0,0,90])
     
@@ -385,11 +376,11 @@ def Rig(module):
     
     #channelbox clean
     attrs=['sx','sy','sz','v']
-    ut.ChannelboxClean(baseCNT, attrs)
+    mru.ChannelboxClean(baseCNT, attrs)
     
     for cnt in cnts:
         attrs=['v']
-        ut.ChannelboxClean(cnt,attrs)
+        mru.ChannelboxClean(cnt,attrs)
 '''
 templateModule='meta_finger'
 finger=Finger()

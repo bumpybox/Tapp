@@ -4,7 +4,6 @@ import maya.cmds as cmds
 
 #import statement
 print 'Tapp.Maya imported!'
-print os.path.dirname(__file__)
 
 #creating menu
 import menu
