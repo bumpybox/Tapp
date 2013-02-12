@@ -19,10 +19,15 @@ def Create():
     return cmds.file(filePath,i=True,defaultNamespace=True,
                      returnNewNodes=True)
 
-def Attach(sourceModule,targetModule):
-    pass
+def Attach(childModule,parentModule):
+    
+    #attaching child module to parent module
+    mru.Attach(childModule, parentModule)
 
 def Detach(module):
+    pass
+
+def SetWorld(childModule,worldModule):
     pass
 
 def Rig(module):

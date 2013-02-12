@@ -6,8 +6,9 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as omu
 import sip
 
-import Tapp.Maya.rigging.modules as modules
+import Tapp.Maya.rigging.modules as mrm
 import create
+import setup
 
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
@@ -27,7 +28,7 @@ class tmrDialog(QtGui.QDialog):
         
         self.setFixedSize(287,371)
         
-        self.create_pathLineEdit.setText(os.path.dirname(modules.__file__))
+        self.create_pathLineEdit.setText(os.path.dirname(mrm.__file__))
         self.refreshList()
     
     def createLayout(self):
@@ -192,6 +193,7 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
+        self.connect(self.setup_connectButton, QtCore.SIGNAL('clicked()'),setup.Connect)
     
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]

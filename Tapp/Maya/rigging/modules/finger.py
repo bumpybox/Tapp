@@ -126,10 +126,13 @@ def __create__(jointAmount,window):
     #clear selection
     cmds.select(cl=True)
 
-def Attach(sourceModule,targetModule):
+def Attach(childModule,parentModule):
     pass
 
 def Detach(module):
+    pass
+
+def SetWorld(childModule,worldModule):
     pass
 
 def Rig(module):

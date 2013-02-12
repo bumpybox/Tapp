@@ -3,11 +3,15 @@ import sys
 
 import maya.cmds as cmds
 
-import Tapp.Maya.rigging.modules as modules
+import Tapp.Maya.rigging.modules as mrm
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
 
-def __importModule__(modulePath):
+def __importModule__(module):
+    modulesPath=mrc.config['modules'].replace('\\','/')
+    modulePath=modulesPath+'/'+module+'.py'
+    print modulePath
+    
     f = os.path.basename( modulePath )
     d = os.path.dirname( modulePath )
  
@@ -31,28 +35,56 @@ def __importModule__(modulePath):
     # exec works like MEL's eval but you need to add in globals() 
     # at the end to make sure the file is imported into the global 
     # namespace else it will only be in the scope of this function
-    exec ('import ' + modname+' as modules') in globals()
+    exec ('import ' + modname+' as mrm') in globals()
 
 def Create(module):
     
-    modulesPath=mrc.config['modules'].replace('\\','/')
+    __importModule__(module)
     
-    __importModule__(modulesPath+'/'+module+'.py')
-    
-    modules.Create()
+    mrm.Create()
 
 def Rig():
     ''' Rigs all modules in the scene. '''
     
-    modules=[]
-    for meta in cmds.ls(type='network'):
-        data=mum.GetData(meta)
+    cmds.undoInfo(openChunk=True)
         
-        if data['type']=='root':
-            modules.append(meta)
+    sel=cmds.ls(selection=True)
     
-    for module in modules:
-        __rig__(module)
+    if len(sel)<=0:
+        message='No modules are selected!\nDo you wanted to rig all modules in scene?'
+        reply=cmds.confirmDialog( title='Rig Modules',
+                                  message=message,
+                                  button=['Yes','No'],
+                                  defaultButton='Yes',
+                                  cancelButton='No')
+        
+        if reply=='Yes':
+            
+            #rigging all modules in the scene
+            modules=[]
+            for meta in cmds.ls(type='network'):
+                data=mum.GetData(meta)
+                
+                if data['type']=='root':
+                    modules.append(meta)
+            
+            for module in modules:
+                __rig__(module)
+    
+    else:
+        #collecting modules
+        modules=[]
+        
+        for node in sel:
+            modules.append(mum.UpStream(node, 'root'))
+        
+        #removing duplicates
+        modules=list(set(modules))
+        
+        for module in modules:
+            __rig__(module)
+    
+    cmds.undoInfo(closeChunk=True)
 
 def __rig__(module):
     ''' Rigs the provided module. '''
@@ -60,8 +92,6 @@ def __rig__(module):
     data=mum.GetData(module)
     moduleName=data['component']
     
-    modulesPath=mrc.config['modules'].replace('\\','/')
+    __importModule__(moduleName)
     
-    __importModule__(modulesPath+'/'+moduleName+'.py')
-    
-    modules.Rig(module)
+    mrm.Rig(module)

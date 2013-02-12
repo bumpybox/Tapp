@@ -3,3 +3,7 @@ def Create():
 
 def Rig():
     pass
+
+def Attach(childModule,parentModule):
+    ''' Attaches child module to parent module. '''
+    pass

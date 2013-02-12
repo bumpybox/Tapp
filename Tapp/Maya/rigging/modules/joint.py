@@ -17,10 +17,13 @@ def Create():
     return cmds.file(filePath,i=True,defaultNamespace=True,
                      returnNewNodes=True)
 
-def Attach(sourceModule,targetModule):
+def Attach(childModule,parentModule):
     pass
 
 def Detach(module):
+    pass
+
+def SetWorld(childModule,worldModule):
     pass
 
 def Rig(module):
@@ -45,6 +48,7 @@ def Rig(module):
     data=mum.GetData(module)
     
     controlShape=data['controlShape']
+    inheritName=data['inheritName']
     
     #establish side
     side='center'
@@ -70,12 +74,18 @@ def Rig(module):
         data['index']==index:
             index+=1
     
+    #establish module name
+    moduleName='joint'
+    
+    if inheritName:
+        moduleName=cmds.container(q=True,fc=jnt)
+    
     #delete template
     cmds.delete(cmds.container(q=True,fc=jnt))
     
     #establish prefix and suffix
-    prefix=side[0]+'_'+'joint'+str(index)+'_'
-    suffix='_'+side[0]+'_'+'joint'+str(index)
+    prefix=side[0]+'_'+moduleName+str(index)+'_'
+    suffix='_'+side[0]+'_'+moduleName+str(index)
     
     #creating asset
     asset=cmds.container(n=prefix+'rig')
@@ -145,9 +155,6 @@ def Rig(module):
     #setup plug
     cmds.xform(phgrp,ws=True,translation=jntTrans)
     cmds.xform(phgrp,ws=True,rotation=jntRot)
-'''
-templateModule='meta_joint'
 
-joint=Joint()
-joint.Rig(templateModule)
-'''
+templateModule='meta_joint'
+Rig(templateModule)

@@ -17,10 +17,13 @@ def Create():
     return cmds.file(filePath,i=True,defaultNamespace=True,
                      returnNewNodes=True)
 
-def Attach(sourceModule,targetModule):
+def Attach(childModule,parentModule):
     pass
 
 def Detach(module):
+    pass
+
+def SetWorld(childModule,worldModule):
     pass
 
 def Rig(module):
@@ -760,8 +763,25 @@ def Rig(module):
         #setup jnt
         cmds.move(-spineLength/3,0,0,jnt,r=True,os=True)
         
+        #create socket
+        socket=cmds.spaceLocator(n=prefix+'socket')[0]
+        
+        data={'index':jointAmount+2}
+        meta=mum.SetData('meta_'+socket,'socket',None,module,data)
+        mum.SetTransform(socket,meta)
+    
+        cmds.container(asset,e=True,addNode=socket)
+        
+        #setup socket
+        mru.Snap(jnt,socket)
+        
+        cmds.parent(socket,jnt)
+        
         #create hip control
         [grp,cnt]=mru.Circle(prefix+'hip_cnt', group=True)
+        
+        meta=mum.SetData('meta_'+cnt,'control','hip',module, None)
+        mum.SetTransform(cnt, meta)
         
         cmds.container(asset,e=True,addNode=[grp,cnt])
         
@@ -829,7 +849,5 @@ def Rig(module):
         mru.ChannelboxClean(cnt,attrs)
 '''
 templateModule='meta_spine'
-
-spine=Spine()
-spine.Rig(templateModule)
+Rig(templateModule)
 '''

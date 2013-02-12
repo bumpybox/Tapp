@@ -1,6 +1,6 @@
 //Maya ASCII 2013 scene
 //Name: joint.ma
-//Last modified: Fri, Feb 08, 2013 05:42:39 PM
+//Last modified: Tue, Feb 12, 2013 12:29:50 AM
 //Codeset: 1252
 requires maya "2013";
 currentUnit -l centimeter -a degree -t film;
@@ -11,12 +11,12 @@ fileInfo "cutIdentifier" "201202220241-825136";
 fileInfo "osv" "Microsoft Windows 7 Ultimate Edition, 64-bit Windows 7 Service Pack 1 (Build 7601)\n";
 createNode transform -s -n "persp";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 25.048797281654821 14.889497180344978 26.01710681725282 ;
-	setAttr ".r" -type "double3" -20.738352729599352 45.400000000001029 0 ;
+	setAttr ".t" -type "double3" 20.027619225455037 28.778244013770571 30.313039657271343 ;
+	setAttr ".r" -type "double3" -35.138352729599525 37.800000000001056 -2.0126143805003932e-015 ;
 createNode camera -s -n "perspShape" -p "persp";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
-	setAttr ".coi" 39.223540473865413;
+	setAttr ".coi" 45.348316801682614;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
@@ -67,6 +67,7 @@ createNode dagContainer -n "joint";
 	addAttr -ci true -sn "index" -ln "index" -dv 1 -at "long";
 	addAttr -ci true -sn "controlShape" -ln "controlShape" -min 0 -max 5 -en "Square:FourWay:Circle:Box:Pin:Sphere" 
 		-at "enum";
+	addAttr -ci true -sn "inheritName" -ln "inheritName" -min 0 -max 1 -at "bool";
 	setAttr ".isc" yes;
 	setAttr ".bbx" yes;
 	setAttr ".ctor" -type "string" "Bumpy";
@@ -83,9 +84,11 @@ createNode dagContainer -n "joint";
 	setAttr ".aal" -type "attributeAlias" {"cnt","publishedNodeInfo[0]"} ;
 	setAttr -k on ".index";
 	setAttr -k on ".controlShape";
+	setAttr -k on ".inheritName";
 createNode transform -n "cnt" -p "joint";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
 	setAttr -l on -k off ".v";
+	setAttr ".r" -type "double3" 0 0 90 ;
 	setAttr -l on -k off ".sx";
 	setAttr -l on -k off ".sy";
 	setAttr -l on -k off ".sz";
@@ -193,11 +196,13 @@ createNode network -n "meta_joint";
 	addAttr -ci true -sn "index" -ln "index" -dv 1 -at "long";
 	addAttr -ci true -sn "controlShape" -ln "controlShape" -min 0 -max 5 -en "Square:FourWay:Circle:Box:Pin:Sphere" 
 		-at "enum";
+	addAttr -ci true -sn "inheritName" -ln "inheritName" -min 0 -max 1 -at "bool";
 	setAttr ".type" -type "string" "root";
 	setAttr ".component" -type "string" "joint";
 	setAttr ".system" -type "string" "template";
 	setAttr -k on ".index";
 	setAttr -k on ".controlShape";
+	setAttr -k on ".inheritName";
 createNode hyperLayout -n "hyperLayout1";
 	setAttr ".ihi" 0;
 	setAttr -s 2 ".hyp";
@@ -241,6 +246,7 @@ connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "joint.index" "meta_joint.index";
 connectAttr "joint.controlShape" "meta_joint.controlShape";
+connectAttr "joint.inheritName" "meta_joint.inheritName";
 connectAttr "cnt.msg" "hyperLayout1.hyp[0].dn";
 connectAttr "cntShape.msg" "hyperLayout1.hyp[1].dn";
 connectAttr "meta_joint.msg" "meta_cnt.metaParent";

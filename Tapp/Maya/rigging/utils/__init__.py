@@ -1,6 +1,31 @@
 import maya.cmds as cmds
 import maya.mel as mel
 
+import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.utils.ZvParentMaster as muz
+
+def Attach(childModule,parentModule):
+    ''' Attaches child module to parent module. '''
+    
+    #get child plug
+    for plug in mum.DownStream(childModule, 'plug'):
+        if len(mum.GetData(plug))<=3:
+            childPlug=mum.GetTransform(plug)
+    
+    #get closest socket
+    sockets={}
+    for socket in mum.DownStream(parentModule,'socket'):
+        
+        tn=mum.GetTransform(socket)
+        sockets[tn]=Distance(tn, childPlug)
+    
+    parentSocket=min(sockets, key=sockets.get)
+    
+    #attaching plug to socket
+    cmds.select(childPlug,parentSocket,r=True)
+    muz.attach()
+    cmds.select(cl=True)
+
 def Distance(objA,objB ):
     ''' Returns distance between two nodes. '''
     
