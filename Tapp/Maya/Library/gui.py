@@ -10,13 +10,13 @@ def maya_main_window():
     ptr = omu.MQtUtil.mainWindow()
     return sip.wrapinstance(long(ptr), QtCore.QObject)
     
-class tmWDialog(QtGui.QDialog):
+class tmLDialog(QtGui.QDialog):
     
     def __init__(self, parent=maya_main_window()):
         QtGui.QDialog.__init__(self, parent)
         
-        self.setObjectName('tmWDialog')
-        self.setWindowTitle('Tapp Warehouse')
+        self.setObjectName('tmLDialog')
+        self.setWindowTitle('Tapp Library')
         
         self.createLayout()
         self.createConnections()
@@ -63,11 +63,11 @@ class tmWDialog(QtGui.QDialog):
 def show():
     #closing previous dialog
     for widget in QtGui.qApp.allWidgets():
-        if widget.objectName()=='tmWDialog':
+        if widget.objectName()=='tmLDialog':
             widget.close()
     
     #showing new dialog
-    win=tmWDialog()
+    win=tmLDialog()
     win.show()
 
 show()
