@@ -37,6 +37,14 @@ def __importModule__(module):
     # namespace else it will only be in the scope of this function
     exec ('import ' + modname+' as mrm') in globals()
 
+def Mirror():
+    ''' Mirrors modules across YZ axis. '''
+    
+    pass
+
+def __mirror__(module):
+    pass
+
 def Create(module):
     
     __importModule__(module)
