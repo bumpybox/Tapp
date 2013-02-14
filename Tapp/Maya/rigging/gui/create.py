@@ -37,19 +37,11 @@ def __importModule__(module):
     # namespace else it will only be in the scope of this function
     exec ('import ' + modname+' as mrm') in globals()
 
-def Mirror():
-    ''' Mirrors modules across YZ axis. '''
-    
-    pass
-
-def __mirror__(module):
-    pass
-
 def Create(module):
     
     __importModule__(module)
     
-    mrm.Create()
+    return mrm.Create()
 
 def Rig():
     ''' Rigs all modules in the scene. '''
@@ -103,3 +95,69 @@ def __rig__(module):
     __importModule__(moduleName)
     
     mrm.Rig(module)
+
+def Mirror():
+    ''' Mirrors modules across YZ axis. '''
+    
+    cmds.undoInfo(openChunk=True)
+        
+    sel=cmds.ls(selection=True)
+    
+    if len(sel)<=0:
+        cmds.warning('No modules selected!\nSelect a module to mirror.')
+    else:
+        #collecting modules
+        modules=[]
+        
+        for node in sel:
+            modules.append(mum.UpStream(node, 'root'))
+        
+        #removing duplicates
+        modules=list(set(modules))
+        
+        for module in modules:
+            __mirror__(module)
+    
+    cmds.undoInfo(closeChunk=True)
+
+def __mirror__(module):
+    ''' Mirrors provided module across YZ axis. '''
+    
+    #getting module data
+    mData=mum.GetData(module)
+    
+    cnts=mum.DownStream(module, 'control')
+    
+    #getting imported controls
+    importCnts=[]
+    
+    importNodes=Create(mData['component'])
+    for node in importNodes:
+        if cmds.nodeType(node)=='network':
+            data=mum.GetData(node)
+            if data['type']=='control':
+                importCnts.append(node)
+    
+    #pairing controls
+    cntPairs={}
+    
+    for cnt in cnts:
+        data=mum.GetData(cnt)
+        for iCnt in importCnts:
+            iData=mum.GetData(iCnt)
+            
+            if iData['component']==data['component']:
+                cntPairs[cnt]=iCnt
+    
+    #mirroring translation and rotation
+    for cnt in cntPairs:
+        
+        tn=mum.GetTransform(cnt)
+        
+        [tx,ty,tz]=cmds.xform(tn,ws=True,query=True,translation=True)
+        [rx,ry,rz]=cmds.xform(tn,ws=True,query=True,rotation=True)
+        
+        itn=mum.GetTransform(cntPairs[cnt])
+        
+        cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
+        cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))

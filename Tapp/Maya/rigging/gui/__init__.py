@@ -188,11 +188,14 @@ class tmrDialog(QtGui.QDialog):
         self.setLayout(main_layout)
     
     def createConnections(self):
-        #///character connections///
+        #///create connections///
         self.connect(self.create_pathButton, QtCore.SIGNAL('clicked()'),self.browsePath)
         self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
+        self.connect(self.create_mirrorButton, QtCore.SIGNAL('clicked()'),create.Mirror)
+        
+        #///setup connections///
         self.connect(self.setup_connectButton, QtCore.SIGNAL('clicked()'),setup.Connect)
     
     def browsePath(self):
