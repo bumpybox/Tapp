@@ -620,7 +620,7 @@ def Rig(module):
     attrs=['sx','sy','sz','v']
     mru.ChannelboxClean(endIkCNT, attrs)
     
-    attrs=['tx','ty','tz','sx','sy','sz','v']
+    attrs=['v']
     mru.ChannelboxClean(startFkCNT, attrs)
     mru.ChannelboxClean(midFkCNT, attrs)
     mru.ChannelboxClean(endFkCNT, attrs)

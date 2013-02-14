@@ -127,7 +127,9 @@ def __create__(jointAmount,window):
     cmds.select(cl=True)
 
 def Attach(childModule,parentModule):
-    pass
+    
+    #attaching child module to parent module
+    mru.Attach(childModule, parentModule)
 
 def Detach(module):
     pass

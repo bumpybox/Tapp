@@ -18,7 +18,9 @@ def Create():
                      returnNewNodes=True)
 
 def Attach(childModule,parentModule):
-    pass
+    
+    #attaching child module to parent module
+    mru.Attach(childModule, parentModule)
 
 def Detach(module):
     pass
@@ -155,6 +157,7 @@ def Rig(module):
     #setup plug
     cmds.xform(phgrp,ws=True,translation=jntTrans)
     cmds.xform(phgrp,ws=True,rotation=jntRot)
-
+'''
 templateModule='meta_joint'
 Rig(templateModule)
+'''

@@ -89,12 +89,16 @@ def Rig():
 def __rig__(module):
     ''' Rigs the provided module. '''
     
+    cmds.undoInfo(openChunk=True)
+    
     data=mum.GetData(module)
     moduleName=data['component']
     
     __importModule__(moduleName)
     
     mrm.Rig(module)
+    
+    cmds.undoInfo(closeChunk=True)
 
 def Mirror():
     ''' Mirrors modules across YZ axis. '''
@@ -128,15 +132,23 @@ def __mirror__(module):
     
     cnts=mum.DownStream(module, 'control')
     
+    container=cmds.container(q=True,fc=mum.GetTransform(cnts[0]))
+    
     #getting imported controls
     importCnts=[]
     
     importNodes=Create(mData['component'])
+    
     for node in importNodes:
         if cmds.nodeType(node)=='network':
             data=mum.GetData(node)
             if data['type']=='control':
                 importCnts.append(node)
+    
+    #copy container values
+    icontainer=cmds.container(q=True,fc=mum.GetTransform(importCnts[0]))
+    
+    cmds.copyAttr(container,icontainer,values=True)
     
     #pairing controls
     cntPairs={}

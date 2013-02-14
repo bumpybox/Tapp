@@ -46,9 +46,6 @@ def Connect():
     for node in sel:
         modules.append(mum.UpStream(node, 'module'))
     
-    #removing duplicates
-    modules=list(set(modules))
-    
     #connecting modules
     if len(modules)>1:
         

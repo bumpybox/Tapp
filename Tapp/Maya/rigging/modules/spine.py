@@ -18,7 +18,9 @@ def Create():
                      returnNewNodes=True)
 
 def Attach(childModule,parentModule):
-    pass
+    
+    #attaching child module to parent module
+    mru.Attach(childModule, parentModule)
 
 def Detach(module):
     pass
@@ -103,8 +105,8 @@ def Rig(module):
     cmds.delete(cmds.container(q=True,fc=start))
     
     #establish prefix and suffix
-    prefix=side[0]+'_'+'spine'+str(index)+'_'
-    suffix='_'+side[0]+'_'+'spine'+str(index)
+    prefix=side[0]+'_'+spineType+str(index)+'_'
+    suffix='_'+side[0]+'_'+spineType+str(index)
     
     #creating asset
     asset=cmds.container(n=prefix+'rig')
@@ -550,7 +552,7 @@ def Rig(module):
             cmds.poleVectorConstraint(upGRP,ikHandle[0])
     
     #create extra control
-    extraCNT=mru.Pin('extra_cnt')
+    extraCNT=mru.Pin(prefix+'extra_cnt')
     
     mNode=mum.SetData(('meta_'+extraCNT),'control',
                        'extra',module,None)
@@ -833,7 +835,7 @@ def Rig(module):
         mru.ChannelboxClean(cnt, attrs)
     
     #clean channel box
-    attrs=['tx','ty','tz','sx','sy','sz','v']
+    attrs=['v']
     for cnt in fkcnts:
         mru.ChannelboxClean(cnt, attrs)
     
@@ -848,6 +850,6 @@ def Rig(module):
     for cnt in iktwistcnts:
         mru.ChannelboxClean(cnt,attrs)
 '''
-templateModule='meta_spine'
+templateModule='meta_spine1'
 Rig(templateModule)
 '''

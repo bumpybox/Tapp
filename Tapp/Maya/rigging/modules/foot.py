@@ -19,7 +19,9 @@ def Create():
                      returnNewNodes=True)
 
 def Attach(childModule,parentModule):
-    pass
+    
+    #attaching child module to parent module
+    mru.Attach(childModule, parentModule)
 
 def Detach(module):
     pass
