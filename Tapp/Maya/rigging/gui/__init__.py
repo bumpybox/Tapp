@@ -195,6 +195,7 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
         self.connect(self.create_mirrorButton, QtCore.SIGNAL('clicked()'),create.Mirror)
         self.connect(self.create_setWorld, QtCore.SIGNAL('clicked()'),create.SetWorld)
+        self.connect(self.create_deleteButton, QtCore.SIGNAL('clicked()'),create.Delete)
         
         #///setup connections///
         self.connect(self.setup_connectButton, QtCore.SIGNAL('clicked()'),setup.Connect)

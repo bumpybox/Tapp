@@ -6,6 +6,7 @@ import maya.cmds as cmds
 import Tapp.Maya.rigging.modules as mrm
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
+import Tapp.Maya.rigging.utils as mru
 
 def __importModule__(module):
     modulesPath=mrc.config['modules'].replace('\\','/')
@@ -35,6 +36,37 @@ def __importModule__(module):
     # at the end to make sure the file is imported into the global 
     # namespace else it will only be in the scope of this function
     exec ('import ' + modname+' as mrm') in globals()
+
+def Delete():
+    
+    sel=cmds.ls(selection=True)
+    
+    if len(sel)<=0:
+        cmds.warning('No modules selected!\nSelect a module to delete.')
+    else:
+        
+        modules=[]
+        roots=[]
+        
+        for node in sel:
+            modules.append(mum.UpStream(node, 'module'))
+            roots.append(mum.UpStream(node, 'root'))
+        
+        for module in modules:
+            if module!=None:
+                mru.Detach(module, detachChildren=True)
+                
+                cnt=mum.DownStream(module, 'control')[0]
+                tn=mum.GetTransform(cnt)
+                
+                cmds.delete(cmds.container(q=True,fc=tn))
+        
+        for root in roots:
+            if root!=None:
+                cnt=mum.DownStream(root, 'control')[0]
+                tn=mum.GetTransform(cnt)
+                
+                cmds.delete(cmds.container(q=True,fc=tn))
 
 def Create(module):
     
@@ -238,4 +270,3 @@ def __mirror__(module):
         
         cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
         cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
-

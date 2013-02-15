@@ -31,6 +31,28 @@ def SetWorld(childModule,worldModule,downStream=False):
             muz.attach()
             cmds.select(cl=True)
 
+def Detach(module,detachChildren=False):
+    
+    #get child plug
+    for plug in mum.DownStream(module, 'plug'):
+        if len(mum.GetData(plug))<=3:
+            childPlug=mum.GetTransform(plug)
+    
+    #detaching module
+    cmds.select(childPlug,r=True)
+    muz.detach()
+    cmds.select(cl=True)
+    
+    parentModule=cmds.listConnections(module+'.metaParent',type='network')[0]
+    
+    cmds.disconnectAttr(parentModule+'.message',module+'.metaParent')
+    
+    #detaching children
+    if detachChildren:
+        
+        for childModule in mum.DownStream(module, 'module'):
+            Detach(childModule)
+
 def Attach(childModule,parentModule):
     ''' Attaches child module to parent module. '''
     

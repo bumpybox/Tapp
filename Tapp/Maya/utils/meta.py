@@ -210,9 +210,10 @@ def UpStream(node,nodeType):
     data=GetData(node)
     
     if data['type']!=nodeType:
-        upStreamNode=UpStream(cmds.listConnections\
-                                   (node+'.metaParent')[0],
-                                   nodeType)
+        if cmds.listConnections(node+'.metaParent')!=None:
+            upStreamNode=UpStream(cmds.listConnections\
+                                       (node+'.metaParent')[0],
+                                       nodeType)
     
     if data['type']==nodeType:
         upStreamNode=node
