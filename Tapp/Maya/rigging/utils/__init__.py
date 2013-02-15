@@ -4,6 +4,33 @@ import maya.mel as mel
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.utils.ZvParentMaster as muz
 
+def SetWorld(childModule,worldModule,downStream=False):
+    ''' Attaches all ik controls to world module. '''
+    
+    #getting world control
+    worldcnt=mum.DownStream(worldModule, 'control')[0]
+    worldcnt=mum.GetTransform(worldcnt)
+    
+    #getting all ik controls
+    cnts=[]
+    
+    for cnt in mum.DownStream(childModule, 'control',allNodes=downStream):
+        cnts.append(cnt)
+    
+    filterData={'system':'ik'}
+    ikcnts=mum.Filter(cnts,filterData)
+    
+    #attaches ik control if they are prepped for ZvParentMaster
+    for cnt in ikcnts:
+        
+        tn=mum.GetTransform(cnt)
+        
+        parent=cmds.listRelatives(tn,parent=True)[0]
+        if parent.split('_')[-1]=='SN':
+            cmds.select(tn,worldcnt,r=True)
+            muz.attach()
+            cmds.select(cl=True)
+
 def Attach(childModule,parentModule):
     ''' Attaches child module to parent module. '''
     
@@ -25,6 +52,8 @@ def Attach(childModule,parentModule):
     cmds.select(childPlug,parentSocket,r=True)
     muz.attach()
     cmds.select(cl=True)
+    
+    cmds.connectAttr(parentModule+'.message',childModule+'.metaParent',force=True)
 
 def Distance(objA,objB ):
     ''' Returns distance between two nodes. '''

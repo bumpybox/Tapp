@@ -27,8 +27,10 @@ def Attach(childModule,parentModule):
 def Detach(module):
     pass
 
-def SetWorld(childModule,worldModule):
-    pass
+def SetWorld(childModule,worldModule,downStream=False):
+    
+    #attaching child module to parent module
+    mru.SetWorld(childModule, worldModule,downStream)
 
 def Rig(module):
     ''' Rigs the provided module. '''

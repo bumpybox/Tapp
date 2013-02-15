@@ -49,7 +49,6 @@ class tmLDialog(QtGui.QDialog):
         type_layout.addWidget(self.typeMenu,1,1)
         
         #thumbnail layout------------
-        thumbnail_layout=QtGui.QGridLayout()
         
         
     

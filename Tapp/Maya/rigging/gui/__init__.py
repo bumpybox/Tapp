@@ -56,14 +56,14 @@ class tmrDialog(QtGui.QDialog):
         self.create_deleteButton=QtGui.QPushButton('Delete')
         self.create_mirrorButton=QtGui.QPushButton('Mirror')
         self.create_rigButton=QtGui.QPushButton('Create Rig')
-        self.create_characterButton=QtGui.QPushButton('Create Character')
+        self.create_setWorld=QtGui.QPushButton('Set World')
         
         tab_layout.addWidget(self.create_importButton,2,0)
         tab_layout.addWidget(self.create_exportButton,2,1)
         tab_layout.addWidget(self.create_deleteButton,3,0)
         tab_layout.addWidget(self.create_mirrorButton,3,1)
         tab_layout.addWidget(self.create_rigButton,4,0)
-        tab_layout.addWidget(self.create_characterButton,4,1)
+        tab_layout.addWidget(self.create_setWorld,4,1)
         
         #///create setup tab///
         setup_tab=QtGui.QWidget()
@@ -194,6 +194,7 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
         self.connect(self.create_mirrorButton, QtCore.SIGNAL('clicked()'),create.Mirror)
+        self.connect(self.create_setWorld, QtCore.SIGNAL('clicked()'),create.SetWorld)
         
         #///setup connections///
         self.connect(self.setup_connectButton, QtCore.SIGNAL('clicked()'),setup.Connect)

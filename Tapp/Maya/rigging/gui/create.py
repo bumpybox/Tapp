@@ -50,7 +50,7 @@ def Rig():
     sel=cmds.ls(selection=True)
     
     if len(sel)<=0:
-        message='No modules are selected!\nDo you wanted to rig all modules in scene?'
+        message='No modules are selected!\nDo you want to rig all modules in scene?'
         reply=cmds.confirmDialog( title='Rig Modules',
                                   message=message,
                                   button=['Yes','No'],
@@ -96,6 +96,72 @@ def __rig__(module):
     __importModule__(moduleName)
     
     mrm.Rig(module)
+    
+    cmds.undoInfo(closeChunk=True)
+
+def SetWorld():
+    ''' Sets the world for the selected modules. '''
+    
+    cmds.undoInfo(openChunk=True)
+    
+    sel=cmds.ls(selection=True)
+    
+    #collecting modules
+    modules=[]
+    
+    for node in sel:
+        modules.append(mum.UpStream(node, 'module'))
+    
+    #connecting modules
+    #if no modules selected
+    if len(modules)>1:
+        
+        #if two modules selected
+        if len(modules)>2:
+            
+            childModules=modules[0:-1]
+            parentModule=modules[-1]
+            
+            for module in childModules:
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule)
+        else:
+            module=modules[0]
+            parentModule=modules[-1]
+            
+            message='Only one child module selected.\nDo you want to set world on downstream modules?'
+            reply=cmds.confirmDialog( title='Set World',
+                                      message=message,
+                                      button=['Yes','No'],
+                                      defaultButton='Yes',
+                                      cancelButton='No')
+            
+            if reply=='Yes':
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule,downStream=True)
+            else:
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule)
+    else:
+        cmds.warning('Not enough modules selected!')
     
     cmds.undoInfo(closeChunk=True)
 
@@ -172,3 +238,4 @@ def __mirror__(module):
         
         cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
         cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
+
