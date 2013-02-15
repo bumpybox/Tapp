@@ -10,7 +10,6 @@ import Tapp.Maya.rigging.config as mrc
 def __importModule__(module):
     modulesPath=mrc.config['modules'].replace('\\','/')
     modulePath=modulesPath+'/'+module+'.py'
-    print modulePath
     
     f = os.path.basename( modulePath )
     d = os.path.dirname( modulePath )

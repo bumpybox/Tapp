@@ -1,1 +1,1 @@
-{'storage':'c:/temp'}
+config={'repository':'Z:/Bait/grandpa/library/animations'}

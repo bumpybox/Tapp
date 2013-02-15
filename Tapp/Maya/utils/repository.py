@@ -1,4 +1,5 @@
 import sys
+import os
 
 import maya.cmds as cmds
 
@@ -17,10 +18,15 @@ def __change__(repoPath):
         repoPath = directory to repository, with '\\' separator.
     '''
     
-    #confirm that this is the tapp directory
-    if repoPath.rpartition('\\')[-1]!='Tapp':
-        cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
-    else:
+    check=False
+    #checking all subdirectories
+    for name in os.listdir(repoPath):
+        
+        #confirm that this is the Tapp directory
+        if name=='Tapp':
+            check=True
+    
+    if check:
         #create the text file that contains the tapp directory path
         path=cmds.internalVar(upd=True)+'Tapp.config'
         
@@ -32,6 +38,10 @@ def __change__(repoPath):
         sys.path.append(repoPath)
         
         cmds.evalDeferred('import Tapp')
+        cmds.evalDeferred('reload(Tapp)')
+        
+    else:
+        cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
 
 def Read():
     cmds.confirmDialog(title='Tapp Repository Path',message=__read__(),button='OK')

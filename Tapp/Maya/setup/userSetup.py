@@ -23,25 +23,34 @@ def tappInstall_UI():
     cmds.showWindow(window)
 
 def tappInstall_browse(*args):
-    tappDir=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
+    repoPath=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
     
-    #confirm that this is the tapp directory
-    if tappDir.rpartition('\\')[-1]!='Tapp':
-        cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
-    else:
-        cmds.deleteUI('tappInstall_UI')
+    check=False
+    #checking all subdirectories
+    for name in os.listdir(repoPath):
         
+        #confirm that this is the tapp directory
+        if name=='Tapp':
+            check=True
+    
+    if check:
         #create the text file that contains the tapp directory path
         path=cmds.internalVar(upd=True)+'Tapp.config'
         
         f=open(path,'w')
-        f.write(tappDir)
+        f.write(repoPath)
         f.close()
 
         #run setup
-        sys.path.append(tappDir)
+        sys.path.append(repoPath)
         
         cmds.evalDeferred('import Tapp')
+        
+        #delete ui
+        cmds.deleteUI('tappInstall_UI')
+        
+    else:
+        cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
 
 def tappInstall_cancel(*args):
     cmds.deleteUI('tappInstall_UI')
@@ -56,7 +65,7 @@ def tapp():
         if os.path.exists(path):
             if not path in sys.path:
                 sys.path.append(path)
-        
+            
             #run setup
             cmds.evalDeferred('import Tapp')
         else:
