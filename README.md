@@ -1,7 +1,7 @@
 Tapp
 =====
 
-This is a VFX tool set for multiple applications, used at Bumpybox.
+This is a VFX tool set for multiple applications.
 
 Everything is very much a work-in-progress.
 
