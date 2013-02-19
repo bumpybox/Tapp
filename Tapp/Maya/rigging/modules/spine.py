@@ -837,20 +837,36 @@ def Rig(module):
         mru.ChannelboxClean(cnt, attrs)
     
     #clean channel box
+    cnts=[]
+    
     attrs=['v']
     for cnt in fkcnts:
         mru.ChannelboxClean(cnt, attrs)
+        
+        cnts.append(cnt)
     
     attrs=['sx','sy','sz','v']
     for cnt in ikcnts:
         mru.ChannelboxClean(cnt, attrs)
+        
+        cnts.append(cnt)
 
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
     mru.ChannelboxClean(extraCNT, attrs)
     
+    cnts.append(extraCNT)
+    
     attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
     for cnt in iktwistcnts:
         mru.ChannelboxClean(cnt,attrs)
+        
+        cnts.append(cnt)
+    
+    #publishing controllers
+    for cnt in cnts:
+        cmds.container(asset,e=True,addNode=[cnt])
+        cmds.containerPublish(asset,publishNode=(cnt,''))
+        cmds.containerPublish(asset,bindNode=(cnt,cnt))
 '''
 templateModule='meta_spine1'
 Rig(templateModule)

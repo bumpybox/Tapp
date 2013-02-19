@@ -634,7 +634,7 @@ def Rig(module):
     mru.ChannelboxClean(startIkTwistCNT, attrs)
     mru.ChannelboxClean(midIkTwistCNT, attrs)
     
-    #adding controls and publish to asset
+    #publishing controllers
     for cnt in cnts:
         cmds.container(asset,e=True,addNode=[cnt])
         cmds.containerPublish(asset,publishNode=(cnt,''))

@@ -159,6 +159,10 @@ def Rig(module):
     #setup plug
     cmds.xform(phgrp,ws=True,translation=jntTrans)
     cmds.xform(phgrp,ws=True,rotation=jntRot)
+    
+    #publishing controllers
+    cmds.containerPublish(asset,publishNode=(cnt,''))
+    cmds.containerPublish(asset,bindNode=(cnt,cnt))
 '''
 templateModule='meta_joint'
 Rig(templateModule)

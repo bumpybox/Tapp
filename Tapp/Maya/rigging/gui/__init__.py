@@ -199,6 +199,10 @@ class tmrDialog(QtGui.QDialog):
         
         #///setup connections///
         self.connect(self.setup_connectButton, QtCore.SIGNAL('clicked()'),setup.Connect)
+        self.connect(self.setup_hideRigButton, QtCore.SIGNAL('clicked()'),setup.Hide)
+        self.connect(self.setup_unhideRigButton, QtCore.SIGNAL('clicked()'),setup.Unhide)
+        self.connect(self.setup_blackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Blackbox)
+        self.connect(self.setup_unblackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Unblackbox)
     
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]

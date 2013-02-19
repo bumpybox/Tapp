@@ -594,6 +594,12 @@ def Rig(module):
     
     for cnt in cnts:
         mru.ChannelboxClean(cnt, attrs)
+    
+    #publishing controllers
+    for cnt in cnts:
+        
+        cmds.containerPublish(asset,publishNode=(cnt,''))
+        cmds.containerPublish(asset,bindNode=(cnt,cnt))
 '''
 templateModule='meta_foot'
 
