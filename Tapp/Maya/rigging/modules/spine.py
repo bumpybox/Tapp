@@ -158,6 +158,9 @@ def Rig(module):
         
         cmds.container(asset,e=True,addNode=jnt)
         
+        meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
+        mum.SetTransform(jnt, meta)
+        
         if len(jnts)>0:
             cmds.parent(jnt,jnts[-1])
             
@@ -867,7 +870,8 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=[cnt])
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
+
 '''
-templateModule='meta_spine1'
+templateModule='meta_spine'
 Rig(templateModule)
 '''

@@ -136,6 +136,10 @@ def Rig(module):
     
     cmds.container(asset,e=True,addNode=jnt)
     
+    #setup joint
+    meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
+    mum.SetTransform(jnt, meta)
+    
     #create socket
     socket=cmds.spaceLocator(name=prefix+'socket')[0]
     
@@ -163,6 +167,7 @@ def Rig(module):
     #publishing controllers
     cmds.containerPublish(asset,publishNode=(cnt,''))
     cmds.containerPublish(asset,bindNode=(cnt,cnt))
+
 '''
 templateModule='meta_joint'
 Rig(templateModule)

@@ -130,6 +130,13 @@ def Rig(module):
     
     cmds.container(asset,e=True,addNode=[footJNT,toeJNT])
     
+    #setup joints
+    meta=mum.SetData('meta_'+footJNT, 'joint', None, module, None)
+    mum.SetTransform(footJNT, meta)
+    
+    meta=mum.SetData('meta_'+toeJNT, 'joint', None, module, None)
+    mum.SetTransform(toeJNT, meta)
+    
     #create plug
     plug=cmds.spaceLocator(name=prefix+'plug')[0]
     
@@ -600,9 +607,8 @@ def Rig(module):
         
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
+
 '''
 templateModule='meta_foot'
-
-foot=Foot()
-foot.Rig(templateModule)
+Rig(templateModule)
 '''

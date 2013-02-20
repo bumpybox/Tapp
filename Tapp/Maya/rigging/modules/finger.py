@@ -272,7 +272,10 @@ def Rig(module):
         jnt=cmds.joint(position=(0,0,0),
                        name=prefix+'jnt'+str(count))
         
-        grp=cmds.group(n=jnt+'_grp')
+        meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
+        mum.SetTransform(jnt, meta)
+        
+        grp=cmds.group(jnt,n=jnt+'_grp')
         cmds.xform(grp,worldSpace=True,translation=pos)
         
         cmds.container(asset,e=True,addNode=[jnt,grp])
@@ -395,8 +398,7 @@ def Rig(module):
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
 '''
+#Create()
 templateModule='meta_finger'
-finger=Finger()
-#finger.Create(3)
-finger.Rig(templateModule)
+Rig(templateModule)
 '''

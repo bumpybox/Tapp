@@ -600,20 +600,29 @@ def Rig(module):
     if upperTwist==True:
         nodes=tj.Rig(startJoint,averageJNT,plug,midJoint,
                      averageJNT,extraCNT,plug,upperTwistJoints,
-                     prefix+'upper_')
+                     prefix+'upper_',module)
         
         for node in nodes:
                 cmds.container(asset,e=True,
-                               addNode=[node,node])        
+                               addNode=[node,node])
+    else:
+        meta=mum.SetData('meta_'+startJoint, 'joint', None, module, None)
+        mum.SetTransform(startJoint, meta)
         
     if lowerTwist==True:
         nodes=tj.Rig(midJoint,endJoint,midJoint,endJoint,
                      averageJNT,extraCNT,plug,lowerTwistJoints,
-                     prefix+'lower_')
+                     prefix+'lower_',module)
         
         for node in nodes:
                 cmds.container(asset,e=True,
-                               addNode=[node,node])  
+                               addNode=[node,node])
+    else:
+        meta=mum.SetData('meta_'+midJoint, 'joint', None, module, None) 
+        mum.SetTransform(midJoint, meta)
+        
+        meta=mum.SetData('meta_'+endJoint, 'joint', None, module, None) 
+        mum.SetTransform(endJoint, meta)
     
     #channelbox cleanup
     attrs=['rx','ry','rz','sx','sy','sz','v']
@@ -643,7 +652,7 @@ def Rig(module):
 class TwistJoints():
     
     def Rig(self,start,end,startMatrix,endMatrix,bendControl,
-            attrControl,scaleRoot,amount,prefix):
+            attrControl,scaleRoot,amount,prefix,module):
         ''' Creates twist joints from start to end. '''
         
         #clear selection
@@ -675,6 +684,10 @@ class TwistJoints():
         mru.Snap(start, jnts[0])
         
         #setup joints
+        for jnt in jnts:
+            meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
+            mum.SetTransform(jnt, meta)
+        
         ikHandle=cmds.ikHandle(sol='ikSplineSolver',
                                createCurve=True,
                                sj=jnts[0],endEffector=jnts[amount])
@@ -793,9 +806,8 @@ class TwistJoints():
         
         #return
         return nodes
+
 '''
 templateModule='meta_limb'
-
-limb=Limb()
-limb.Rig(templateModule)
+Rig(templateModule)
 '''
