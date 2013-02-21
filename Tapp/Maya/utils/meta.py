@@ -2,6 +2,8 @@ import operator
 
 import maya.cmds as cmds
 
+import Tapp.Maya.utils.yaml as muy
+
 def Filter(objects,filterData):
     ''' Filters objects based on a dictionary.
         objects is a list of nodes.
@@ -252,6 +254,12 @@ def DownStream(node,nodeType,allNodes=False):
         return validNodes
 
 def Compare(dictA,dicts):
+    ''' Compares one dict to multiple dicts.
+        dicts is either a list or dict of dicts.
+        
+        returns the dict that shares the most values,
+        with dictA.
+    '''
     
     validNodes={}
     
@@ -263,6 +271,10 @@ def Compare(dictA,dicts):
     return max(validNodes, key=validNodes.get)
 
 def __compare__(dictA,dictB):
+    ''' Compares dictA with dictB.
+    
+        returns a percentage of values shared.
+    '''
     
     sharedKeys=[]
     
@@ -281,12 +293,52 @@ def __compare__(dictA,dictB):
     
     return sharePercent
 
+def exportControlData(controls,outputFile,selected=True):
+    ''' Exports control data to YAML file.
+        
+        outputFile is the full path with *.yml extension.
+        selected:    True: operates only on selected controls.
+                    False: operates on all controls within rig.
+    '''
+    
+    data={}
+    
+    if selected:
+        for cnt in controls:
+            
+            data[str(cnt)]=GetData(cnt)
+    else:
+        root=UpStream(controls[0], 'root')
+        
+        for module in DownStream(root, 'module', allNodes=True):
+            
+            cnts=DownStream(module, 'control')
+            
+            moduleData={}
+            
+            for cnt in cnts:
+                
+                cntData=GetData(cnt)
+                
+                tn=GetTransform(cnt)
+                moduleData[str(tn)]=cntData
+            
+            data[str(module)]=moduleData
+    
+    f=open(outputFile,'w')
+    muy.dump(data, f)
+    f.close()
+
+def importData(inputFile):
+    ''' Returns YAML file data. '''
+    
+    f = open(inputFile)
+    data = muy.safe_load(f)
+    f.close()
+    
+    return data
+
 '''
-import Tapp.Maya.animation.utils.tools as maut
-
-ymlData=maut.importData('c:/temp.yml')
-
-cntData=GetData('meta_l_joint1_cnt')
-
-Compare(cntData,ymlData)
+sel=cmds.ls(selection=True)
+exportControlData(sel,'c:/temp.yml')
 '''

@@ -1,4 +1,5 @@
 import os
+import webbrowser
 
 from PyQt4 import QtCore, QtGui
 import maya.cmds as cmds
@@ -6,8 +7,11 @@ import maya.mel as mel
 import maya.OpenMayaUI as omu
 import sip
 
-import Tapp.Maya.animation.utils.character as mauc
+import character
+import tools
 import Tapp.Maya.utils.ZvParentMaster as muz
+import Tapp.Maya.animation.utils as mau
+import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
 
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
@@ -127,29 +131,56 @@ class tmaDialog(QtGui.QDialog):
         tools_tab.setLayout(tab_layout)
         
         gb=QtGui.QGroupBox(title='Space Switching')
-        gb_layout=QtGui.QHBoxLayout()
-        self.zvParentMaster_button=QtGui.QPushButton(text='Zv Parent Master')
-        gb_layout.addWidget(self.zvParentMaster_button)
+        gb_layout=QtGui.QGridLayout()
+        
+        self.tools_zvParentMaster=QtGui.QPushButton(text='Zv Parent Master')
+        gb_layout.addWidget(self.tools_zvParentMaster,0,0)
+        self.tools_zvParentMasterHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_zvParentMasterHelp,0,1)
+        
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
         
         gb=QtGui.QGroupBox(title='Keying')
-        gb_layout=QtGui.QVBoxLayout()
-        self.breakdownDragger=QtGui.QPushButton(text='Breakdown Dragger')
-        gb_layout.addWidget(self.breakdownDragger)
-        self.breakdownDragger.setEnabled(False)
-        self.holdKey=QtGui.QPushButton(text='Hold Key')
-        gb_layout.addWidget(self.holdKey)
-        self.holdKey.setEnabled(False)
-        self.keyValueDragger=QtGui.QPushButton(text='Key Value Dragger')
-        gb_layout.addWidget(self.keyValueDragger)
-        self.keyValueDragger.setEnabled(False)
-        self.keyCleanUp=QtGui.QPushButton(text='Key Clean Up')
-        gb_layout.addWidget(self.keyCleanUp)
+        gb_layout=QtGui.QGridLayout()
+        
+        self.tools_breakdownDragger=QtGui.QPushButton(text='Breakdown Dragger')
+        gb_layout.addWidget(self.tools_breakdownDragger,0,0)
+        self.tools_breakdownDraggerHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_breakdownDraggerHelp,0,1)
+        
+        self.tools_holdKey=QtGui.QPushButton(text='Hold Key')
+        gb_layout.addWidget(self.tools_holdKey,1,0)
+        self.tools_holdKey.setEnabled(False)
+        self.tools_keyValueDragger=QtGui.QPushButton(text='Key Value Dragger')
+        gb_layout.addWidget(self.tools_keyValueDragger,2,0)
+        self.tools_keyValueDragger.setEnabled(False)
+        self.tools_keyCleanUp=QtGui.QPushButton(text='Key Clean Up')
+        gb_layout.addWidget(self.tools_keyCleanUp,3,0)
+        
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
         
-        #create tools tab
+        gb=QtGui.QGroupBox(title='Export/Import Animation')
+        gb_layout=QtGui.QGridLayout()
+        
+        self.tools_exportAnim=QtGui.QPushButton(text='Export')
+        gb_layout.addWidget(self.tools_exportAnim,0,0)
+        self.tools_exportAnimHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_exportAnimHelp,0,1)
+        self.tools_exportAnimHelp.setEnabled(False)
+        
+        self.tools_importAnim=QtGui.QPushButton(text='Import')
+        gb_layout.addWidget(self.tools_importAnim,1,0)
+        self.tools_importAnim.setEnabled(False)
+        self.tools_importAnimHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_importAnimHelp,1,1)
+        self.tools_importAnimHelp.setEnabled(False)
+        
+        gb.setLayout(gb_layout)
+        tab_layout.addWidget(gb)
+        
+        #create playblast tab
         playblast_tab=QtGui.QWidget()
         
         tab_layout=QtGui.QVBoxLayout()
@@ -178,21 +209,30 @@ class tmaDialog(QtGui.QDialog):
 
     def create_connections(self):
         #///character connections///
-        self.connect(self.ik_button, QtCore.SIGNAL('clicked()'),mauc.ikSwitch)
-        self.connect(self.fk_button, QtCore.SIGNAL('clicked()'),mauc.fkSwitch)
+        self.connect(self.ik_button, QtCore.SIGNAL('clicked()'),character.ikSwitch)
+        self.connect(self.fk_button, QtCore.SIGNAL('clicked()'),character.fkSwitch)
         
         #///tools connections///
-        self.connect(self.zvParentMaster_button, QtCore.SIGNAL('clicked()'),muz.ZvParentMaster)
+        self.connect(self.tools_zvParentMaster, QtCore.SIGNAL('clicked()'),muz.ZvParentMaster)
+        self.connect(self.tools_zvParentMasterHelp, QtCore.SIGNAL('clicked()'),self.zvParentMasterHelp)
+        self.connect(self.tools_breakdownDragger, QtCore.SIGNAL('clicked()'),maumlb.drag)
+        self.connect(self.tools_breakdownDraggerHelp, QtCore.SIGNAL('clicked()'),self.breakdownDraggerHelp)
+        self.connect(self.tools_keyCleanUp, QtCore.SIGNAL('clicked()'),self.keyCleanUp_click)
+        self.connect(self.tools_exportAnim, QtCore.SIGNAL('clicked()'),tools.exportAnim)
+    
+    def breakdownDraggerHelp(self):
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_breakdownDragger')
         
-        self.connect(self.keyCleanUp, QtCore.SIGNAL('clicked()'),self.keyCleanUp_click)
+    def zvParentMasterHelp(self):
+        webbrowser.open('http://www.creativecrash.com/maya/downloads/scripts-plugins/animation/c/zv-parent-master')
     
     def keyCleanUp_click(self):
         cmds.undoInfo(openChunk=True)
         
         #execute redundant keys script
-        path=os.path.dirname(__file__).replace('\\','/')
+        path=os.path.dirname(mau.__file__).replace('\\','/')
         
-        mel.eval('source "'+path+'/utils/deleteRedundantKeys.mel"')
+        mel.eval('source "'+path+'/deleteRedundantKeys.mel"')
         mel.eval('llDeleteRedundantKeys;')
         
         #deleting static channels in scene or on selected object
@@ -216,3 +256,5 @@ def show():
     dockPt = omu.MQtUtil.findControl(dock)
     dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
     dockWidget.setWidget(tmaDialog())
+
+#show()

@@ -119,14 +119,18 @@ def CreateRoot():
         if len(sel)>=1:
             
             module=mum.UpStream(sel[0], 'module')
-        
-            win=cmds.window(title='Name of Asset?',w=270,h=100)
-            layomru=cmds.columnLayout(parent=win)
-            field=cmds.textField()
             
-            cmds.button(label='OK',parent=layomru,command=lambda x:__createRoot__(cmds.textField(field,query=True,text=True),win,module))
+            result = cmds.promptDialog(
+                    title='Name of Asset',
+                    message='Enter Name:',
+                    button=['OK', 'Cancel'],
+                    defaultButton='OK',
+                    cancelButton='Cancel',
+                    dismissString='Cancel')
             
-            cmds.showWindow(win)
+            if result == 'OK':
+                text = cmds.promptDialog(query=True, text=True)
+                __createRoot__(text,module)
         else:
             cmds.warning('Multiple modules selected!\nPlease select only one.')
     else:
@@ -134,10 +138,7 @@ def CreateRoot():
     
     cmds.undoInfo(closeChunk=True)
 
-def __createRoot__(assetName,window,childModule):
-    
-    #deletes window
-    cmds.deleteUI(window)
+def __createRoot__(assetName,childModule):
     
     data={'asset':assetName}
     root=mum.SetData('meta_'+assetName, 'root', None, None, data)
