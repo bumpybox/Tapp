@@ -12,6 +12,8 @@ import tools
 import Tapp.Maya.utils.ZvParentMaster as muz
 import Tapp.Maya.animation.utils as mau
 import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
+import Tapp.Maya.animation.utils.ml_hold as maumlh
+import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
@@ -151,10 +153,14 @@ class tmaDialog(QtGui.QDialog):
         
         self.tools_holdKey=QtGui.QPushButton(text='Hold Key')
         gb_layout.addWidget(self.tools_holdKey,1,0)
-        self.tools_holdKey.setEnabled(False)
+        self.tools_holdKeyHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_holdKeyHelp,1,1)
+        
         self.tools_keyValueDragger=QtGui.QPushButton(text='Key Value Dragger')
         gb_layout.addWidget(self.tools_keyValueDragger,2,0)
-        self.tools_keyValueDragger.setEnabled(False)
+        self.tools_keyValueDraggerHelp=QtGui.QPushButton(text='?')
+        gb_layout.addWidget(self.tools_keyValueDraggerHelp,2,1)
+        
         self.tools_keyCleanUp=QtGui.QPushButton(text='Key Clean Up')
         gb_layout.addWidget(self.tools_keyCleanUp,3,0)
         
@@ -217,11 +223,21 @@ class tmaDialog(QtGui.QDialog):
         self.connect(self.tools_zvParentMasterHelp, QtCore.SIGNAL('clicked()'),self.zvParentMasterHelp)
         self.connect(self.tools_breakdownDragger, QtCore.SIGNAL('clicked()'),maumlb.drag)
         self.connect(self.tools_breakdownDraggerHelp, QtCore.SIGNAL('clicked()'),self.breakdownDraggerHelp)
+        self.connect(self.tools_holdKey, QtCore.SIGNAL('clicked()'),maumlh.ui)
+        self.connect(self.tools_holdKeyHelp, QtCore.SIGNAL('clicked()'),self.holdKeyHelp)
+        self.connect(self.tools_keyValueDragger, QtCore.SIGNAL('clicked()'),maumlk.drag)
+        self.connect(self.tools_keyValueDraggerHelp, QtCore.SIGNAL('clicked()'),self.keyValueDraggerHelp)
         self.connect(self.tools_keyCleanUp, QtCore.SIGNAL('clicked()'),self.keyCleanUp_click)
         self.connect(self.tools_exportAnim, QtCore.SIGNAL('clicked()'),tools.exportAnim)
     
     def breakdownDraggerHelp(self):
         webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_breakdownDragger')
+        
+    def holdKeyHelp(self):
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_hold')
+        
+    def keyValueDraggerHelp(self):
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_keyValueDragger')
         
     def zvParentMasterHelp(self):
         webbrowser.open('http://www.creativecrash.com/maya/downloads/scripts-plugins/animation/c/zv-parent-master')
