@@ -33,3 +33,5 @@ def importData(inputFile):
     f.close()
     
     return data
+
+#exportData('meta_l_joint1_cnt','c:/temp.yml')

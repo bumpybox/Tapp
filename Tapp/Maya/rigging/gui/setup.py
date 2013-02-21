@@ -107,3 +107,105 @@ def Blackbox():
     for node in cmds.ls(type='container'):
         
         cmds.setAttr(node+'.blackBox',1)
+
+def CreateRoot():
+    
+    cmds.undoInfo(openChunk=True)
+        
+    sel=cmds.ls(selection=True)
+    
+    if len(sel)>0:
+        
+        if len(sel)>=1:
+            
+            module=mum.UpStream(sel[0], 'module')
+        
+            win=cmds.window(title='Name of Asset?',w=270,h=100)
+            layomru=cmds.columnLayout(parent=win)
+            field=cmds.textField()
+            
+            cmds.button(label='OK',parent=layomru,command=lambda x:__createRoot__(cmds.textField(field,query=True,text=True),win,module))
+            
+            cmds.showWindow(win)
+        else:
+            cmds.warning('Multiple modules selected!\nPlease select only one.')
+    else:
+        cmds.warning('No modules selected!')
+    
+    cmds.undoInfo(closeChunk=True)
+
+def __createRoot__(assetName,window,childModule):
+    
+    #deletes window
+    cmds.deleteUI(window)
+    
+    data={'asset':assetName}
+    root=mum.SetData('meta_'+assetName, 'root', None, None, data)
+    
+    cmds.connectAttr(root+'.message',childModule+'.metaParent',force=True)
+
+def SetWorld():
+    ''' Sets the world for the selected modules. '''
+    
+    cmds.undoInfo(openChunk=True)
+    
+    sel=cmds.ls(selection=True)
+    
+    #collecting modules
+    modules=[]
+    
+    for node in sel:
+        modules.append(mum.UpStream(node, 'module'))
+    
+    #connecting modules
+    #if no modules selected
+    if len(modules)>1:
+        
+        #if two modules selected
+        if len(modules)>2:
+            
+            childModules=modules[0:-1]
+            parentModule=modules[-1]
+            
+            for module in childModules:
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule)
+        else:
+            module=modules[0]
+            parentModule=modules[-1]
+            
+            message='Only one child module selected.\nDo you want to set world on downstream modules?'
+            reply=cmds.confirmDialog( title='Set World',
+                                      message=message,
+                                      button=['Yes','No'],
+                                      defaultButton='Yes',
+                                      cancelButton='No')
+            
+            if reply=='Yes':
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule,downStream=True)
+            else:
+                
+                #importing module
+                data=mum.GetData(module)
+                
+                __importModule__(data['component'])
+                
+                #setting world for modules
+                mrm.SetWorld(module, parentModule)
+    else:
+        cmds.warning('Not enough modules selected!')
+    
+    cmds.undoInfo(closeChunk=True)

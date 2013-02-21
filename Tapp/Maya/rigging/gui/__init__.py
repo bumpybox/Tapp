@@ -26,7 +26,7 @@ class tmrDialog(QtGui.QDialog):
         self.createLayout()
         self.createConnections()
         
-        self.setFixedSize(287,371)
+        self.setFixedSize(287,431)
         
         self.create_pathLineEdit.setText(os.path.dirname(mrm.__file__))
         self.refreshList()
@@ -56,14 +56,12 @@ class tmrDialog(QtGui.QDialog):
         self.create_deleteButton=QtGui.QPushButton('Delete')
         self.create_mirrorButton=QtGui.QPushButton('Mirror')
         self.create_rigButton=QtGui.QPushButton('Create Rig')
-        self.create_setWorld=QtGui.QPushButton('Set World')
         
         tab_layout.addWidget(self.create_importButton,2,0)
         tab_layout.addWidget(self.create_exportButton,2,1)
         tab_layout.addWidget(self.create_deleteButton,3,0)
         tab_layout.addWidget(self.create_mirrorButton,3,1)
         tab_layout.addWidget(self.create_rigButton,4,0)
-        tab_layout.addWidget(self.create_setWorld,4,1)
         
         #///create setup tab///
         setup_tab=QtGui.QWidget()
@@ -81,6 +79,19 @@ class tmrDialog(QtGui.QDialog):
         
         gb_layout.addWidget(self.setup_connectButton)
         gb_layout.addWidget(label)
+        
+        gb.setLayout(gb_layout)
+        tab_layout.addWidget(gb)
+        
+        #utilities
+        gb=QtGui.QGroupBox(title='Utilities')
+        gb_layout=QtGui.QHBoxLayout()
+        
+        self.setup_setWorld=QtGui.QPushButton('Set World')
+        self.setup_createRoot=QtGui.QPushButton('Create Root')
+        
+        gb_layout.addWidget(self.setup_setWorld)
+        gb_layout.addWidget(self.setup_createRoot)
         
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
@@ -194,7 +205,6 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
         self.connect(self.create_mirrorButton, QtCore.SIGNAL('clicked()'),create.Mirror)
-        self.connect(self.create_setWorld, QtCore.SIGNAL('clicked()'),create.SetWorld)
         self.connect(self.create_deleteButton, QtCore.SIGNAL('clicked()'),create.Delete)
         
         #///setup connections///
@@ -203,6 +213,8 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.setup_unhideRigButton, QtCore.SIGNAL('clicked()'),setup.Unhide)
         self.connect(self.setup_blackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Blackbox)
         self.connect(self.setup_unblackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Unblackbox)
+        self.connect(self.setup_setWorld, QtCore.SIGNAL('clicked()'),setup.SetWorld)
+        self.connect(self.setup_createRoot, QtCore.SIGNAL('clicked()'),setup.CreateRoot)
     
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]

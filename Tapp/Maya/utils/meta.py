@@ -171,7 +171,7 @@ def GetData(node):
     #setting data variables
     attrList=cmds.attributeInfo(metaNode,all=True)
     data={}
-    data['name']=metaNode
+    data['name']=str(metaNode)
     
     #looping through custom attributes
     for count in range(7,len(attrList)):
@@ -180,26 +180,26 @@ def GetData(node):
         
         if cmds.getAttr('%s.%s' % (metaNode,attr),
                         type=True)=='enum':               
-            data[attr]=cmds.getAttr(metaNode+'.'+attr,
-                                    asString=True)
+            data[str(attr)]=str(cmds.getAttr(metaNode+'.'+attr,
+                                    asString=True))
         
         if cmds.getAttr('%s.%s' % (metaNode,attr),
                         type=True)!='enum' and\
                          cmds.getAttr(metaNode+'.'+attr,
                                       type=True)!='message':
-            data[attr]=cmds.getAttr(metaNode+'.'+attr)
+            data[str(attr)]=str(cmds.getAttr(metaNode+'.'+attr))
         
         if cmds.getAttr(metaNode+'.'+attr,
                         type=True)=='message':
             
             #query whether message attribute is connected
             if cmds.listConnections(metaNode+'.'+attr)==None:
-                data[attr]=None
+                data[str(attr)]=None
             else:
                 metaParent=cmds.listConnections(metaNode+
                                                 '.'+attr)[0]
                 
-                data[attr]=metaParent
+                data[str(attr)]=str(metaParent)
     
     return data
 
@@ -251,23 +251,42 @@ def DownStream(node,nodeType,allNodes=False):
         
         return validNodes
 
-def GetHierarchies(self):
-    hierarchies={}
-    hierarchies['None']=[]
+def Compare(dictA,dicts):
     
-    for node in cmds.ls(nodeType='network'):
-        data=GetData(node)
-        
-        if data['metaParent']==None:
-            hierarchies['None'].append(node)
-        
-        if cmds.listConnections('%s.message' % node,
-                                nodeType='network')>0:
-            hierarchies[node]=[]
-            
-            for child in cmds.listConnections(node+'.message',
-                                              nodeType=\
-                                              'network'):
-                hierarchies[node].append(child)
+    validNodes={}
     
-    return hierarchies
+    for module in dicts:
+        
+        for cnt in dicts[module]:
+            validNodes[cnt]=__compare__(dictA,dicts[module][cnt])
+    
+    return max(validNodes, key=validNodes.get)
+
+def __compare__(dictA,dictB):
+    
+    sharedKeys=[]
+    
+    for keyA in dictA:
+        for keyB in dictB:
+            if keyA==keyB:
+                sharedKeys.append(keyA)
+    
+    sharedData=0.0
+    
+    for key in sharedKeys:
+        if dictA[key]==dictB[key]:
+            sharedData+=1.0
+    
+    sharePercent=sharedData/len(dictA)*100
+    
+    return sharePercent
+
+'''
+import Tapp.Maya.animation.utils.tools as maut
+
+ymlData=maut.importData('c:/temp.yml')
+
+cntData=GetData('meta_l_joint1_cnt')
+
+Compare(cntData,ymlData)
+'''
