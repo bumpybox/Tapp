@@ -1,6 +1,9 @@
 def Create():
     pass
 
+def __createMirror__(module):
+    pass
+
 def Rig():
     pass
 

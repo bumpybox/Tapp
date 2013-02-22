@@ -7,19 +7,27 @@ import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
 
 def Create():
-    win=cmds.window(title='Number of finger joints?',w=270,h=100)
-    layomru=cmds.columnLayout(parent=win)
-    field=cmds.intField(minValue=1,value=3,parent=layomru)
     
-    cmds.button(label='OK',parent=layomru,command=lambda x:__create__(cmds.intField(field,query=True,value=True),win))
+    result = cmds.promptDialog(
+            title='Amount of finger joints?',
+            message='Enter Amount:',
+            button=['OK', 'Cancel'],
+            defaultButton='OK',
+            cancelButton='Cancel',
+            dismissString='Cancel')
     
-    cmds.showWindow(win)
+    if result == 'OK':
+        text = cmds.promptDialog(query=True, text=True)
+        __create__(int(text))
 
-def __create__(jointAmount,window):
-    ''' Creates the finger module. '''
+def __createMirror__(module):
     
-    #deletes window
-    cmds.deleteUI(window)
+    jointAmount=len(mum.DownStream(module, 'control'))-1
+    
+    return __create__(jointAmount)
+
+def __create__(jointAmount):
+    ''' Creates the finger module. '''
     
     #creating asset
     asset=cmds.container(n='finger')
@@ -32,7 +40,7 @@ def __create__(jointAmount,window):
     #create module
     data={'system':'template'}
     
-    module=mum.SetData(('meta_finger'),'root','finger',None,
+    module=mum.SetData(('meta_'+asset),'root','finger',None,
                         data)
     
     cmds.container(asset,e=True,addNode=module)
@@ -46,31 +54,35 @@ def __create__(jointAmount,window):
     cnts=[]
     
     #create base control
-    base=mru.Box('base_cnt')
+    base=mru.Box(asset+'_base_cnt')
     
     cmds.container(asset,e=True,addNode=base)
     
     #setup base control
+    data={'index':1}
     mNode=mum.SetData(('meta_'+base),'control','base',module,
-                        None)
+                        data)
     mum.SetTransform(base, mNode)
     
     cnts.append(base)
     
     #create jnts
     jnts=[]
+    metas=[mNode]
     
     for count in xrange(1,jointAmount):
         #create control
-        cnt=mru.Sphere('joint'+str(count)+'_cnt')
+        cnt=mru.Sphere(asset+'_joint'+str(count)+'_cnt')
         
         cmds.container(asset,e=True,addNode=cnt)
         
         #setup control
-        data={'index':count}
+        data={'index':count+1}
         mNode=mum.SetData(('meta_'+cnt),'control','joint',
                            module,data)
         mum.SetTransform(cnt, mNode)
+        
+        metas.append(mNode)
         
         cmds.xform(cnt,ws=True,translation=[count*3,0,0])
         
@@ -80,14 +92,17 @@ def __create__(jointAmount,window):
         cnts.append(cnt)
     
     #create end control
-    end=mru.Sphere('end_cnt')
+    end=mru.Sphere(asset+'_end_cnt')
     
     cmds.container(asset,e=True,addNode=end)
     
     #setup end control
+    data={'index':int(jointAmount)+1}
     mNode=mum.SetData(('meta_'+end),'control','end',module,
-                        None)
+                        data)
     mum.SetTransform(end, mNode)
+    
+    metas.append(mNode)
     
     cmds.xform(end,ws=True,translation=[jointAmount*3,0,0])
     
@@ -125,6 +140,9 @@ def __create__(jointAmount,window):
     
     #clear selection
     cmds.select(cl=True)
+    
+    #return
+    return metas
 
 def Attach(childModule,parentModule):
     

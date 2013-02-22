@@ -68,11 +68,17 @@ def Delete():
                 
                 cmds.delete(cmds.container(q=True,fc=tn))
 
-def Create(module):
+def Create(component):
     
-    __importModule__(module)
+    __importModule__(component)
     
     return mrm.Create()
+
+def __createMirror__(component,module):
+    
+    __importModule__(component)
+    
+    return mrm.__createMirror__(module)
 
 def Rig():
     ''' Rigs all modules in the scene. '''
@@ -168,7 +174,7 @@ def __mirror__(module):
     #getting imported controls
     importCnts=[]
     
-    importNodes=Create(mData['component'])
+    importNodes=__createMirror__(mData['component'],module)
     
     for node in importNodes:
         if cmds.nodeType(node)=='network':
@@ -182,25 +188,43 @@ def __mirror__(module):
     cmds.copyAttr(container,icontainer,values=True)
     
     #pairing controls
-    cntPairs={}
+    iModule=mum.UpStream(importCnts[0], 'root')
+    
+    iData={}
+    iData[iModule]={}
+    
+    for cnt in importCnts:
+        data=mum.GetData(cnt)
+        iData[iModule][cnt]=data
+    
+    cntPairs=[]
     
     for cnt in cnts:
+        
         data=mum.GetData(cnt)
-        for iCnt in importCnts:
-            iData=mum.GetData(iCnt)
-            
-            if iData['component']==data['component']:
-                cntPairs[cnt]=iCnt
+        iCnt=mum.Compare(data,iData)
+        
+        cntPairs.append(iCnt)
     
     #mirroring translation and rotation
-    for cnt in cntPairs:
+    for count in xrange(0,len(cnts)):
         
-        tn=mum.GetTransform(cnt)
+        tn=mum.GetTransform(cnts[count])
+        itn=mum.GetTransform(cntPairs[count])
         
-        [tx,ty,tz]=cmds.xform(tn,ws=True,query=True,translation=True)
-        [rx,ry,rz]=cmds.xform(tn,ws=True,query=True,rotation=True)
+        if cmds.nodeType(cmds.listRelatives(tn,p=True))=='dagContainer':
         
-        itn=mum.GetTransform(cntPairs[cnt])
+            [tx,ty,tz]=cmds.xform(tn,ws=True,query=True,translation=True)
+            [rx,ry,rz]=cmds.xform(tn,ws=True,query=True,rotation=True)
         
-        cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
-        cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
+            cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
+            #cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
+            
+            #cmds.rotate(0,180,0,itn,relative=True,os=True)
+            
+        else:
+            [tx,ty,tz]=cmds.xform(tn,os=True,query=True,translation=True)
+            [rx,ry,rz]=cmds.xform(tn,os=True,query=True,rotation=True)
+            
+            cmds.xform(itn,os=True,translation=(tx,ty,tz))
+            cmds.xform(itn,os=True,rotation=(rx,-ry,-rz))

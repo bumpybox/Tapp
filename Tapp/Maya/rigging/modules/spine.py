@@ -15,7 +15,11 @@ def Create():
     filePath=path.replace('\\','/').split('.')[0]+'.ma'
     
     return cmds.file(filePath,i=True,defaultNamespace=True,
-                     returnNewNodes=True)
+                     returnNewNodes=True,renameAll=True)
+
+def __createMirror__(module):
+    
+    return Create()
 
 def Attach(childModule,parentModule):
     
