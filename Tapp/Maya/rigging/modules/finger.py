@@ -33,7 +33,7 @@ def __create__(jointAmount):
     asset=cmds.container(n='finger')
     
     #setup asset
-    cmds.addAttr(asset,ln='index',at='long',defaultValue=1)
+    cmds.addAttr(asset,ln='index',at='long',defaultValue=1,keyable=True)
     
     cmds.setAttr(asset+'.blackBox',True)
     
@@ -195,15 +195,15 @@ def Rig(module):
     
     x=(baseTrans[0]+endTrans[0])/2
     
-    if x>1.0:
+    if x>0.1:
         side='left'
-    if x<-1.0:
+    if x<-0.1:
         side='right'
     
     #establish index
     data=mum.GetData(module)
     
-    index=data['index']
+    index=int(data['index'])
     
     for node in cmds.ls(type='network'):
         data=mum.GetData(node)

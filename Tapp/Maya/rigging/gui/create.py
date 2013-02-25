@@ -212,19 +212,33 @@ def __mirror__(module):
         tn=mum.GetTransform(cnts[count])
         itn=mum.GetTransform(cntPairs[count])
         
-        if cmds.nodeType(cmds.listRelatives(tn,p=True))=='dagContainer':
+        print'node:'
+        print cnts[count]
+        print 'parent:'
+        print cmds.nodeType(cmds.listRelatives(tn,p=True))
         
+        parent=cmds.nodeType(cmds.listRelatives(tn,p=True))
+        
+        if parent==None or parent=='dagContainer':
+            
+            print 'worldspace mirror'
+            
             [tx,ty,tz]=cmds.xform(tn,ws=True,query=True,translation=True)
             [rx,ry,rz]=cmds.xform(tn,ws=True,query=True,rotation=True)
         
             cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
-            #cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
+            cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
             
-            #cmds.rotate(0,180,0,itn,relative=True,os=True)
+            cmds.rotate(0,180,0,itn,relative=True,os=True)
             
         else:
+            
+            print 'objectspace mirror'
+            
             [tx,ty,tz]=cmds.xform(tn,os=True,query=True,translation=True)
             [rx,ry,rz]=cmds.xform(tn,os=True,query=True,rotation=True)
             
             cmds.xform(itn,os=True,translation=(tx,ty,tz))
             cmds.xform(itn,os=True,rotation=(rx,-ry,-rz))
+        
+        print '-----------------'

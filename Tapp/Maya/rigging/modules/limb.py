@@ -80,15 +80,15 @@ def Rig(module):
     
     x=(startTrans[0]+midTrans[0]+endTrans[0])/3
     
-    if x>1.0:
+    if x>0.1:
         side='left'
-    if x<-1.0:
+    if x<-0.1:
         side='right'
     
     #establish index
     data=mum.GetData(module)
     
-    index=data['index']
+    index=int(data['index'])
     
     for node in cmds.ls(type='network'):
         data=mum.GetData(node)
@@ -588,8 +588,9 @@ def Rig(module):
     cmds.connectAttr(extraCNT+'.ikTwistControls',
                      midIkTwistCNT+'.v')
     
-    #twist joints        
-    if upperTwist==True or lowerTwist==True:
+    #twist joints
+    if upperTwist=='True' or lowerTwist=='True':
+        
         averageJNT=cmds.joint(p=[0,0,0],n=prefix+'average_jnt')
         
         mru.Snap(midFk,averageJNT)
@@ -601,9 +602,9 @@ def Rig(module):
         
         cmds.container(asset,e=True,addNode=[averageJNT])
     
-    if upperTwist==True:
+    if upperTwist=='True':
         nodes=tj.Rig(startJoint,averageJNT,plug,midJoint,
-                     averageJNT,extraCNT,plug,upperTwistJoints,
+                     averageJNT,extraCNT,plug,int(upperTwistJoints),
                      prefix+'upper_',module)
         
         for node in nodes:
@@ -613,9 +614,9 @@ def Rig(module):
         meta=mum.SetData('meta_'+startJoint, 'joint', None, module, None)
         mum.SetTransform(startJoint, meta)
         
-    if lowerTwist==True:
+    if lowerTwist=='True':
         nodes=tj.Rig(midJoint,endJoint,midJoint,endJoint,
-                     averageJNT,extraCNT,plug,lowerTwistJoints,
+                     averageJNT,extraCNT,plug,int(lowerTwistJoints),
                      prefix+'lower_',module)
         
         for node in nodes:

@@ -51,7 +51,7 @@ def Rig(module):
     #getting module data
     data=mum.GetData(module)
     
-    jointAmount=data['joints']
+    jointAmount=int(data['joints'])
     hipsAttach=data['hips']
     spineType=data['spineType']
     
@@ -87,15 +87,15 @@ def Rig(module):
     
     x=(startTrans[0]+endTrans[0])/2
     
-    if x>1.0:
+    if x>0.1:
         side='left'
-    if x<-1.0:
+    if x<-0.1:
         side='right'
     
     #establish index
     data=mum.GetData(module)
     
-    index=data['index']
+    index=int(data['index'])
     
     for node in cmds.ls(type='network'):
         data=mum.GetData(node)

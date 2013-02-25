@@ -87,15 +87,15 @@ def Rig(module):
     
     x=(footTrans[0]+toetipTrans[0]+heelTrans[0])/3
     
-    if x>1.0:
+    if x>0.1:
         side='left'
-    if x<-1.0:
+    if x<-0.1:
         side='right'
     
     #establish index
     data=mum.GetData(module)
     
-    index=data['index']
+    index=int(data['index'])
     
     for node in cmds.ls(type='network'):
         data=mum.GetData(node)
