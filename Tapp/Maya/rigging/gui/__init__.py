@@ -9,6 +9,7 @@ import sip
 import Tapp.Maya.rigging.modules as mrm
 import create
 import setup
+import utilities
 
 # MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
@@ -101,7 +102,9 @@ class tmrDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         
         self.setup_controlExportButton=QtGui.QPushButton('Export')
+        self.setup_controlExportButton.setEnabled(False)
         self.setup_controlImportButton=QtGui.QPushButton('Import')
+        self.setup_controlImportButton.setEnabled(False)
         
         gb_layout.addWidget(self.setup_controlExportButton)
         gb_layout.addWidget(self.setup_controlImportButton)
@@ -114,7 +117,9 @@ class tmrDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         
         self.setup_hierarchyExportButton=QtGui.QPushButton('Export')
+        self.setup_hierarchyExportButton.setEnabled(False)
         self.setup_hierarchyImportButton=QtGui.QPushButton('Import')
+        self.setup_hierarchyImportButton.setEnabled(False)
         
         gb_layout.addWidget(self.setup_hierarchyExportButton)
         gb_layout.addWidget(self.setup_hierarchyImportButton)
@@ -151,7 +156,9 @@ class tmrDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         
         self.utils_sphereCreateButton=QtGui.QPushButton('Create')
+        self.utils_sphereCreateButton.setEnabled(False)
         self.utils_sphereRemoveButton=QtGui.QPushButton('Remove All')
+        self.utils_sphereRemoveButton.setEnabled(False)
         
         gb_layout.addWidget(self.utils_sphereCreateButton)
         gb_layout.addWidget(self.utils_sphereRemoveButton)
@@ -164,7 +171,9 @@ class tmrDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         
         self.utils_weightImportButton=QtGui.QPushButton('Import')
+        self.utils_weightImportButton.setEnabled(False)
         self.utils_weightExportButton=QtGui.QPushButton('Export')
+        self.utils_weightExportButton.setEnabled(False)
         
         gb_layout.addWidget(self.utils_weightImportButton)
         gb_layout.addWidget(self.utils_weightExportButton)
@@ -172,10 +181,10 @@ class tmrDialog(QtGui.QDialog):
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
         
-        #proxy parent
-        self.utils_proxyParentButton=QtGui.QPushButton('Proxy Parent')
+        #skeleton parent
+        self.utils_skeletonParentButton=QtGui.QPushButton('Skeleton Parent')
         
-        tab_layout.addWidget(self.utils_proxyParentButton)
+        tab_layout.addWidget(self.utils_skeletonParentButton)
         
         #create main tabs
         tabs=QtGui.QVBoxLayout()
@@ -215,6 +224,9 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.setup_unblackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Unblackbox)
         self.connect(self.setup_setWorld, QtCore.SIGNAL('clicked()'),setup.SetWorld)
         self.connect(self.setup_createRoot, QtCore.SIGNAL('clicked()'),setup.CreateRoot)
+        
+        #///setup utilities///
+        self.connect(self.utils_skeletonParentButton, QtCore.SIGNAL('clicked()'),utilities.SkeletonParent)
     
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]

@@ -1,6 +1,6 @@
 //Maya ASCII 2013 scene
 //Name: foot.ma
-//Last modified: Fri, Feb 22, 2013 05:29:25 PM
+//Last modified: Tue, Feb 26, 2013 12:23:27 PM
 //Codeset: 1252
 requires maya "2013";
 requires "stereoCamera" "10.0";
@@ -13,7 +13,7 @@ fileInfo "osv" "Microsoft Windows 7 Business Edition, 64-bit Windows 7 Service P
 createNode transform -s -n "persp";
 	setAttr ".v" no;
 	setAttr ".t" -type "double3" 26.628849301768955 28.041931081578028 30.638466487104257 ;
-	setAttr ".r" -type "double3" -33.338352729575334 45.000000000007027 2.2489917831977478e-015 ;
+	setAttr ".r" -type "double3" -33.338352729575334 45.000000000007027 2.2489917831977482e-015 ;
 createNode camera -s -n "perspShape" -p "persp";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999986;
@@ -65,7 +65,6 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".o" yes;
 createNode dagContainer -n "foot";
 	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
-	addAttr -ci true -sn "attachToLeg" -ln "attachToLeg" -min 0 -max 1 -at "bool";
 	addAttr -ci true -sn "index" -ln "index" -dv 1 -at "long";
 	setAttr ".isc" yes;
 	setAttr ".bbx" yes;
@@ -86,7 +85,6 @@ createNode dagContainer -n "foot";
 	setAttr ".aal" -type "attributeAlias" {"foot_cnt","publishedNodeInfo[0]","toe_cnt"
 		,"publishedNodeInfo[1]","heel_cnt","publishedNodeInfo[2]","toetip_cnt","publishedNodeInfo[3]"
 		,"bank01_cnt","publishedNodeInfo[4]","bank02_cnt","publishedNodeInfo[5]"} ;
-	setAttr -k on ".attachToLeg" yes;
 	setAttr -k on ".index";
 createNode transform -n "foot_cnt" -p "foot";
 	addAttr -ci true -sn "metaParent" -ln "metaParent" -at "message";
@@ -513,7 +511,7 @@ createNode nurbsCurve -n "bank01IndicatorShape" -p "bank01Indicator";
 		0.053232184679152202 -0.91989753528849683 -2.6455360092226012e-016
 		2.4361191817451728 -0.91989753528849683 -2.6455360092226012e-016
 		2.4361191817451728 -2.3828869970660271 -5.2910720184452023e-016
-		6.0104496773441944 1.0818542425217947e-015 -4.8043979573444199e-031
+		6.0104496773441944 1.0818542425217947e-015 -4.8043979573444208e-031
 		2.4361191817451728 2.3828869970660271 5.2910720184452023e-016
 		2.4361191817451728 0.91989753528849683 2.6455360092225997e-016
 		0.053232184679152202 0.91989753528849683 2.6455360092225997e-016
@@ -720,7 +718,7 @@ createNode network -n "meta_foot";
 	setAttr ".component" -type "string" "foot";
 	setAttr ".system" -type "string" "template";
 	setAttr -k on ".index";
-	setAttr -k on ".attachToLeg";
+	setAttr -k on ".attachToLeg" yes;
 createNode network -n "meta_r_bank_cnt";
 	addAttr -ci true -sn "type" -ln "type" -dt "string";
 	addAttr -ci true -sn "component" -ln "component" -dt "string";
@@ -910,7 +908,6 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "foot.index" "meta_foot.index";
-connectAttr "foot.attachToLeg" "meta_foot.attachToLeg";
 connectAttr "meta_foot.msg" "meta_r_bank_cnt.metaParent";
 connectAttr "meta_foot.msg" "meta_toe_cnt.metaParent";
 connectAttr "meta_foot.msg" "meta_heel_cnt.metaParent";

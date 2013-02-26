@@ -16,8 +16,10 @@ def Create():
     
     filePath=path.replace('\\','/').split('.')[0]+'.ma'
     
-    return cmds.file(filePath,i=True,defaultNamespace=True,
-                     returnNewNodes=True,renameAll=True)
+    return cmds.file(filePath,i=True,defaultNamespace=False,
+                     returnNewNodes=True,renameAll=True,
+                     mergeNamespacesOnClash=True,
+                     namespace='limb')
 
 def __createMirror__(module):
     

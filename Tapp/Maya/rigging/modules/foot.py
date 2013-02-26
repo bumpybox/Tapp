@@ -16,16 +16,127 @@ def Create():
     filePath=path.replace('\\','/').split('.')[0]+'.ma'
     
     return cmds.file(filePath,i=True,defaultNamespace=False,
-                     returnNewNodes=True,renameAll=True)
-
+                     returnNewNodes=True,renameAll=True,
+                     mergeNamespacesOnClash=True,
+                     namespace='foot')
+    
 def __createMirror__(module):
     
     return Create()
 
 def Attach(childModule,parentModule):
     
-    #attaching child module to parent module
-    mru.Attach(childModule, parentModule)
+    data=mum.GetData(parentModule)
+    if data['component']=='limb':
+        
+        plugs=mum.DownStream(parentModule, 'plug')
+        ikPlug=''
+        for plug in plugs:
+            
+            data=mum.GetData(plug)
+            if 'system' in data:
+                ikPlug=mum.GetTransform(plug)
+        
+        cmds.select(ikPlug,r=True)
+        muz.detach()
+        
+        #getting controls
+        ballCNT=''
+        controls=mum.DownStream(childModule, 'control')
+        for cnt in controls:
+            
+            data=mum.GetData(cnt)
+            
+            if data['component']=='ball':
+                ballCNT=mum.GetTransform(cnt)
+        
+        #getting joints
+        footIK=''
+        iks=mum.DownStream(childModule, 'ik')
+        for ik in iks:
+            
+            data=mum.GetData(ik)
+            
+            if data['component']=='foot':
+                footIK=mum.GetTransform(ik)
+        
+        #getting groups
+        rbankParent=''
+        grps=mum.DownStream(childModule, 'group')
+        for grp in grps:
+            
+            data=mum.GetData(grp)
+            
+            if data['component']=='bank' and data['side']=='right':
+                rbankParent=mum.GetTransform(grp)
+        
+        #getting plug
+        plug=mum.DownStream(childModule, 'plug')[0]
+        plug=mum.GetTransform(plug)
+        
+        #getting asset
+        asset=cmds.container(q=True,fc=ballCNT)
+        
+        #attaching ik plug
+        cmds.select(ikPlug,ballCNT,r=True)
+        muz.attach()
+        
+        #create fk foot align
+        footFKalign=cmds.group(empty=True,
+                               n=footIK+'_align')
+        
+        cmds.container(asset,e=True,addNode=[footFKalign])
+        
+        mru.Snap(footIK,footFKalign)
+        
+        cmds.parent(footFKalign,footIK)
+        
+        #setup controls
+        sockets=mum.DownStream(parentModule,'socket')
+        
+        controls=mum.DownStream(parentModule, 'control')
+        for cnt in controls:
+            data=mum.GetData(cnt)
+            
+            #setup ik control
+            if 'system' in data and data['system']=='ik' \
+            and data['component']=='end':
+                tn=mum.GetTransform(cnt)
+                
+                cmds.select(rbankParent,tn,r=True)
+                muz.attach()
+                
+                cmds.scaleConstraint(tn,rbankParent)
+            
+            #setup extra control
+            if data['component']=='extra':
+                tn=mum.GetTransform(cnt)
+                
+                cmds.connectAttr(tn+'.FKIK',asset+'.FKIK')
+            
+            #setup end fk control
+            if 'system' in data and data['system']=='fk' \
+            and data['component']=='end':
+                data={'switch':footFKalign}
+                mum.ModifyData(cnt, data)
+                
+                tn=mum.GetTransform(cnt)
+                
+                mru.Snap(tn,footFKalign,point=False)
+        
+        #attaching plug
+        for socket in sockets:
+            data=mum.GetData(socket)
+            
+            if data['index']=='3':
+                tn=mum.GetTransform(socket)
+                
+                cmds.select(plug,tn,r=True)
+                muz.attach()
+                
+                cmds.scaleConstraint(tn,plug)
+    else:
+        mru.Attach(childModule, parentModule)
 
 def Detach(module):
     pass
@@ -220,6 +331,9 @@ def Rig(module):
     toeIK=cmds.duplicate(toeJNT,st=True,po=True,
                            n=prefix+'ik02')[0]
     
+    mNode=mum.SetData('meta_'+footIK, 'ik', 'foot', module, None)
+    mum.SetTransform(footIK, mNode)
+    
     cmds.container(asset,e=True,addNode=[footIK,toeIK])
     
     #setup ik chain
@@ -269,6 +383,10 @@ def Rig(module):
     mru.Snap(plug,rbankParent)
     
     cmds.parent(rbankgrpGRP,rbankParent)
+    
+    data={'side':'right'}
+    mNode=mum.SetData('meta_'+rbankParent, 'group', 'bank', module, data)
+    mum.SetTransform(rbankParent, mNode)
     
     phgrp=cmds.group(rbankParent,n=(rbankParent+'_PH'))
     sngrp=cmds.group(rbankParent,n=(rbankParent+'_SN'))
@@ -500,104 +618,12 @@ def Rig(module):
     cmds.connectAttr(asset+'.FKIK',heelCNT+'.v')
     cmds.connectAttr(asset+'.FKIK',footCNT+'.v')
     
-    #attach to leg
-    if attachToLeg==True:
-        #search for plugs in scene and add distance to plugs
-        plugs={}
-        
-        for node in cmds.ls(type='network'):
-            data=mum.GetData(node)
-            if data['type']=='module' and \
-            data['component']=='limb':
-                nodes=mum.DownStream(node,'plug')
-                for n in nodes:
-                    data=mum.GetData(n)
-                    if 'system' in data:
-                        tn=mum.GetTransform(n)
-                        plugs[tn]=mru.Distance(tn, plug)
-        
-        #attaching ik plug
-        ikPlug=min(plugs, key=plugs.get)
-        
-        cmds.select(ikPlug,r=True)
-        muz.detach()
-        
-        cmds.select(ikPlug,ballCNT,r=True)
-        muz.attach()
-        
-        #create fk foot align
-        footFKalign=cmds.group(empty=True,
-                               n=footIK+'_align')
-        
-        cmds.container(asset,e=True,addNode=[footFKalign])
-        
-        mru.Snap(footIK,footFKalign)
-        
-        cmds.parent(footFKalign,footIK)
-        
-        #setup controls
-        mNode=mum.UpStream(ikPlug, 'module')
-        cnts=mum.DownStream(mNode,'control')
-        sockets=mum.DownStream(mNode,'socket')
-        
-        for cnt in cnts:
-            data=mum.GetData(cnt)
-            
-            #setup ik control
-            if 'system' in data and data['system']=='ik' \
-            and data['component']=='end':
-                tn=mum.GetTransform(cnt)
-                
-                cmds.select(rbankParent,tn,r=True)
-                muz.attach()
-                
-                cmds.scaleConstraint(tn,rbankParent)
-            
-            #setup extra control
-            if data['component']=='extra':
-                tn=mum.GetTransform(cnt)
-                
-                cmds.connectAttr(tn+'.FKIK',asset+'.FKIK')
-            
-            #setup end fk control
-            if 'system' in data and data['system']=='fk' \
-            and data['component']=='end':
-                data={'switch':footFKalign}
-                mum.ModifyData(cnt, data)
-                
-                tn=mum.GetTransform(cnt)
-                
-                mru.Snap(tn,footFKalign,point=False)
-        
-        #attaching plug
-        for socket in sockets:
-            data=mum.GetData(socket)
-            
-            if data['index']=='3':
-                tn=mum.GetTransform(socket)
-                
-                cmds.select(plug,tn,r=True)
-                muz.attach()
-                
-                cmds.scaleConstraint(tn,plug)
-        
-        #parenting meta nodes
-        cmds.connectAttr(mNode+'.message',module+'.metaParent')
-        
-        cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
-        
-        for cnt in cnts:
-            metaNode=mum.GetMetaNode(cnt)
-            
-            cmds.connectAttr(mNode+'.message',metaNode+'.metaParent',
-                             force=True)
-    else:
-        pointCon=cmds.pointConstraint(footIK,footFK,footJNT)[0]
-        
-        cmds.connectAttr(fkikREV+'.outputX',
-                         pointCon+'.'+footFK+'W1')
-        cmds.connectAttr(asset+'.FKIK',
-                         pointCon+'.'+footIK+'W0')
+    pointCon=cmds.pointConstraint(footIK,footFK,footJNT)[0]
+    
+    cmds.connectAttr(fkikREV+'.outputX',
+                     pointCon+'.'+footFK+'W1')
+    cmds.connectAttr(asset+'.FKIK',
+                     pointCon+'.'+footIK+'W0')
     
     #clean channel box
     cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
@@ -611,6 +637,8 @@ def Rig(module):
         
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
+
+#Attach('meta_c_foot1','meta_c_arm1')
 
 '''
 templateModule='meta_foot'
