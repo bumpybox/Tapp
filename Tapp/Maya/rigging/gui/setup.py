@@ -1,11 +1,13 @@
 import os
 import sys
+from shutil import move
 
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.modules as mrm
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
+import Tapp.Maya.utils.yaml as muy
 
 def __importModule__(module):
     modulesPath=mrc.config['modules'].replace('\\','/')
@@ -210,3 +212,131 @@ def SetWorld():
         cmds.warning('Not enough modules selected!')
     
     cmds.undoInfo(closeChunk=True)
+
+def HierarchyExport():
+    ''' Exports hierarchy data to external hierarchy files. '''
+    
+    sel=cmds.ls(selection=True)
+    
+    #collecting modules
+    modules=[]
+    
+    for node in sel:
+        modules.append(mum.UpStream(node, 'module'))
+    
+    #if no modules selected
+    if len(modules)>0:
+        
+        basicFilter = 'Hierarchy (*.hierarchy)'
+        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                                  caption='Export Hierarchy')
+        if filePath!=None:
+            root=mum.UpStream(modules[0], 'root')
+            
+            hierarchyData=__hierarchyData__(root)
+            
+            f=open(filePath[0],'w')
+            muy.dump(hierarchyData, f)
+            f.close()
+        
+    else:
+        cmds.warning('No enough modules selected!')
+
+def HierarchyImport():
+    ''' Queries user for hierarchy files and
+        sets up the hierarchy.
+    '''
+    
+    basicFilter = 'Hierarchy (*.hierarchy)'
+    filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                              caption='Export Hierarchy',fileMode=1)
+    
+    if filePath!=None:
+        
+        f=open(filePath[0],'r')
+        hierarchyData=muy.safe_load(f)
+        
+        for module in hierarchyData:
+            
+            parent=hierarchyData[module]['metaParent']
+            
+            if parent!=None:
+                
+                moduleCnts=mum.DownStream(module, 'control')
+                moduleCnt=mum.GetTransform(moduleCnts[0])
+                
+                parentCnts=mum.DownStream(parent, 'control')
+                if len(parentCnts)>0:
+                    
+                    parentCnt=mum.GetTransform(parentCnts[0])
+                    
+                    cmds.select(moduleCnt,parentCnt,r=True)
+                    
+                    Connect()
+
+def __hierarchyData__(root):
+    ''' Queries the hierarchy of the meta rig.
+    
+        returns dict with module name and metaParent info.
+    '''
+    
+    modules=mum.DownStream(root, 'module', allNodes=True)
+    modules.append(root)
+    
+    hierarchyData={}
+    
+    for module in modules:
+        
+        data=mum.GetData(module)
+        
+        moduleData={}
+        
+        moduleData['metaParent']=data['metaParent']
+        
+        hierarchyData[str(module)]=moduleData
+    
+    return hierarchyData
+
+def ExportControls():
+    
+    #getting file path and name
+    basicFilter = "Controls (*.controls)"
+    fileName=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,caption='Export Controls')
+    
+    if fileName!=None:
+        
+        controls=[]
+        for node in cmds.ls(type='network'):
+            
+            data=mum.GetData(node)
+            if data['type']=='control':
+                
+                controls.append(mum.GetTransform(node))
+        
+        cmds.select(controls,r=True)
+        
+        newFileName=cmds.file(fileName[0],exportSelected=True,type='mayaAscii')
+        move(newFileName,(os.path.splitext(newFileName)[0]))
+        
+        cmds.select(cl=True)
+
+def ImportControls():
+    
+    #getting file path and name
+    basicFilter = "Controls (*.controls)"
+    fileName=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,fileMode=1)
+                    
+    #importing nodes
+    importNodes=cmds.file(fileName,i=True,returnNewNodes=True)
+    
+    importCnts=[]
+    #importNodes loop
+    for node in importNodes:
+        
+        if cmds.nodeType(node)=='network':
+            
+            data=mum.GetData(node)
+            if data['type']=='control':
+                importCnts.append(mum.GetTransform(node))
+
+#ImportControls()

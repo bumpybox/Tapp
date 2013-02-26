@@ -191,8 +191,6 @@ def Rig(module):
     #getting module data
     data=mum.GetData(module)
     
-    attachToLeg=data['attachToLeg']
-    
     #establish side
     side='center'
     

@@ -97,8 +97,21 @@ class tmrDialog(QtGui.QDialog):
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
         
+        #hierarchy
+        gb=QtGui.QGroupBox(title='Hierarchy')
+        gb_layout=QtGui.QHBoxLayout()
+        
+        self.setup_hierarchyExportButton=QtGui.QPushButton('Export')
+        self.setup_hierarchyImportButton=QtGui.QPushButton('Import')
+        
+        gb_layout.addWidget(self.setup_hierarchyExportButton)
+        gb_layout.addWidget(self.setup_hierarchyImportButton)
+        
+        gb.setLayout(gb_layout)
+        tab_layout.addWidget(gb)
+        
         #control shapes
-        gb=QtGui.QGroupBox(title='Control Shapes')
+        gb=QtGui.QGroupBox(title='Controls')
         gb_layout=QtGui.QHBoxLayout()
         
         self.setup_controlExportButton=QtGui.QPushButton('Export')
@@ -108,21 +121,6 @@ class tmrDialog(QtGui.QDialog):
         
         gb_layout.addWidget(self.setup_controlExportButton)
         gb_layout.addWidget(self.setup_controlImportButton)
-        
-        gb.setLayout(gb_layout)
-        tab_layout.addWidget(gb)
-        
-        #control shapes
-        gb=QtGui.QGroupBox(title='Hierarchy')
-        gb_layout=QtGui.QHBoxLayout()
-        
-        self.setup_hierarchyExportButton=QtGui.QPushButton('Export')
-        self.setup_hierarchyExportButton.setEnabled(False)
-        self.setup_hierarchyImportButton=QtGui.QPushButton('Import')
-        self.setup_hierarchyImportButton.setEnabled(False)
-        
-        gb_layout.addWidget(self.setup_hierarchyExportButton)
-        gb_layout.addWidget(self.setup_hierarchyImportButton)
         
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
@@ -224,6 +222,8 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.setup_unblackboxRigButton, QtCore.SIGNAL('clicked()'),setup.Unblackbox)
         self.connect(self.setup_setWorld, QtCore.SIGNAL('clicked()'),setup.SetWorld)
         self.connect(self.setup_createRoot, QtCore.SIGNAL('clicked()'),setup.CreateRoot)
+        self.connect(self.setup_hierarchyImportButton, QtCore.SIGNAL('clicked()'),setup.HierarchyImport)
+        self.connect(self.setup_hierarchyExportButton, QtCore.SIGNAL('clicked()'),setup.HierarchyExport)
         
         #///setup utilities///
         self.connect(self.utils_skeletonParentButton, QtCore.SIGNAL('clicked()'),utilities.SkeletonParent)
