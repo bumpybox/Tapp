@@ -67,35 +67,79 @@ def Connect():
         cmds.warning('Not enough modules selected!')
 
 def Hide():
-    for node in cmds.ls():
-        if cmds.nodeType(node)=='nurbsCurve':
-            p=cmds.listRelatives(node,p=True)[0]
-            if (cmds.attributeQuery('metaParent',n=p,ex=True))==False:
-                cmds.setAttr('%s.visibility' % node,False)
-        if cmds.nodeType(node)=='locator':
-            cmds.setAttr('%s.visibility' % node,False)
+    
+    nodes=[]
+    
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='module':
+            cnts=mum.DownStream(node, 'control')
+            
+            tn=mum.GetTransform(cnts[0])
+            container=cmds.container(q=True,fc=tn)
+            
+            for obj in cmds.container(container,q=True,nodeList=True):
+                nodes.append(obj)
+    
+    for node in nodes:
+                
+        if cmds.nodeType(node)=='transform':
+            
+            shape=cmds.listRelatives(node,shapes=True)
+            if cmds.nodeType(shape)=='locator':
+            
+                cmds.setAttr('%s.visibility' % shape[0],False)
+                
         if cmds.nodeType(node)=='ikHandle':
+            
             cmds.setAttr('%s.visibility' % node,False)
+            
         if cmds.nodeType(node)=='cluster':
+            
             p=cmds.listConnections(node+'.matrix')[0]
             cmds.setAttr('%s.visibility' % p,False)
+            
         if cmds.nodeType(node)=='joint':
+            
             cmds.setAttr('%s.drawStyle' % node,2)
 
 def Unhide():
-    for node in cmds.ls():
-        if cmds.nodeType(node)=='nurbsCurve':
-            p=cmds.listRelatives(node,p=True)[0]
-            if (cmds.attributeQuery('metaParent',n=p,ex=True))==False:
-                cmds.setAttr('%s.visibility' % node,True)
-        if cmds.nodeType(node)=='locator':
-            cmds.setAttr('%s.visibility' % node,True)
+    
+    nodes=[]
+    
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='module':
+            cnts=mum.DownStream(node, 'control')
+            
+            tn=mum.GetTransform(cnts[0])
+            container=cmds.container(q=True,fc=tn)
+            
+            for obj in cmds.container(container,q=True,nodeList=True):
+                nodes.append(obj)
+    
+    for node in nodes:
+                
+        if cmds.nodeType(node)=='transform':
+            
+            shape=cmds.listRelatives(node,shapes=True)
+            if cmds.nodeType(shape)=='locator':
+            
+                cmds.setAttr('%s.visibility' % shape[0],True)
+                
         if cmds.nodeType(node)=='ikHandle':
+            
             cmds.setAttr('%s.visibility' % node,True)
+            
         if cmds.nodeType(node)=='cluster':
+            
             p=cmds.listConnections(node+'.matrix')[0]
             cmds.setAttr('%s.visibility' % p,True)
+            
         if cmds.nodeType(node)=='joint':
+            
             cmds.setAttr('%s.drawStyle' % node,0)
 
 def Unblackbox():
@@ -297,7 +341,7 @@ def __hierarchyData__(root):
     
     return hierarchyData
 
-def ExportControls():
+def ControlsExport():
     
     #getting file path and name
     basicFilter = "Controls (*.controls)"
@@ -320,23 +364,117 @@ def ExportControls():
         
         cmds.select(cl=True)
 
-def ImportControls():
+def ControlsImport():
     
     #getting file path and name
     basicFilter = "Controls (*.controls)"
     fileName=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,fileMode=1)
-                    
-    #importing nodes
-    importNodes=cmds.file(fileName,i=True,returnNewNodes=True)
     
-    importCnts=[]
-    #importNodes loop
-    for node in importNodes:
+    if fileName!=None:
         
-        if cmds.nodeType(node)=='network':
+        cnts={}
+        for node in cmds.ls(type='network'):
             
             data=mum.GetData(node)
             if data['type']=='control':
-                importCnts.append(mum.GetTransform(node))
+                cnts[node]=data
+                
+                module=mum.UpStream(node, 'module')
+                mData=mum.GetData(module)
+                
+                cnts[node]['module_side']=mData['side']
+                cnts[node]['module']=mData['component']
+                cnts[node]['module_index']=mData['index']
+                cnts[node]['module_subcomponent']=mData['subcomponent']
+            
+        #importing nodes
+        importNodes=cmds.file(fileName,i=True,defaultNamespace=False,
+                         returnNewNodes=True,renameAll=True,
+                         mergeNamespacesOnClash=False,
+                         namespace='mr_importControls')
+        
+        importCnts=[]
+        #importNodes loop
+        for node in importNodes:
+            
+            if cmds.nodeType(node)=='network':
+                
+                data=mum.GetData(node)
+                if data['type']=='control':
+                    importCnts.append(mum.GetTransform(node))
+        
+        for cnt in importCnts:
+            
+            data=mum.GetData(cnt)
+            
+            module=mum.UpStream(cnt, 'module')
+            mData=mum.GetData(module)
+            
+            data['module_side']=mData['side']
+            data['module']=mData['component']
+            data['module_index']=mData['index']
+            data['module_subcomponent']=mData['subcomponent']
+            
+            cntMatch=mum.GetTransform(mum.Compare(data, cnts))
+            
+            shapeNode=cmds.listRelatives(cnt,shapes=True)
+            
+            origShapeNode=cmds.listRelatives(cntMatch,shapes=True)[0]
+            
+            #delete original shape node
+            tempGroup=cmds.createNode( 'transform', ss=True )
+            
+            cmds.parent(origShapeNode,tempGroup,absolute=True,shape=True)
+            
+            cmds.delete(tempGroup)
+            
+            #adding new shape node
+            cmds.parent(shapeNode,cntMatch,add=True,shape=True)
+            
+            cmds.rename(shapeNode,shapeNode[0].split(':')[-1])
+            
+        #delete imported nodes
+        for node in importNodes:
+            try:
+                cmds.delete(node)
+            except:
+                pass
+        
+        cmds.namespace(force=True,removeNamespace='mr_importControls')
 
-#ImportControls()
+def __colorModule__(module):
+    
+    cnts=mum.DownStream(module, 'control')
+    
+    mData=mum.GetData(module)
+    side=mData['side']
+    color=1
+    
+    if side=='center':
+        color=6
+    if side=='right':
+        color=13
+    if side=='left':
+        color=14
+    
+    for cnt in cnts:
+        
+        tn=mum.GetTransform(cnt)
+        
+        shape=cmds.listRelatives(tn,shapes=True)[0]
+        
+        cmds.setAttr('%s.overrideEnabled' % shape,1)
+            
+        cmds.setAttr('%s.overrideColor' % shape,color)
+
+def ColorRig():
+    
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='root':
+            
+            modules=mum.DownStream(node, 'module', allNodes=True)
+            for module in modules:
+                
+                __colorModule__(module)

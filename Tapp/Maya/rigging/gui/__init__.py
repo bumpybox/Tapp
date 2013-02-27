@@ -115,9 +115,7 @@ class tmrDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         
         self.setup_controlExportButton=QtGui.QPushButton('Export')
-        self.setup_controlExportButton.setEnabled(False)
         self.setup_controlImportButton=QtGui.QPushButton('Import')
-        self.setup_controlImportButton.setEnabled(False)
         
         gb_layout.addWidget(self.setup_controlExportButton)
         gb_layout.addWidget(self.setup_controlImportButton)
@@ -224,6 +222,8 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.setup_createRoot, QtCore.SIGNAL('clicked()'),setup.CreateRoot)
         self.connect(self.setup_hierarchyImportButton, QtCore.SIGNAL('clicked()'),setup.HierarchyImport)
         self.connect(self.setup_hierarchyExportButton, QtCore.SIGNAL('clicked()'),setup.HierarchyExport)
+        self.connect(self.setup_controlExportButton, QtCore.SIGNAL('clicked()'),setup.ControlsExport)
+        self.connect(self.setup_controlImportButton, QtCore.SIGNAL('clicked()'),setup.ControlsImport)
         
         #///setup utilities///
         self.connect(self.utils_skeletonParentButton, QtCore.SIGNAL('clicked()'),utilities.SkeletonParent)

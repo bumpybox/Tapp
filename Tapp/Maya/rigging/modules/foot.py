@@ -135,6 +135,9 @@ def Attach(childModule,parentModule):
                 muz.attach()
                 
                 cmds.scaleConstraint(tn,plug)
+        
+        #connecting modules
+        cmds.connectAttr(parentModule+'.message',childModule+'.metaParent')
     else:
         mru.Attach(childModule, parentModule)
 
@@ -226,7 +229,7 @@ def Rig(module):
     asset=cmds.container(n=prefix+'rig')
     
     #create module
-    data={'side':side,'index':str(index),'system':'rig'}
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':'foot'}
     
     module=mum.SetData(('meta'+suffix),'module','foot',None,
                         data)

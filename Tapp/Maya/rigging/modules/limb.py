@@ -114,7 +114,7 @@ def Rig(module):
     asset=cmds.container(n=prefix+'rig')
     
     #create module
-    data={'side':side,'index':str(index),'system':'rig'}
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':limbType}
     
     module=mum.SetData(('meta'+suffix),'module','limb',None,
                         data)
@@ -195,6 +195,8 @@ def Rig(module):
     rot=cmds.xform(grp,query=True,rotation=True)
     cmds.rotate(rot[0],rot[1],rot[2],startJoint,
                 worldSpace=True,pcp=True)
+    
+    mru.Snap(startJoint, plug)
     
     cmds.parent(startJoint,plug)
     
@@ -607,11 +609,12 @@ def Rig(module):
     if upperTwist=='True':
         nodes=tj.Rig(startJoint,averageJNT,plug,midJoint,
                      averageJNT,extraCNT,plug,int(upperTwistJoints),
-                     prefix+'upper_',module)
+                     prefix+'upper_',module,'y')
         
         for node in nodes:
                 cmds.container(asset,e=True,
                                addNode=[node,node])
+                               
     else:
         meta=mum.SetData('meta_'+startJoint, 'joint', None, module, None)
         mum.SetTransform(startJoint, meta)
@@ -619,17 +622,18 @@ def Rig(module):
     if lowerTwist=='True':
         nodes=tj.Rig(midJoint,endJoint,midJoint,endJoint,
                      averageJNT,extraCNT,plug,int(lowerTwistJoints),
-                     prefix+'lower_',module)
+                     prefix+'lower_',module,'z')
         
         for node in nodes:
                 cmds.container(asset,e=True,
                                addNode=[node,node])
+                               
     else:
         meta=mum.SetData('meta_'+midJoint, 'joint', None, module, None) 
         mum.SetTransform(midJoint, meta)
         
-        meta=mum.SetData('meta_'+endJoint, 'joint', None, module, None) 
-        mum.SetTransform(endJoint, meta)
+    meta=mum.SetData('meta_'+endJoint, 'joint', None, module, None) 
+    mum.SetTransform(endJoint, meta)
     
     #channelbox cleanup
     attrs=['rx','ry','rz','sx','sy','sz','v']
@@ -659,7 +663,7 @@ def Rig(module):
 class TwistJoints():
     
     def Rig(self,start,end,startMatrix,endMatrix,bendControl,
-            attrControl,scaleRoot,amount,prefix,module):
+            attrControl,scaleRoot,amount,prefix,module,twistAxis):
         ''' Creates twist joints from start to end. '''
         
         #clear selection
@@ -692,15 +696,27 @@ class TwistJoints():
         
         #setup joints
         for jnt in jnts:
-            meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
-            mum.SetTransform(jnt, meta)
+            count=jnts.index(jnt)+1
+            
+            if count<=amount:
+                meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
+                mum.SetTransform(jnt, meta)
         
+        #ik spline
         ikHandle=cmds.ikHandle(sol='ikSplineSolver',
                                createCurve=True,
                                sj=jnts[0],endEffector=jnts[amount])
         
         cmds.setAttr(ikHandle[0]+'.dTwistControlEnable',1)
         cmds.setAttr(ikHandle[0]+'.dWorldUpType',4)
+        
+        if twistAxis=='z':
+            
+            cmds.setAttr(ikHandle[0]+'.dWorldUpAxis',3)
+            cmds.setAttr(ikHandle[0]+'.dWorldUpVectorY',0)
+            cmds.setAttr(ikHandle[0]+'.dWorldUpVectorZ',1)
+            cmds.setAttr(ikHandle[0]+'.dWorldUpVectorEndY',0)
+            cmds.setAttr(ikHandle[0]+'.dWorldUpVectorEndZ',1)
         
         cmds.connectAttr(startMatrix+'.worldMatrix[0]',
                          ikHandle[0]+'.dWorldUpMatrix',force=True)
@@ -813,8 +829,9 @@ class TwistJoints():
         
         #return
         return nodes
-
 '''
-templateModule='meta_limb'
-Rig(templateModule)
+module='meta_limb1'
+Rig(module)
+module='meta_limb2'
+Rig(module)
 '''

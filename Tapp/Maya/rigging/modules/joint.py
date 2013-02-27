@@ -101,7 +101,7 @@ def Rig(module):
     asset=cmds.container(n=prefix+'rig')
     
     #create module
-    data={'side':side,'index':str(index),'system':'rig'}
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':'joint'}
     
     module=mum.SetData(('meta'+suffix),'module','joint',None,
                         data)

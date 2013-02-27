@@ -255,7 +255,8 @@ def DownStream(node,nodeType,allNodes=False):
 
 def Compare(dictA,dicts):
     ''' Compares one dict to multiple dicts.
-        dicts is either a list or dict of dicts.
+        dicts is should be of following construct:
+            {#NODE#:{#NODE DATA#}}
         
         returns the dict that shares the most values,
         with dictA.
@@ -263,10 +264,9 @@ def Compare(dictA,dicts):
     
     validNodes={}
     
-    for module in dicts:
+    for key in dicts:
         
-        for cnt in dicts[module]:
-            validNodes[cnt]=__compare__(dictA,dicts[module][cnt])
+        validNodes[key]=__compare__(dictA,dicts[key])
     
     return max(validNodes, key=validNodes.get)
 

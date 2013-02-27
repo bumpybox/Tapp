@@ -120,7 +120,7 @@ def Rig(module):
     asset=cmds.container(n=prefix+'rig')
     
     #create module
-    data={'side':side,'index':str(index),'system':'rig'}
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':spineType}
     
     module=mum.SetData(('meta'+suffix),'module','spine',None,
                         data)
@@ -302,6 +302,19 @@ def Rig(module):
     
     cmds.parent(jnts[0],plug)
     cmds.parent(fkcntsGRP[0],plug)
+    
+    #create end fk joint
+    endFk=cmds.joint(position=(0,0,0),n=prefix+'fk_end')
+    
+    cmds.container(asset,e=True,addNode=endFk)
+    
+    #setup end fk joint
+    cmds.xform(endFk,ws=True,translation=endTrans)
+    cmds.xform(endFk,ws=True,rotation=endRot)
+    
+    mru.ClosestOrient(fkjnts[-1], endFk)
+    
+    cmds.parent(endFk,fkjnts[-1])
     
     #create controls
     ikhighcnts=[]
@@ -561,6 +574,8 @@ def Rig(module):
             cmds.parent(ikHandle[0],ikcnts[count-1])
             
             cmds.poleVectorConstraint(upGRP,ikHandle[0])
+            
+            cmds.setAttr(ikHandle[0]+'.twist',-90)
     
     #create extra control
     extraCNT=mru.Pin(prefix+'extra_cnt')
@@ -574,9 +589,9 @@ def Rig(module):
     #setup extra control
     mru.Snap(endCNT,extraCNT)
     
-    cmds.rotate(0,-90,0,extraCNT,os=True,r=True)
-    
     cmds.parent(extraCNT,jnts[-1])
+    
+    cmds.setAttr(extraCNT+'.ry',-90)
     
     #setup fine tune controls
     cmds.addAttr(extraCNT,ln='ikFineTune',at='float',
@@ -691,6 +706,11 @@ def Rig(module):
     
     ikjnts.append(endJNT)
     
+    #changing last fk joint
+    
+    fkjnts[-1]=endFk
+    print fkjnts
+    
     for jnt in jnts:
         count=jnts.index(jnt)
         
@@ -768,12 +788,16 @@ def Rig(module):
         cmds.select(cl=True)
         jnt=cmds.joint(position=(0,0,0),name=prefix+'hip_jnt')
         
-        mru.Snap(jnts[0],jnt)
-        cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
-        
         cmds.container(asset,e=True,addNode=jnt)
         
         #setup jnt
+        
+        meta=mum.SetData('meta_'+jnt, 'joint', 'hip', module, None)
+        mum.SetTransform(jnt, meta)
+        
+        mru.Snap(masterCNT,jnt)
+        cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
+        
         cmds.move(-spineLength/3,0,0,jnt,r=True,os=True)
         
         #create socket

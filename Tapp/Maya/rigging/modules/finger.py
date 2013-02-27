@@ -225,7 +225,7 @@ def Rig(module):
     asset=cmds.container(n=prefix+'rig')
     
     #create module
-    data={'side':side,'index':str(index),'system':'rig'}
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':'finger'}
     
     module=mum.SetData(('meta'+suffix),'module','finger',None,
                         data)
@@ -236,6 +236,10 @@ def Rig(module):
     baseJNT=cmds.joint(position=(baseTrans[0],baseTrans[1],
                                  baseTrans[2]),
                        name=prefix+'jnt1')
+    
+    meta=mum.SetData('meta_'+baseJNT, 'joint', 'base', module, None)
+    mum.SetTransform(baseJNT, meta)
+    
     cmds.select(cl=True)
     endJNT=cmds.joint(position=(endTrans[0],endTrans[1],
                                  endTrans[2]),

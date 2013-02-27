@@ -46,24 +46,21 @@ def Delete():
     else:
         
         modules=[]
-        roots=[]
         
         for node in sel:
             modules.append(mum.UpStream(node, 'module'))
-            roots.append(mum.UpStream(node, 'root'))
+            modules.append(mum.UpStream(node, 'root'))
+        
+        modules=set(modules)
         
         for module in modules:
             if module!=None:
-                mru.Detach(module, detachChildren=True)
+                try:
+                    mru.Detach(module, detachChildren=True)
+                except:
+                    pass
                 
                 cnt=mum.DownStream(module, 'control')[0]
-                tn=mum.GetTransform(cnt)
-                
-                cmds.delete(cmds.container(q=True,fc=tn))
-        
-        for root in roots:
-            if root!=None:
-                cnt=mum.DownStream(root, 'control')[0]
                 tn=mum.GetTransform(cnt)
                 
                 cmds.delete(cmds.container(q=True,fc=tn))
