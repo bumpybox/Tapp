@@ -23,5 +23,7 @@ def SkeletonParent():
         
         cmds.parentConstraint(closestJnt,jnt,mo=True)
         cmds.scaleConstraint(closestJnt,jnt,mo=True)
+        
+        cmds.setAttr(jnt+'.segmentScaleCompensate',0)
     
     cmds.undoInfo(closeChunk=True)

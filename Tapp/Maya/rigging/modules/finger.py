@@ -415,6 +415,8 @@ def Rig(module):
         mru.ChannelboxClean(cnt,attrs)
     
     #publishing controllers
+    cnts.append(baseCNT)
+    
     for cnt in cnts:
         
         cmds.containerPublish(asset,publishNode=(cnt,''))

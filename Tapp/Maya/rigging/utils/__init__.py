@@ -71,14 +71,16 @@ def Attach(childModule,parentModule):
     parentSocket=min(sockets, key=sockets.get)
     
     #attaching plug to socket
-    cmds.select(childPlug,parentSocket,r=True)
-    muz.attach()
-    cmds.select(cl=True)
+    #cmds.select(childPlug,parentSocket,r=True)
+    #muz.attach()
+    #cmds.select(cl=True)
+    
+    cmds.parentConstraint(parentSocket,childPlug,mo=True)
     
     cmds.connectAttr(parentModule+'.message',childModule+'.metaParent',force=True)
     
     #scale constraining
-    cmds.scaleConstraint(childPlug,parentSocket)
+    cmds.scaleConstraint(parentSocket,childPlug)
 
 def Distance(objA,objB ):
     ''' Returns distance between two nodes. '''

@@ -293,12 +293,12 @@ def HierarchyImport():
     
     basicFilter = 'Hierarchy (*.hierarchy)'
     filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
-                              caption='Export Hierarchy',fileMode=1)
+                              caption='Import Hierarchy',fileMode=1)
     
     if filePath!=None:
         
         f=open(filePath[0],'r')
-        hierarchyData=muy.safe_load(f)
+        hierarchyData=muy.load(f)
         
         for module in hierarchyData:
             
@@ -317,6 +317,8 @@ def HierarchyImport():
                     cmds.select(moduleCnt,parentCnt,r=True)
                     
                     Connect()
+                    
+                    cmds.select(cl=True)
 
 def __hierarchyData__(root):
     ''' Queries the hierarchy of the meta rig.

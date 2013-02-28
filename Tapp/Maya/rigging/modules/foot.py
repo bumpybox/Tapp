@@ -13,7 +13,7 @@ def Create():
     
     path=os.path.realpath(__file__)
     
-    filePath=path.replace('\\','/').split('.')[0]+'.ma'
+    filePath=path.replace('\\','/').split('.py')[0]+'.ma'
     
     return cmds.file(filePath,i=True,defaultNamespace=False,
                      returnNewNodes=True,renameAll=True,

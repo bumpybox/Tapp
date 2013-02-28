@@ -12,7 +12,7 @@ def Create():
     
     path=os.path.realpath(__file__)
     
-    filePath=path.replace('\\','/').split('.')[0]+'.ma'
+    filePath=path.replace('\\','/').split('.py')[0]+'.ma'
     
     return cmds.file(filePath,i=True,defaultNamespace=False,
                      returnNewNodes=True,renameAll=True,
@@ -783,6 +783,8 @@ def Rig(module):
                      pCon+'.'+ikjnts[0]+'W0')
     
     #create hip
+    hipCNT=''
+    
     if hipsAttach and spineType=='spine':
         #create hip jnt
         cmds.select(cl=True)
@@ -821,6 +823,8 @@ def Rig(module):
         mum.SetTransform(cnt, meta)
         
         cmds.container(asset,e=True,addNode=[grp,cnt])
+        
+        hipCNT=cnt
         
         #setup hip control
         mru.Snap(jnt,grp)
@@ -896,6 +900,9 @@ def Rig(module):
         cnts.append(cnt)
     
     #publishing controllers
+    cnts.append(masterCNT)
+    cnts.append(hipCNT)
+    
     for cnt in cnts:
         cmds.container(asset,e=True,addNode=[cnt])
         cmds.containerPublish(asset,publishNode=(cnt,''))
