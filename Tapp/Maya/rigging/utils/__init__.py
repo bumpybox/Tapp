@@ -78,7 +78,7 @@ def Attach(childModule,parentModule):
     cmds.connectAttr(parentModule+'.message',childModule+'.metaParent',force=True)
     
     #scale constraining
-    #cmds.scaleConstraint(childPlug,parentSocket)
+    cmds.scaleConstraint(childPlug,parentSocket)
 
 def Distance(objA,objB ):
     ''' Returns distance between two nodes. '''

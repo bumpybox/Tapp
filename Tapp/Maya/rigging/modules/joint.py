@@ -87,7 +87,7 @@ def Rig(module):
     #establish module name
     moduleName='joint'
     
-    if inheritName:
+    if inheritName=='True':
         moduleName=cmds.container(q=True,fc=jnt)
     
     #delete template
@@ -175,6 +175,6 @@ def Rig(module):
     cmds.containerPublish(asset,bindNode=(cnt,cnt))
 
 '''
-templateModule='meta_joint'
+templateModule='joint:meta_joint'
 Rig(templateModule)
 '''

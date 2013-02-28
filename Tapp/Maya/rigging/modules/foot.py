@@ -591,6 +591,8 @@ def Rig(module):
     cmds.parent(footIK,ballCNT)
     cmds.parent(toeIK,toeIkCNT)
     
+    cmds.pointConstraint(plug,footIK)
+    
     #blending setup
     cmds.addAttr(asset,ln='FKIK',at='float',min=0,max=1,
                  k=True)
