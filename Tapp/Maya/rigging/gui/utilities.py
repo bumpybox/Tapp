@@ -8,22 +8,24 @@ def SkeletonParent():
     
     cmds.undoInfo(openChunk=True)
     
-    for jnt in cmds.ls(selection=True):
+    for obj in cmds.ls(selection=True):
         
-        nodes={}
-        for node in cmds.ls(type='network'):
-            
-            data=mum.GetData(node)
-            if data['type']=='joint':
+        if cmds.nodeType(obj)=='joint':
+        
+            nodes={}
+            for node in cmds.ls(type='network'):
                 
-                tn=mum.GetTransform(node)
-                nodes[tn]=mru.Distance(tn, jnt)
-        
-        closestJnt=min(nodes, key=nodes.get)
-        
-        cmds.parentConstraint(closestJnt,jnt,mo=True)
-        cmds.scaleConstraint(closestJnt,jnt,mo=True)
-        
-        cmds.setAttr(jnt+'.segmentScaleCompensate',0)
+                data=mum.GetData(node)
+                if data['type']=='joint':
+                    
+                    tn=mum.GetTransform(node)
+                    nodes[tn]=mru.Distance(tn, obj)
+            
+            closestJnt=min(nodes, key=nodes.get)
+            
+            cmds.parentConstraint(closestJnt,obj,mo=True)
+            cmds.scaleConstraint(closestJnt,obj,mo=True)
+            
+            cmds.setAttr(obj+'.segmentScaleCompensate',0)
     
     cmds.undoInfo(closeChunk=True)
