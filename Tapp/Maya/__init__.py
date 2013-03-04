@@ -8,6 +8,11 @@ print 'Tapp.Maya imported!'
 #creating menu
 import menu
 
+#framerate prompting
+import utils.framerate as uf
+
+uf.FrameratePrompt()
+
 #opening command port for Eclipse
 try:
     if cmds.commandPort(':7720', q=True) !=1:
