@@ -20,7 +20,7 @@ def maya_main_window():
     ptr = omu.MQtUtil.mainWindow()
     return sip.wrapinstance(long(ptr), QtCore.QObject)
     
-class tmaDialog(QtGui.QDialog):
+class tatDialog(QtGui.QDialog):
     
     def __init__(self, parent=maya_main_window()):
         QtGui.QDialog.__init__(self, parent)
@@ -65,9 +65,6 @@ class tmaDialog(QtGui.QDialog):
         self.zeroControl_button=QtGui.QPushButton(text='Control')
         self.zeroLimb_button=QtGui.QPushButton(text='Limb')
         self.zeroCharacter_button=QtGui.QPushButton(text='Character')
-        self.zeroControl_button.setEnabled(False)
-        self.zeroLimb_button.setEnabled(False)
-        self.zeroCharacter_button.setEnabled(False)
         gb_layout.addWidget(self.zeroControl_button)
         gb_layout.addWidget(self.zeroLimb_button)
         gb_layout.addWidget(self.zeroCharacter_button)
@@ -78,8 +75,6 @@ class tmaDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         self.keyLimb_button=QtGui.QPushButton(text='Limb')
         self.keyCharacter_button=QtGui.QPushButton(text='Character')
-        self.keyLimb_button.setEnabled(False)
-        self.keyCharacter_button.setEnabled(False)
         gb_layout.addWidget(self.keyLimb_button)
         gb_layout.addWidget(self.keyCharacter_button)
         gb.setLayout(gb_layout)
@@ -89,8 +84,6 @@ class tmaDialog(QtGui.QDialog):
         gb_layout=QtGui.QHBoxLayout()
         self.selectLimb_button=QtGui.QPushButton(text='Limb')
         self.selectCharacter_button=QtGui.QPushButton(text='Character')
-        self.selectLimb_button.setEnabled(False)
-        self.selectCharacter_button.setEnabled(False)
         gb_layout.addWidget(self.selectLimb_button)
         gb_layout.addWidget(self.selectCharacter_button)
         gb.setLayout(gb_layout)
@@ -215,8 +208,15 @@ class tmaDialog(QtGui.QDialog):
 
     def create_connections(self):
         #///character connections///
-        self.connect(self.ik_button, QtCore.SIGNAL('clicked()'),character.ikSwitch)
-        self.connect(self.fk_button, QtCore.SIGNAL('clicked()'),character.fkSwitch)
+        self.connect(self.ik_button, QtCore.SIGNAL('clicked()'),character.IkSwitch)
+        self.connect(self.fk_button, QtCore.SIGNAL('clicked()'),character.FkSwitch)
+        self.connect(self.zeroControl_button, QtCore.SIGNAL('clicked()'),character.ZeroControl)
+        self.connect(self.zeroLimb_button, QtCore.SIGNAL('clicked()'),character.ZeroLimb)
+        self.connect(self.zeroCharacter_button, QtCore.SIGNAL('clicked()'),character.ZeroCharacter)
+        self.connect(self.keyLimb_button, QtCore.SIGNAL('clicked()'),character.KeyLimb)
+        self.connect(self.keyCharacter_button, QtCore.SIGNAL('clicked()'),character.KeyCharacter)
+        self.connect(self.selectLimb_button, QtCore.SIGNAL('clicked()'),character.SelectLimb)
+        self.connect(self.selectCharacter_button, QtCore.SIGNAL('clicked()'),character.SelectCharacter)
         
         #///tools connections///
         self.connect(self.tools_zvParentMaster, QtCore.SIGNAL('clicked()'),muz.ZvParentMaster)
@@ -271,6 +271,6 @@ def show():
     dock = cmds.dockControl('tmaDock',label='Tapp Animation Tools',content=slider, area='right')
     dockPt = omu.MQtUtil.findControl(dock)
     dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
-    dockWidget.setWidget(tmaDialog())
+    dockWidget.setWidget(tatDialog())
 
 #show()
