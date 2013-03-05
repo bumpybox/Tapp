@@ -1,0 +1,747 @@
+//finding the module
+string $module="";
+for($i in `ls -type network`)
+{
+    if((`getAttr ($i+".type")`=="module") && (`attributeQuery -node $i -exists "system"`) && (`getAttr ($i+".system")`=="template") && (`getAttr ($i+".component")`=="neck"))
+    {
+        $module=$i;
+    }
+}
+
+//finding the joints
+string $head;
+string $neckBase;
+string $neck;
+
+for($i in `listConnections -type network ($module+".message")`)
+{
+    if((`getAttr ($i+".component")`=="head"))
+    {
+        $head=$i;
+    }
+    if((`getAttr ($i+".component")`=="neckbase"))
+    {
+        $neckBase=$i;
+    }
+    if((`getAttr ($i+".component")`=="neck"))
+    {
+        $neck=$i;
+    }
+}
+
+//getting position data
+string $neckTemp[]=`listConnections -type joint ($head+".message")`;
+$headPOS=`xform -worldSpace -query -translation $neckTemp[0]`;
+$headROT=`xform -worldSpace -query -rotation $neckTemp[0]`;
+
+string $neckTemp[]=`listConnections -type joint ($neckBase+".message")`;
+$neckPOS=`xform -worldSpace -query -translation $neckTemp[0]`;
+
+//getting number of spine joints
+int $numNeckJNT=`getAttr ($neck+".numberOfNeckJoints")`;
+
+//establish side
+string $side="c";
+
+if($headPOS[0] > 1.0)
+{
+    $side="l";
+}
+if($headPOS[0] < -1.0)
+{
+    $side="r";
+}
+
+//establish index
+int $index=`getAttr ($module+".index")`;
+if(size(`ls -type network`)!=0)
+{
+    for($i in `ls -type network`)
+    {
+        if((`getAttr ($i+".type")`=="module") && (`attributeQuery -node $i -exists "index"`) && (`getAttr ($i+".component")`=="neck") && (`attributeQuery -node $i -exists "side"`) && (`getAttr ($i+".side")`==$side) && (`getAttr ($i+".index")`==$index))
+        {
+            $index=`getAttr ($i+".index")`+1;
+        }
+    }
+}
+
+//deleting module template
+string $root="";
+for($i in `listConnections ($module+".message")`)
+{
+    if((`attributeQuery -node $i -exists "component"`) && (`getAttr ($i+".component")`=="root"))
+    {
+        $temp=`listConnections ($i+".message")`;
+        for($node in `listConnections ($i+".message")`)
+        {
+            if(`nodeType($node)`=="transform")
+            {
+                $root=$node;
+            }
+        }
+    }
+}
+
+delete $root;
+
+//establish prefix and suffix
+string $prefix=($side+"_neck"+$index+"_");
+string $suffix=("_"+$side+"_neck"+$index);
+
+//calculate length of spine
+float $distX=$headPOS[0]-$neckPOS[0];
+float $distY=$headPOS[1]-$neckPOS[1];
+float $distZ=$headPOS[2]-$neckPOS[2];
+
+float $neckLength=`mag <<$distX,$distY,$distZ>>`;
+
+//create module
+string $module=`shadingNode -asUtility -n ("meta"+$suffix) network`;
+
+addAttr -ln "type" -dt "string" $module;
+setAttr ($module+".type") -type "string" "module";
+addAttr -ln "component" -dt "string" $module;
+setAttr ($module+".component") -type "string" "neck";
+addAttr -ln "metaParent" -at message $module;
+addAttr -ln "index" -at long $module;
+setAttr ($module+".index") $index;
+addAttr -ln "side" -dt "string" $module;
+setAttr ($module+".side") -type "string" $side;
+
+//create plug
+string $helper_loc[] = `spaceLocator -n ($prefix+"plug")`;
+string $plug=$helper_loc[0];
+move -a $neckPOS[0] $neckPOS[1] $neckPOS[2] $plug;
+string $plugMETA=`shadingNode -asUtility -n ("meta_"+$plug) network`;
+addAttr -ln "type" -dt "string" $plugMETA;
+setAttr ($plugMETA+".type") -type "string" "plug";
+addAttr -ln "component" -dt "string" $plugMETA;
+setAttr ($plugMETA+".component") -type "string" "neck";
+addAttr -ln "metaParent" -at message $plugMETA;
+connectAttr -f ($module+".message") ($plugMETA+".metaParent");
+
+addAttr -ln "metaParent" -at message $plug;
+connectAttr -f ($plugMETA+".message") ($plug+".metaParent");
+
+string $helperJNT =`joint -p ($headPOS[0]) ($headPOS[1]) ($headPOS[2]) -o ($headROT[0]) ($headROT[1]) ($headROT[2])`;
+
+delete `aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 0 1 -worldUpType "objectrotation" -worldUpVector 0 0 1 -worldUpObject $helperJNT $helperJNT $plug`;
+
+delete $helperJNT;
+
+//create neck joints
+select -cl;
+string $jnts[]={};
+string $jntMETAS[]={};
+for($o = 1; $o < ($numNeckJNT+2); $o++)
+{
+    string $jnt =`joint -p (($neckLength/$numNeckJNT)*$o) 0 0 -n ($prefix+"jnt"+$o)`;
+    
+    string $jntMETA=`shadingNode -asUtility -n ("meta_"+$jnt) network`;
+    addAttr -ln "type" -dt "string" $jntMETA;
+    setAttr ($jntMETA+".type") -type "string" "joint";
+    addAttr -ln "component" -dt "string" $jntMETA;
+    setAttr ($jntMETA+".component") -type "string" "neck";
+    addAttr -ln "system" -dt "string" $jntMETA;
+    setAttr ($jntMETA+".system") -type "string" "skin";
+    addAttr -ln "metaParent" -at message $jntMETA;
+    connectAttr -f ($module+".message") ($jntMETA+".metaParent");
+    
+    addAttr -ln "metaParent" -at message $jnt;
+    connectAttr -f ($jntMETA+".message") ($jnt+".metaParent");
+    
+    $jnts[size($jnts)]=$jnt;
+    $jntMETAS[size($jntMETAS)]=$jntMETA;
+}
+
+for($o = 0; $o < $numNeckJNT; $o++)
+{
+    parent $jnts[($o+1)] $jnts[$o];
+}
+
+delete `parentConstraint -weight 1 $plug $jnts[0]`;
+
+rotate -ws ($headROT[0]) ($headROT[1]) ($headROT[2]) $jnts[$numNeckJNT];
+
+parent $jnts[0] $plug;
+
+//removing end joint meta
+delete $jntMETAS[size($jntMETAS)-1];
+
+deleteAttr ($jnts[size($jnts)-1]+".metaParent");
+
+//create head joint
+select -cl;
+string $headJNT =`joint -p ($headPOS[0]) ($headPOS[1]) ($headPOS[2]) -o ($headROT[0]) ($headROT[1]) ($headROT[2]) -n ($prefix+"head_jnt")`;
+
+string $jntMETA=`shadingNode -asUtility -n ("meta_"+$headJNT) network`;
+addAttr -ln "type" -dt "string" $jntMETA;
+setAttr ($jntMETA+".type") -type "string" "joint";
+addAttr -ln "component" -dt "string" $jntMETA;
+setAttr ($jntMETA+".component") -type "string" "head";
+addAttr -ln "system" -dt "string" $jntMETA;
+setAttr ($jntMETA+".system") -type "string" "skin";
+addAttr -ln "metaParent" -at message $jntMETA;
+connectAttr -f ($module+".message") ($jntMETA+".metaParent");
+
+addAttr -ln "metaParent" -at message $headJNT;
+connectAttr -f ($jntMETA+".message") ($headJNT+".metaParent");
+
+//create fk chain
+select -cl;
+string $fkGRPS[]={};
+string $fkCNTS[]={};
+string $fkMETAS[]={};
+for($o = 0; $o < ($numNeckJNT+1); $o++)
+{
+    string $cnt=`curve -d 1 -p 0.5 0 -0.5 -p 0.5 0 0.5 -p -0.5 0 0.5 -p -0.5 0 -0.5 -p 0.5 0 -0.5 -n ($prefix+"fk"+$o+"_cnt")`;
+    string $grp=`createNode "transform" -n ($prefix+"fk"+$o+"_grp") -ss`;
+    
+    parent $cnt $grp;
+    delete `parentConstraint -weight 1 $jnts[$o] $grp`;
+    
+    rotate -r -os 0 0 90 ($cnt+".cv[0:4]");
+    
+    $fkCNTS[$o]=$cnt;
+    $fkGRPS[$o]=$grp;
+    
+    string $META=`shadingNode -asUtility -n ("meta_"+$cnt) network`;
+    
+    addAttr -ln "type" -dt "string" $META;
+    setAttr ($META+".type") -type "string" "control";
+    addAttr -ln "component" -dt "string" $META;
+    setAttr ($META+".component") -type "string" "neck";
+    addAttr -ln "system" -dt "string" $META;
+    setAttr ($META+".system") -type "string" "fk";
+    addAttr -ln "metaParent" -at message $META;
+    connectAttr -f ($module+".message") ($META+".metaParent");
+    addAttr -ln "metaParent" -at message $cnt;
+    connectAttr -f ($META+".message") ($cnt+".metaParent");
+    addAttr -ln "index" -at long $META;
+    setAttr ($META+".index") ($o+1);
+    
+    $fkMETAS[$o]=$META;
+    
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sx");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sy");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sz");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".tx");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".ty");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".tz");
+}
+
+parent $fkGRPS[0] $plug;
+
+for($o = 1; $o < ($numNeckJNT+1); $o++)
+{
+    parent $fkGRPS[$o] $fkCNTS[$o-1];
+}
+
+//create ik chain
+select -cl;
+string $ikJNTS[]={};
+for($o = 1; $o < ($numNeckJNT+2); $o++)
+{
+    string $jnt =`joint -p (($neckLength/$numNeckJNT)*$o) 0 0 -n ($prefix+"ik"+$o+"_jnt")`;
+    
+    $ikJNTS[size($ikJNTS)]=$jnt;
+}
+
+delete `parentConstraint -weight 1 $plug $ikJNTS[0]`;
+
+rotate -ws ($headROT[0]) ($headROT[1]) ($headROT[2]) $ikJNTS[$numNeckJNT];
+
+parent $ikJNTS[0] $plug;
+
+//create ik control setup
+string $ikHeadGRP=`createNode "transform" -n ($prefix+"ikHead_grp") -ss`;
+string $helper_loc[]=`circle -ch 0 -n ($prefix+"ikHead_cnt")`;
+string $ikHeadCNT=$helper_loc[0];
+string $ikHeadJNT =`joint -p 0 0 0 -n ($prefix+"ikHead_jnt")`;
+
+string $META=`shadingNode -asUtility -n ("meta_"+$ikHeadCNT) network`;
+
+addAttr -ln "type" -dt "string" $META;
+setAttr ($META+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $META;
+setAttr ($META+".component") -type "string" "head";
+addAttr -ln "system" -dt "string" $META;
+setAttr ($META+".system") -type "string" "ik";
+addAttr -ln "metaParent" -at message $META;
+connectAttr -f ($module+".message") ($META+".metaParent");
+addAttr -ln "metaParent" -at message $ikHeadCNT;
+connectAttr -f ($META+".message") ($ikHeadCNT+".metaParent");
+addAttr -ln "switch" -at message $META;
+connectAttr -f ($fkCNTS[size($fkCNTS)-1]+".message") ($META+".switch");
+
+//setup mid joint
+string $helper_loc[]=`circle -ch 0 -n ($prefix+"ikNeck_cnt")`;
+string $ikNeckCNT=$helper_loc[0];
+string $midGRP=`createNode "transform" -n ($prefix+"mid_grp") -ss`;
+string $midJNT=`joint -p 0 0 0 -n ($prefix+"mid_jnt")`;
+
+parent $ikNeckCNT $midGRP;
+
+rotate -r -os 0 90 0 ($ikNeckCNT+".cv[0:7]");
+
+delete `pointConstraint -offset 0 0 0 -weight 1 $ikJNTS[0] $ikJNTS[size($ikJNTS)-1] $midGRP`;
+delete `orientConstraint -offset 0 0 0 -weight 1 $ikJNTS[0] $ikJNTS[size($ikJNTS)-1] $midGRP`;
+
+string $meta=`shadingNode -asUtility -n ("meta_"+$ikNeckCNT) network`;
+
+addAttr -ln "type" -dt "string" $meta;
+setAttr ($meta+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $meta;
+setAttr ($meta+".component") -type "string" "mid";
+addAttr -ln "system" -dt "string" $meta;
+setAttr ($meta+".system") -type "string" "ik";
+addAttr -ln "worldspace" -dt "string" $meta;
+setAttr ($meta+".worldspace") -type "string" "false";
+addAttr -ln "metaParent" -at message $meta;
+connectAttr -f ($module+".message") ($meta+".metaParent");
+addAttr -ln "metaParent" -at message $ikNeckCNT;
+connectAttr -f ($meta+".message") ($ikNeckCNT+".metaParent");
+
+setAttr -lock true -keyable false -channelBox false ($ikNeckCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ikNeckCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ikNeckCNT+".sz");
+
+//create zero controller
+string $zeroNeckGRP=`createNode "transform" -ss -n ($prefix+"zeroNeck_grp")`;
+delete `parentConstraint -weight 1 $midGRP $zeroNeckGRP`;
+parent $zeroNeckGRP $midGRP;
+
+addAttr -ln "switch" -at message $meta;
+connectAttr -f ($zeroNeckGRP+".message") ($meta+".switch");
+
+//setup ik controls
+setAttr -lock true -keyable false -channelBox false ($ikHeadCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($ikHeadCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($ikHeadCNT+".sz");
+
+parent $ikHeadCNT $ikHeadGRP;
+
+delete `parentConstraint -weight 1 $jnts[$numNeckJNT] $ikHeadGRP`;
+
+rotate -r -os 0 90 0 ($ikHeadCNT+".cv[0:7]");
+
+select -cl;
+string $ikNeckJNT =`joint -p 0 0 0 -n ($prefix+"ikNeck_jnt")`;
+
+delete `parentConstraint -weight 1 $plug $ikNeckJNT`;
+
+parent $ikNeckJNT $plug;
+
+string $midPosGRP=`createNode "transform" -n ($prefix+"midPos_grp") -ss`;
+string $midAimAtGRP=`createNode "transform" -n ($prefix+"midAimAt_grp") -ss`;
+string $midAimUpGRP=`createNode "transform" -n ($prefix+"midAimUp_grp") -ss`;
+
+delete `pointConstraint -offset 0 0 0 -weight 1 $midGRP $midPosGRP`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $midGRP $midAimAtGRP`;
+delete `pointConstraint -offset 0 0 0 -weight 1 $midGRP $midAimUpGRP`;
+
+delete `orientConstraint -offset 0 0 0 -weight 1 $midGRP $midPosGRP`;
+delete `orientConstraint -offset 0 0 0 -weight 1 $midGRP $midAimAtGRP`;
+delete `orientConstraint -offset 0 0 0 -weight 1 $midGRP $midAimUpGRP`;
+
+move -r -os ($neckLength/10) 0 0 $midAimAtGRP;
+move -r -os 0 ($neckLength/10) 0 $midAimUpGRP;
+
+pointConstraint -offset 0 0 0 -weight 1 $midPosGRP $midGRP;
+aimConstraint -offset 0 0 0 -weight 1 -aimVector 1 0 0 -upVector 0 1 0 -worldUpType "object" -worldUpObject $midAimUpGRP $midAimAtGRP $midGRP;
+parentConstraint -maintainOffset -weight 1 $ikNeckJNT $ikHeadJNT $midPosGRP;
+parentConstraint -maintainOffset -weight 1 $ikNeckJNT $ikHeadJNT $midAimAtGRP;
+parentConstraint -maintainOffset -weight 1 $ikNeckJNT $ikHeadJNT $midAimUpGRP;
+
+scaleConstraint -offset 1 1 1 -weight 1 $plug $midGRP;
+
+string $neckTemp[]=`nurbsPlane -p 0 0 0 -ax 0 1 0 -w ($neckLength/3) -lr ($neckLength/($neckLength/3)) -d 3 -u 1 -v 1 -ch 0 -n ($prefix+"geo")`;
+rebuildSurface -rpo 1 -rt 0 -end 1 -kr 0 -kcp 0 -kc 0 -su 0 -du 1 -sv 3 -dv 2 -tol 0.01 -fr 0  -dir 2 $neckTemp[0];
+string $neckGEO=$neckTemp[0];
+
+delete `pointConstraint -offset 0 0 0 -weight 1 $jnts[0] $jnts[$numNeckJNT] $neckGEO`;
+delete `orientConstraint -offset 0 0 0 -weight 1 $plug $neckGEO`;
+
+rotate -r -os 0 -90 0 $neckGEO;
+rotate -r -os 0 0 90 $neckGEO;
+
+string $skin[]=`skinCluster -tsb $ikHeadJNT $ikNeckJNT $midJNT $neckGEO`;
+
+skinPercent -tv $ikNeckJNT 1 $skin[0] ($neckGEO+".cv[0:1][0]");
+skinPercent -tv $ikNeckJNT 1 $skin[0] ($neckGEO+".cv[0:1][1]");
+skinPercent -tv $ikHeadJNT 1 $skin[0] ($neckGEO+".cv[0:1][3]");
+skinPercent -tv $ikHeadJNT 1 $skin[0] ($neckGEO+".cv[0:1][4]");
+skinPercent -tv $midJNT 1 $skin[0] ($neckGEO+".cv[0:1][2]");
+skinPercent -tv $midJNT 0.333 $skin[0] ($neckGEO+".cv[0:1][1]");
+skinPercent -tv $midJNT 0.333 $skin[0] ($neckGEO+".cv[0:1][3]");
+
+setAttr ($neckGEO+".visibility") false;
+
+//create extra control
+string $extraCNT=`curve -n ($prefix+"extra_cnt") -d 1 -p 0 0 0 -p 0 1.2 0 -p -0.235114 1.276393 0 -p -0.380423 1.476393 0 -p -0.380423 1.723607 0 -p -0.235114 1.923607 0 -p 0 2 0 -p 0.235114 1.923607 0 -p 0.380423 1.723607 0 -p 0.380423 1.476393 0 -p 0.235114 1.276393 0 -p 0 1.2 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11`;
+
+delete `parentConstraint -weight 1 $jnts[$numNeckJNT] $extraCNT`;
+parent $extraCNT $jnts[$numNeckJNT];
+
+rotate -r -os -90 0 0 ($extraCNT+".cv[0:11]");
+
+addAttr -ln "FKIK" -at "float" -min 0 -max 1 -k true $extraCNT;
+addAttr -ln "fineTuneControl" -at "float" -min 0 -max 1 -k true $extraCNT;
+addAttr -ln "IKTwistControl" -at "float" -min 0 -max 1 -k true $extraCNT;
+addAttr -ln "squashStretch" -at "float" -min 0 -max 1 -k true $extraCNT;
+
+string $extraMETA=`shadingNode -asUtility -n ("meta_"+$extraCNT) network`;
+
+addAttr -ln "type" -dt "string" $extraMETA;
+setAttr ($extraMETA+".type") -type "string" "control";
+addAttr -ln "component" -dt "string" $extraMETA;
+setAttr ($extraMETA+".component") -type "string" "extra";
+addAttr -ln "metaParent" -at message $extraMETA;
+connectAttr -f ($module+".message") ($extraMETA+".metaParent");
+addAttr -ln "metaParent" -at message $extraCNT;
+connectAttr -f ($extraMETA+".message") ($extraCNT+".metaParent");
+
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".tx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".ty");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".tz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".rx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".ry");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".rz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sx");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sy");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".sz");
+setAttr -lock true -keyable false -channelBox false ($extraCNT+".v");
+
+//setup ik chain
+string $posGRPS[]={};
+string $upGRPS[]={};
+string $ikHandles[]={};
+for($o = 0; $o < $numNeckJNT; $o++)
+{
+    //create surface grps
+    string $posGRP=`createNode "transform" -n ($prefix+"pos"+$o+"_grp") -ss`;
+    $posGRPS[$o]=$posGRP;
+    string $upGRP=`createNode "transform" -n ($prefix+"up"+$o+"_grp") -ss`;
+    $upGRPS[$o]=$upGRP;
+    string $psi=`createNode -n ($prefix+"up"+$o+"_psi") pointOnSurfaceInfo`;
+    
+    //setup surface grps
+    parent $upGRP $posGRP;
+    
+    setAttr ($psi+".parameterU") 0.5;
+    setAttr ($psi+".parameterV") ((1.0/$numNeckJNT)*$o);
+    
+    connectAttr ($neckGEO+".worldSpace") ($psi+".inputSurface");
+    connectAttr ($psi+".position") ($posGRP+".translate");
+    connectAttr ($psi+".tangentU") ($upGRP+".translate");
+    
+    //create ik_handle
+    string $ik_handle[]=`ikHandle -sj $ikJNTS[$o] -ee $ikJNTS[($o+1)] -sol ikRPsolver`;
+    
+    poleVectorConstraint -weight 1 $upGRP $ik_handle[0];
+    
+    setAttr ($ik_handle[0]+".twist") 180;
+    
+    rename $ik_handle[1] ($prefix+$o+"_eff");
+    
+    $ikHandles[$o]=`rename $ik_handle[0] ($prefix+$o+"_ikHandle")`;
+}
+
+//parenting ik handles and create ik fine tune control
+string $ikCNTS[]={};
+for($o = 0; $o < ($numNeckJNT-1); $o++)
+{
+    parent $ikHandles[$o] $posGRPS[($o+1)];
+    
+    string $cnt=`curve -n ($prefix+"ikNeck"+$o+"_cnt") -d 1 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 -0.382683 0 -p -0.707107 -0.707107 0 -p -0.382683 -0.92388 0 -p 0 -1 0 -p 0.382683 -0.92388 0 -p 0.707107 -0.707107 0 -p 0.92388 -0.382683 0 -p 1 0 0 -p 0.92388 0.382683 0 -p 0.707107 0.707107 0 -p 0.382683 0.92388 0 -p 0 1 0 -p 0 0.92388 0.382683 -p 0 0.707107 0.707107 -p 0 0.382683 0.92388 -p 0 0 1 -p 0 -0.382683 0.92388 -p 0 -0.707107 0.707107 -p 0 -0.92388 0.382683 -p 0 -1 0 -p 0 -0.92388 -0.382683 -p 0 -0.707107 -0.707107 -p 0 -0.382683 -0.92388 -p 0 0 -1 -p 0 0.382683 -0.92388 -p 0 0.707107 -0.707107 -p 0 0.92388 -0.382683 -p 0 1 0 -p -0.382683 0.92388 0 -p -0.707107 0.707107 0 -p -0.92388 0.382683 0 -p -1 0 0 -p -0.92388 0 0.382683 -p -0.707107 0 0.707107 -p -0.382683 0 0.92388 -p 0 0 1 -p 0.382683 0 0.92388 -p 0.707107 0 0.707107 -p 0.92388 0 0.382683 -p 1 0 0 -p 0.92388 0 -0.382683 -p 0.707107 0 -0.707107 -p 0.382683 0 -0.92388 -p 0 0 -1 -p -0.382683 0 -0.92388 -p -0.707107 0 -0.707107 -p -0.92388 0 -0.382683 -p -1 0 0 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 -k 9 -k 10 -k 11 -k 12 -k 13 -k 14 -k 15 -k 16 -k 17 -k 18 -k 19 -k 20 -k 21 -k 22 -k 23 -k 24 -k 25 -k 26 -k 27 -k 28 -k 29 -k 30 -k 31 -k 32 -k 33 -k 34 -k 35 -k 36 -k 37 -k 38 -k 39 -k 40 -k 41 -k 42 -k 43 -k 44 -k 45 -k 46 -k 47 -k 48 -k 49 -k 50 -k 51 -k 52`;
+    $ikCNTS[$o]=$cnt;
+    
+    string $grp=`group -name ($prefix+"ikNeck"+$o+"_grp") $cnt`;
+    
+    delete `parentConstraint $jnts[($o+1)] $grp`;
+    
+    parent $grp $posGRPS[($o+1)];
+    
+    parent $ikHandles[$o] $cnt;
+    
+    connectAttr -f ($extraCNT+".fineTuneControl") ($cnt+".visibility");
+    
+    string $META=`shadingNode -asUtility -n ("meta_"+$cnt) network`;
+    
+    addAttr -ln "type" -dt "string" $META;
+    setAttr ($META+".type") -type "string" "control";
+    addAttr -ln "component" -dt "string" $META;
+    setAttr ($META+".component") -type "string" "finetune";
+    addAttr -ln "system" -dt "string" $META;
+    setAttr ($META+".system") -type "string" "ik";
+    addAttr -ln "metaParent" -at message $META;
+    connectAttr -f ($module+".message") ($META+".metaParent");
+    addAttr -ln "metaParent" -at message $cnt;
+    connectAttr -f ($META+".message") ($cnt+".metaParent");
+    addAttr -ln "switch" -at message $META;
+    connectAttr -f ($fkCNTS[$o+1]+".message") ($META+".switch");
+    addAttr -ln "worldspace" -dt "string" $META;
+    setAttr ($META+".worldspace") -type "string" "false";
+    addAttr -ln "index" -at long $META;
+    setAttr ($META+".index") ($o+1);
+    
+    setAttr -lock true -keyable false -channelBox false ($cnt+".rx");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".ry");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".rz");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sx");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sy");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".sz");
+    setAttr -lock true -keyable false -channelBox false ($cnt+".v");
+}
+
+parent $ikHandles[$numNeckJNT-1] $ikHeadJNT;
+
+//create ik twist cnts and sockets
+string $ikTwistCNTS[]={};
+string $ikTwistGRPS[]={};
+string $sockets[]={};
+for($o = 0; $o < $numNeckJNT; $o++)
+{
+    //create twist control
+    string $helper_loc[]=`circle -ch 0 -n ($prefix+"ikTwist"+$o+"_cnt")`;
+    string $twistCNT=$helper_loc[0];
+    
+    delete `parentConstraint -weight 1 $ikJNTS[$o] $twistCNT`;
+    
+    parent $twistCNT $ikJNTS[$o];
+    
+    rotate -r -os 0 90 0 ($twistCNT+".cv[0:7]");
+    
+    connectAttr -f ($extraCNT+".IKTwistControl") ($twistCNT+".visibility");
+    
+    $ikTwistCNTS[$o]=$twistCNT;
+    
+    string $META=`shadingNode -asUtility -n ("meta_"+$twistCNT) network`;
+    
+    addAttr -ln "type" -dt "string" $META;
+    setAttr ($META+".type") -type "string" "control";
+    addAttr -ln "component" -dt "string" $META;
+    setAttr ($META+".component") -type "string" "twist";
+    addAttr -ln "system" -dt "string" $META;
+    setAttr ($META+".system") -type "string" "ik";
+    addAttr -ln "metaParent" -at message $META;
+    connectAttr -f ($module+".message") ($META+".metaParent");
+    addAttr -ln "metaParent" -at message $twistCNT;
+    connectAttr -f ($META+".message") ($twistCNT+".metaParent");
+    addAttr -ln "switch" -at message $META;
+    connectAttr -f ($fkCNTS[$o]+".message") ($META+".switch");
+    addAttr -ln "worldspace" -dt "string" $META;
+    setAttr ($META+".worldspace") -type "string" "false";
+    addAttr -ln "index" -at long $META;
+    setAttr ($META+".index") ($o+1);
+    
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".sx");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".sy");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".sz");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".tx");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".ty");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".tz");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".ry");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".rz");
+    setAttr -lock true -keyable false -channelBox false ($twistCNT+".v");
+    
+    //create twist grps
+    string $grp=`createNode "transform" -n ($prefix+"ikTwist"+$o+"_grp") -ss`;
+    
+    parentConstraint -weight 1 $twistCNT $grp;
+    
+    $ikTwistGRPS[$o]=$grp;
+    
+    parent $grp $plug;
+    
+    //create sockets
+    string $helper_loc[] = `spaceLocator -n ($prefix+$o+"_socket")`;
+    string $socket=$helper_loc[0];
+    
+    delete `parentConstraint -weight 1 $jnts[$o+1] $socket`;
+    parent $socket $jnts[$o+1];
+    
+    string $socketMETA=`shadingNode -asUtility -n ("meta_"+$socket) network`;
+    addAttr -ln "type" -dt "string" $socketMETA;
+    setAttr ($socketMETA+".type") -type "string" "socket";
+    addAttr -ln "component" -dt "string" $socketMETA;
+    setAttr ($socketMETA+".component") -type "string" "neck";
+    addAttr -ln "metaParent" -at message $socketMETA;
+    connectAttr -f ($module+".message") ($socketMETA+".metaParent");
+    
+    addAttr -ln "metaParent" -at message $socket;
+    connectAttr -f ($socketMETA+".message") ($socket+".metaParent");
+    
+    $sockets[$o]=$socket;
+}
+for($o = 1; $o < $numNeckJNT; $o++)
+{
+    parent $ikTwistGRPS[$o] $ikTwistGRPS[$o-1];
+}
+
+parent $sockets[$numNeckJNT-1] $headJNT;
+
+//setup chest joint
+pointConstraint $jnts[$numNeckJNT] $headJNT;
+
+//setup ik stretching
+string $ikMDS[]={};
+
+string $ikStretch1DIST=`shadingNode -asUtility -n ($prefix+"ikStretch_dist") distanceBetween`;
+string $ikStretch1MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+string $ikStretch2MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+
+connectAttr -f ($plug+".worldMatrix[0]") ($ikStretch1DIST+".inMatrix1");
+connectAttr -f ($ikCNTS[0]+".worldMatrix[0]") ($ikStretch1DIST+".inMatrix2");
+
+setAttr ($ikStretch2MD+".operation") 1;
+setAttr ($ikStretch2MD+".input2X") ($neckLength/$numNeckJNT);
+connectAttr -f ($plug+".sx") ($ikStretch2MD+".input1X");
+
+setAttr ($ikStretch1MD+".operation") 2;
+connectAttr -f ($ikStretch1DIST+".distance") ($ikStretch1MD+".input1X");
+connectAttr -f ($ikStretch2MD+".outputX") ($ikStretch1MD+".input2X");
+
+connectAttr -f ($ikStretch1MD+".outputX") ($ikJNTS[0]+".sx");
+
+$ikMDS[0]=$ikStretch1MD;
+
+//parenting setup ik stretch mid
+for($o = 1; $o < ($numNeckJNT-1); $o++)
+{
+    string $ikStretch1DIST=`shadingNode -asUtility -n ($prefix+"ikStretch_dist") distanceBetween`;
+    string $ikStretch1MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+    string $ikStretch2MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+    
+    connectAttr -f ($ikCNTS[$o-1]+".worldMatrix[0]") ($ikStretch1DIST+".inMatrix1");
+    connectAttr -f ($ikCNTS[$o]+".worldMatrix[0]") ($ikStretch1DIST+".inMatrix2");
+    
+    setAttr ($ikStretch2MD+".operation") 1;
+    setAttr ($ikStretch2MD+".input2X") ($neckLength/$numNeckJNT);
+    connectAttr -f ($plug+".sx") ($ikStretch2MD+".input1X");
+    
+    setAttr ($ikStretch1MD+".operation") 2;
+    connectAttr -f ($ikStretch1DIST+".distance") ($ikStretch1MD+".input1X");
+    connectAttr -f ($ikStretch2MD+".outputX") ($ikStretch1MD+".input2X");
+    
+    connectAttr -f ($ikStretch1MD+".outputX") ($ikJNTS[$o]+".sx");
+    
+    $ikMDS[$o]=$ikStretch1MD;
+}
+
+string $ikStretch2DIST=`shadingNode -asUtility -n ($prefix+"ikStretch_dist") distanceBetween`;
+string $ikStretch3MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+string $ikStretch4MD=`shadingNode -asUtility -n ($prefix+"ikStretch_md") multiplyDivide`;
+
+connectAttr -f ($ikCNTS[$numNeckJNT-2]+".worldMatrix[0]") ($ikStretch2DIST+".inMatrix1");
+connectAttr -f ($ikHeadJNT+".worldMatrix[0]") ($ikStretch2DIST+".inMatrix2");
+
+setAttr ($ikStretch4MD+".operation") 1;
+setAttr ($ikStretch4MD+".input2X") ($neckLength/$numNeckJNT);
+connectAttr -f ($plug+".sx") ($ikStretch4MD+".input1X");
+
+setAttr ($ikStretch3MD+".operation") 2;
+connectAttr -f ($ikStretch2DIST+".distance") ($ikStretch3MD+".input1X");
+connectAttr -f ($ikStretch4MD+".outputX") ($ikStretch3MD+".input2X");
+
+connectAttr -f ($ikStretch3MD+".outputX") ($ikJNTS[$numNeckJNT-1]+".sx");
+
+$ikMDS[size($ikMDS)]=$ikStretch3MD;
+
+//setup blending
+string $fkikREV=`shadingNode -asUtility -n ($prefix+"fkikREV") reverse`;
+
+connectAttr ($extraCNT+".FKIK") ($fkikREV+".inputX");
+
+for($o = 0; $o < $numNeckJNT; $o++)
+{
+    string $orientCon[]=`orientConstraint -weight 1 -offset 0 0 0 $ikTwistGRPS[$o] $fkCNTS[$o] $jnts[$o]`;
+    
+    connectAttr -f ($fkikREV+".outputX") ($orientCon[0]+"."+$fkCNTS[$o]+"W1");
+    connectAttr -f ($extraCNT+".FKIK") ($orientCon[0]+"."+$ikTwistGRPS[$o]+"W0");
+    
+    //scale blending
+    string $fkikBlend=`shadingNode -asUtility -n ($prefix+"fkik"+$o+"_blend") blendColors`;
+    string $stretchBlend=`shadingNode -asUtility -n ($prefix+"stretch"+$o+"_blend") blendColors`;
+    
+    setAttr ($fkikBlend+".color2R") 1;
+    connectAttr -f ($extraCNT+".FKIK") ($fkikBlend+".blender");
+    connectAttr -f ($ikMDS[$o]+".outputX") ($fkikBlend+".color1R");
+    
+    setAttr ($stretchBlend+".color2R") 1;
+    connectAttr -f ($extraCNT+".squashStretch") ($stretchBlend+".blender");
+    connectAttr -f ($fkikBlend+".outputR") ($stretchBlend+".color1R");
+    connectAttr -f ($stretchBlend+".outputR") ($jnts[$o]+".sx");
+}
+
+string $pCon[]=`parentConstraint -skipTranslate x -skipTranslate y -skipTranslate z -weight 1 $ikHeadCNT $fkCNTS[$numNeckJNT] $headJNT`;
+
+connectAttr -f ($fkikREV+".outputX") ($pCon[0]+"."+$fkCNTS[size($fkCNTS)-1]+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($pCon[0]+"."+$ikHeadCNT+"W0");
+
+string $orientCon[]=`orientConstraint -weight 1 -offset 0 0 0 $ikHeadCNT $fkCNTS[size($fkCNTS)-1] $jnts[size($jnts)-1]`;
+
+connectAttr -f ($fkikREV+".outputX") ($orientCon[0]+"."+$fkCNTS[size($fkCNTS)-1]+"W1");
+connectAttr -f ($extraCNT+".FKIK") ($orientCon[0]+"."+$ikHeadCNT+"W0");
+
+//adding switch to fk chain
+for($o = 0; $o < ($numNeckJNT); $o++)
+{
+    addAttr -ln "switch" -at message $fkMETAS[$o];
+    connectAttr -f ($ikTwistCNTS[$o]+".message") ($fkMETAS[$o]+".switch");
+}
+
+addAttr -ln "switch" -at message $fkMETAS[size($fkMETAS)-1];
+connectAttr -f ($ikHeadCNT+".message") ($fkMETAS[size($fkMETAS)-1]+".switch");
+
+//connect blend visibility
+connectAttr -f ($extraCNT+".FKIK") ($ikHeadCNT+".visibility");
+setAttr -lock true -keyable false -channelBox false ($ikHeadCNT+".v");
+
+connectAttr -f ($extraCNT+".FKIK") ($ikNeckCNT+".visibility");
+setAttr -lock true -keyable false -channelBox false ($ikNeckCNT+".v");
+
+for($o = 0; $o < ($numNeckJNT+1); $o++)
+{
+    connectAttr -f ($fkikREV+".outputX") ($fkCNTS[$o]+".visibility");
+    setAttr -lock true -keyable false -channelBox false ($fkCNTS[$o]+".v");
+}
+
+//volume preservation
+addAttr -ln "squashStretch" -at "float" $plug;
+setKeyframe -at "squashStretch" -t 0 -v 0 $plug;
+setKeyframe -at "squashStretch" -t  ($numNeckJNT-1) -v 0 $plug;
+setKeyframe -at "squashStretch" -t  (($numNeckJNT-1)/2.0) -v 1 $plug;
+
+for($o = 1; $o < ($numNeckJNT); $o++)
+{
+    //create utility nodes
+    string $FC=`shadingNode -asUtility -n ($prefix+"stretch_fc") frameCache`;
+    string $MD01=`shadingNode -asUtility -n ($prefix+"stretch_md") multiplyDivide`;
+    string $MD02=`shadingNode -asUtility -n ($prefix+"stretch_md") multiplyDivide`;
+    string $MD03=`shadingNode -asUtility -n ($prefix+"stretch_md") multiplyDivide`;
+    
+    //setup nodes
+    setAttr ($MD01+".operation") 3;
+    setAttr ($MD01+".input2X") 0.5;
+    connectAttr -f ($jnts[$o]+".sx") ($MD01+".input1X");
+    
+    setAttr ($MD02+".operation") 2;
+    setAttr ($MD02+".input1X") 1;
+    connectAttr -f ($MD01+".outputX") ($MD02+".input2X");
+    
+    setAttr ($FC+".varyTime") $o;
+    connectAttr -f ($plug+".squashStretch") ($FC+".stream");
+    setAttr ($MD03+".operation") 3;
+    connectAttr -f ($FC+".varying") ($MD03+".input2X");
+    connectAttr -f ($MD02+".outputX") ($MD03+".input1X");
+    
+    //connecting to joints
+    connectAttr -f ($MD03+".outputX") ($jnts[$o]+".sy");
+    connectAttr -f ($MD03+".outputX") ($jnts[$o]+".sz");
+}
+
+///setup for ZvParentMaster
+select $ikHeadCNT;
+group -n ($prefix+"ikHead_cnt_SN");
+group -n ($prefix+"ikHead_cnt_PH");
