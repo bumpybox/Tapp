@@ -203,6 +203,11 @@ def __mirror__(module):
         
         cntPairs.append(iCnt)
     
+    print cntPairs
+    print cnts
+    
+    #look at ControlsImport for comparing nodes
+    '''
     #mirroring translation and rotation
     for count in xrange(0,len(cnts)):
         
@@ -239,3 +244,6 @@ def __mirror__(module):
             cmds.xform(itn,os=True,rotation=(rx,-ry,-rz))
         
         print '-----------------'
+        '''
+
+__mirror__('meta_finger')

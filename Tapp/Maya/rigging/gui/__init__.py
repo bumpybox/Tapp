@@ -56,6 +56,7 @@ class tmrDialog(QtGui.QDialog):
         self.create_exportButton=QtGui.QPushButton('Export')
         self.create_deleteButton=QtGui.QPushButton('Delete')
         self.create_mirrorButton=QtGui.QPushButton('Mirror')
+        self.create_mirrorButton.setEnabled(False)
         self.create_rigButton=QtGui.QPushButton('Create Rig')
         
         tab_layout.addWidget(self.create_importButton,2,0)
