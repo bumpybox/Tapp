@@ -159,9 +159,9 @@ def GetMetaNode(node):
     return cmds.listConnections('%s.metaParent' % node,
                                 type='network')[0]
 
-def GetData(node):
+def GetData(node,stripNamespace=True):
     ''' Returns the meta data as a dictionary for
-    the requested node. 
+        the requested node. 
     '''
     
     #making sure we get a network node
@@ -173,7 +173,12 @@ def GetData(node):
     #setting data variables
     attrList=cmds.attributeInfo(metaNode,all=True)
     data={}
-    data['name']=str(metaNode)
+    
+    if stripNamespace:
+        name=str(metaNode).split(':')[-1]
+        data['name']=name
+    else:
+        data['name']=str(metaNode)
     
     #looping through custom attributes
     for count in range(7,len(attrList)):
@@ -201,7 +206,11 @@ def GetData(node):
                 metaParent=cmds.listConnections(metaNode+
                                                 '.'+attr)[0]
                 
-                data[str(attr)]=str(metaParent)
+                if stripNamespace:
+                    name=str(metaParent).split(':')[-1]
+                    data[str(attr)]=name
+                else:
+                    data[str(attr)]=str(metaParent)
     
     return data
 
@@ -255,7 +264,7 @@ def DownStream(node,nodeType,allNodes=False):
 
 def Compare(dictA,dicts):
     ''' Compares one dict to multiple dicts.
-        dicts is should be of following construct:
+        dicts have should be of following construct:
             {#NODE#:{#NODE DATA#}}
         
         returns the dict that shares the most values,
@@ -268,7 +277,9 @@ def Compare(dictA,dicts):
         
         validNodes[key]=__compare__(dictA,dicts[key])
     
-    return max(validNodes, key=validNodes.get)
+    closestNode=max(validNodes, key=validNodes.get)
+    
+    return [closestNode,validNodes[closestNode]]
 
 def __compare__(dictA,dictB):
     ''' Compares dictA with dictB.
@@ -293,52 +304,45 @@ def __compare__(dictA,dictB):
     
     return sharePercent
 
-def exportControlData(controls,outputFile,selected=True):
-    ''' Exports control data to YAML file.
-        
-        outputFile is the full path with *.yml extension.
-        selected:    True: operates only on selected controls.
-                    False: operates on all controls within rig.
+def GetControlData(node,stripNamespace=True):
+    ''' Returns control data.
     '''
     
+    #return variable
     data={}
     
-    if selected:
-        for cnt in controls:
-            
-            data[str(cnt)]=GetData(cnt)
-    else:
-        root=UpStream(controls[0], 'root')
+    if (cmds.attributeQuery('metaParent',n=node,ex=True))==True:
         
-        for module in DownStream(root, 'module', allNodes=True):
+        #getting control data
+        data=GetData(node,stripNamespace=stripNamespace)
+        
+        if data['type']=='control':
+        
+            #adding module data
+            module=UpStream(node, 'module')
+            mData=GetData(module)
+            data['module_side']=mData['side']
+            data['module']=mData['component']
+            data['module_index']=mData['index']
+            data['module_subcomponent']=mData['subcomponent']
             
-            cnts=DownStream(module, 'control')
+            #adding root data
+            root=UpStream(node, 'root')
+            rData=GetData(root)
+            data['root_asset']=rData['asset']
             
-            moduleData={}
+            #getting transform data
+            if stripNamespace:
+                data['transform']=str(node).split(':')[-1]
+            else:
+                data['transform']=str(node)
+        else:
             
-            for cnt in cnts:
-                
-                cntData=GetData(cnt)
-                
-                tn=GetTransform(cnt)
-                moduleData[str(tn)]=cntData
-            
-            data[str(module)]=moduleData
+            return None
+    else:
+        cmds.warning(node+' is not part of the meta system!')
+        
+        return None
     
-    f=open(outputFile,'w')
-    muy.dump(data, f)
-    f.close()
-
-def importData(inputFile):
-    ''' Returns YAML file data. '''
-    
-    f = open(inputFile)
-    data = muy.safe_load(f)
-    f.close()
-    
+    #return
     return data
-
-'''
-sel=cmds.ls(selection=True)
-exportControlData(sel,'c:/temp.yml')
-'''

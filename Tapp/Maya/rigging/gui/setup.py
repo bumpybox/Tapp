@@ -417,7 +417,8 @@ def ControlsImport():
             data['module_index']=mData['index']
             data['module_subcomponent']=mData['subcomponent']
             
-            cntMatch=mum.GetTransform(mum.Compare(data, cnts))
+            metaMatch=mum.Compare(data, cnts)[1]
+            cntMatch=mum.GetTransform(metaMatch)
             
             shapeNode=cmds.listRelatives(cnt,shapes=True)
             

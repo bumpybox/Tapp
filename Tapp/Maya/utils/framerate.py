@@ -12,3 +12,5 @@ def FrameratePrompt():
         if result=='Confirm':
             
             cmds.currentUnit(time='pal')
+
+scriptJobNum=cmds.scriptJob(event=('SceneOpened',FrameratePrompt))
