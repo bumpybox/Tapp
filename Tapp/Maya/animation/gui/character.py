@@ -104,7 +104,7 @@ def ZeroControl():
     sel=cmds.ls(sl=True)
     
     #zero controls
-    if len(sel)>1:
+    if len(sel)>=1:
         for node in cmds.ls(sl=True):
             __zeroNode__(node)
     else:
@@ -125,12 +125,12 @@ def ZeroLimb():
     sel=cmds.ls(sl=True)
     
     #zero limb
-    if len(sel)>1:
+    if len(sel)>=1:
         modules=[]
         for node in sel:
             modules.append(mum.UpStream(node, 'module'))
         
-        if len(modules)>1:
+        if len(modules)>=1:
             modules=set(modules)
             for module in modules:
                 cnts=mum.DownStream(module, 'control')
@@ -157,7 +157,7 @@ def ZeroCharacter():
     sel=cmds.ls(sl=True)
     
     #zero character
-    if len(sel)>1:
+    if len(sel)>=1:
         root=mum.UpStream(sel[0], 'root')
         
         if root!=None:

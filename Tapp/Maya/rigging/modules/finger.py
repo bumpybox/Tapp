@@ -423,6 +423,6 @@ def Rig(module):
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
 '''
 #Create()
-templateModule='meta_finger'
+templateModule='meta_finger3'
 Rig(templateModule)
 '''

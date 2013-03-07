@@ -27,7 +27,7 @@ class tmrDialog(QtGui.QDialog):
         self.createLayout()
         self.createConnections()
         
-        self.setFixedSize(287,431)
+        self.setFixedSize(287,471)
         
         self.create_pathLineEdit.setText(os.path.dirname(mrm.__file__))
         self.refreshList()
@@ -54,6 +54,7 @@ class tmrDialog(QtGui.QDialog):
         #buttons
         self.create_importButton=QtGui.QPushButton('Import')
         self.create_exportButton=QtGui.QPushButton('Export')
+        self.create_exportButton.setEnabled(False)
         self.create_deleteButton=QtGui.QPushButton('Delete')
         self.create_mirrorButton=QtGui.QPushButton('Mirror')
         self.create_mirrorButton.setEnabled(False)
@@ -113,13 +114,18 @@ class tmrDialog(QtGui.QDialog):
         
         #control shapes
         gb=QtGui.QGroupBox(title='Controls')
-        gb_layout=QtGui.QHBoxLayout()
+        gb_layout=QtGui.QVBoxLayout()
         
+        self.setup_controlColorButton=QtGui.QPushButton('Color Controls')
         self.setup_controlExportButton=QtGui.QPushButton('Export')
         self.setup_controlImportButton=QtGui.QPushButton('Import')
         
-        gb_layout.addWidget(self.setup_controlExportButton)
-        gb_layout.addWidget(self.setup_controlImportButton)
+        gb_layout.addWidget(self.setup_controlColorButton)
+        
+        layout=QtGui.QHBoxLayout()
+        layout.addWidget(self.setup_controlExportButton)
+        layout.addWidget(self.setup_controlImportButton)
+        gb_layout.addLayout(layout)
         
         gb.setLayout(gb_layout)
         tab_layout.addWidget(gb)
@@ -225,6 +231,7 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.setup_hierarchyExportButton, QtCore.SIGNAL('clicked()'),setup.HierarchyExport)
         self.connect(self.setup_controlExportButton, QtCore.SIGNAL('clicked()'),setup.ControlsExport)
         self.connect(self.setup_controlImportButton, QtCore.SIGNAL('clicked()'),setup.ControlsImport)
+        self.connect(self.setup_controlColorButton, QtCore.SIGNAL('clicked()'),setup.ColorRig)
         
         #///setup utilities///
         self.connect(self.utils_skeletonParentButton, QtCore.SIGNAL('clicked()'),utilities.SkeletonParent)

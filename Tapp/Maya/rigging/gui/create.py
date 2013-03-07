@@ -203,9 +203,6 @@ def __mirror__(module):
         
         cntPairs.append(iCnt)
     
-    print cntPairs
-    print cnts
-    
     #look at ControlsImport for comparing nodes
     '''
     #mirroring translation and rotation
@@ -246,4 +243,4 @@ def __mirror__(module):
         print '-----------------'
         '''
 
-__mirror__('meta_finger')
+#__mirror__('meta_finger1')

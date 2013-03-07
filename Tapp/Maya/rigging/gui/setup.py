@@ -470,13 +470,26 @@ def __colorModule__(module):
         cmds.setAttr('%s.overrideColor' % shape,color)
 
 def ColorRig():
+    ''' Color code rig into center,right and left. '''
     
+    #finding root in scene
+    root=False
     for node in cmds.ls(type='network'):
         
         data=mum.GetData(node)
         if data['type']=='root':
             
+            root=node
             modules=mum.DownStream(node, 'module', allNodes=True)
             for module in modules:
                 
                 __colorModule__(module)
+    
+    #execute color rig if root is found
+    if not root:
+        cmds.warning('No root node found in scene!')
+    else:
+        modules=mum.DownStream(root, 'module', allNodes=True)
+        for module in modules:
+            
+            __colorModule__(module)

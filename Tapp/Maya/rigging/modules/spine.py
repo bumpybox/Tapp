@@ -900,8 +900,9 @@ def Rig(module):
         cnts.append(cnt)
     
     #publishing controllers
-    cnts.append(masterCNT)
-    cnts.append(hipCNT)
+    if spineType=='spine':
+        cnts.append(masterCNT)
+        cnts.append(hipCNT)
     
     for cnt in cnts:
         cmds.container(asset,e=True,addNode=[cnt])
@@ -909,6 +910,6 @@ def Rig(module):
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
 
 '''
-templateModule='meta_spine'
+templateModule='spine:meta_spine'
 Rig(templateModule)
 '''

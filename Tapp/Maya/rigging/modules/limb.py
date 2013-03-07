@@ -317,7 +317,7 @@ def Rig(module):
     
     mru.Snap(endJoint,phgrp)
     mru.Snap(endJoint,stretch02)
-    cmds.pointConstraint(stretch02REF,stretch02)
+    cmds.parentConstraint(stretch02REF,stretch02)
     
     cmds.scaleConstraint(plug,phgrp)
     
@@ -707,6 +707,8 @@ class TwistJoints():
                                createCurve=True,
                                sj=jnts[0],endEffector=jnts[amount])
         
+        cmds.setAttr(ikHandle[2]+'.v',False)
+        
         cmds.setAttr(ikHandle[0]+'.dTwistControlEnable',1)
         cmds.setAttr(ikHandle[0]+'.dWorldUpType',4)
         
@@ -830,8 +832,6 @@ class TwistJoints():
         #return
         return nodes
 '''
-module='meta_limb1'
-Rig(module)
-module='meta_limb2'
+module='limb:meta_limb1'
 Rig(module)
 '''
