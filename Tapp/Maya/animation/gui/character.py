@@ -11,16 +11,25 @@ def FkSwitch():
     nodeSelection=cmds.ls(selection=True)
     
     if len(nodeSelection)>=1:
+        
+        #getting modules
+        modules=[]
         for node in nodeSelection:
-            #travel upstream and finding the module
-            module=mum.UpStream(node, 'module')
             
+            modules.append(mum.UpStream(node, 'module'))
+        
+        modules=set(modules)
+        
+        #module loop
+        for module in modules:
             #switching to fk with extra control and finding fk cnts
             cnts=mum.DownStream(module, 'control')
             for cnt in cnts:
-                data=mum.GetData(cnt)
+                
+                data=mum.GetData(cnt, stripNamespace=False)
                 
                 if data['component']=='extra':
+                    
                     transformNode=mum.GetTransform(cnt)
                     
                     cmds.setAttr(transformNode+'.FKIK',0)
@@ -31,11 +40,10 @@ def FkSwitch():
             
             #transforming fk cnts to their switch node
             for cnt in mum.Sort(fkcnts, 'index'):
-                data=mum.GetData(cnt)
+                data=mum.GetData(cnt,stripNamespace=False)
                 
                 switch=data['switch']
                 transformNode=mum.GetTransform(cnt)
-                
                 mru.Snap(switch, transformNode)
     else:
         cmds.warning('Nothing is selected!')
@@ -50,15 +58,21 @@ def IkSwitch():
     nodeSelection=cmds.ls(selection=True)
     
     if len(nodeSelection)>=1:
+        #getting modules
+        modules=[]
         for node in nodeSelection:
-            #travel upstream and finding the module
-            module=mum.UpStream(node, 'module')
             
+            modules.append(mum.UpStream(node, 'module'))
+        
+        modules=set(modules)
+        
+        #module loop
+        for module in modules:
             #finding cnts and switching to ik with extra control
             cnts=mum.DownStream(module, 'control')
             
             for cnt in cnts:
-                data=mum.GetData(cnt)
+                data=mum.GetData(cnt,stripNamespace=False)
                 
                 if data['component']=='extra':
                     transformNode=mum.GetTransform(cnt)
@@ -71,7 +85,7 @@ def IkSwitch():
             
             #transforming ik cnts to their switch node
             for cnt in mum.Sort(ikcnts, 'index'):
-                data=mum.GetData(cnt)
+                data=mum.GetData(cnt,stripNamespace=False)
                 
                 switch=data['switch']
                 transformNode=mum.GetTransform(cnt)

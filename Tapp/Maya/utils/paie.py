@@ -867,15 +867,140 @@ class DataWrapper:
 		# Progress printing done
 		progress.finish()
 		
+	def writeToObjs(self,idDict,animOffset):
 		
+		if debugger == 2:
+			print "# writeToScene start: ".ljust(30), time.clock()
 		
+		curFps = self.getFramerate()
+		srcFps = self.dataObj.getHeaderAttr("framerate")
 		
+		if curFps != 0 and srcFps != 0:
+			if srcFps != curFps:
+				userInput = mc.confirmDialog( title="Framerate doesn't match", message = ("Animation was exported with a different framerate than \nyour current settings. Continue anyway? \n\nSource: " + `srcFps` + " fps\nCurrent: " + `curFps` + " fps"), ma="left", button = ["Yes", "No"], defaultButton = "No", cancelButton = "No", dismissString = "No")
+					
+				if userInput == "No":
+					raise KeyboardInterrupt, "# writeToScene >> Program terminated by user"
 		
+		###	Clear keys in frameRange	
+		proceed = 0
+		isKey = 0
 		
-		
-		
-		
+		objList = []
 	
+		if debugger == 2:
+			print "# Check for existin keys: ".ljust(30), time.clock()
+			
+		startTime = animOffset 
+		stopTime = animOffset + self.dataObj.getHeaderAttr('clipLength') - 1
+		
+		# make 'em look nice
+		if int(startTime) == startTime:
+			startTime = int(startTime)
+		if int(stopTime) == stopTime:
+			stopTime = int(stopTime)
+				
+		if self.dataObj.getHeaderAttr('filetype') == 'anim':		
+			if isKey:
+				proceed = mc.confirmDialog( title="Keys exist", message = ("Keys already exist in framerange: " + str(startTime) + '-' + str(stopTime) + '\nOverrwrite?'), button = ["Yes", "No"], defaultButton = "Yes", cancelButton = "No", dismissString = "No")
+		
+				
+				if proceed == 'No':
+					raise KeyboardInterrupt, "# writeToScene >> Procedure cancelled by user"
+					
+				
+				# remove existing animation on objs with importAnim data		
+				mc.cutKey( objList , time=(startTime , stopTime), clear=True)
+		
+		if debugger == 2:
+			print "# write keys start: ".ljust(30), time.clock()
+		
+		# Starting to write to scene
+		for objID in idDict:
+			obj = idDict[objID]['node']
+			
+			namespace=idDict[objID]['namespace']
+			self.dataObj.setDefaultNamespace(namespace)
+			
+			for attr in self.dataObj.listObjAttrs(objID):
+			
+				if mc.objExists( obj + '.' + attr ):
+					
+					if self.dataObj.hasAnim(objID, attr):
+						
+						
+						# Set Keys
+						for key in self.dataObj.getAttrKeyID(objID , attr):
+	
+							### line 773: This is hacked. Change back soon!
+							######################################################################################################
+							
+							frameNr = float(self.dataObj.getKeyAnimData(objID, attr, key, 'time')) + animOffset
+							### maya 2010 bugfix - can't set rotation values with setKeyframe when on animLayers
+							#if attr in ("rotateX", "rotateY", "rotateZ"):
+								#mc.currentTime( frameNr )
+								#try:
+									#mc.setAttr(obj + "." + attr, float(self.dataObj.getKeyAnimData(objID, attr, key, 'value')))
+									#mc.setKeyframe(obj , time =  frameNr  , attribute = str(attr), breakdown=False, hierarchy='none', controlPoints=False, shape=False )
+								#except:
+									#pass
+									
+							#else:
+								#mc.setKeyframe(obj , time =  frameNr  , attribute = str(attr)  , value =  float(self.dataObj.getKeyAnimData(objID, attr, key, 'value')), breakdown=False, hierarchy='none', controlPoints=False, shape=False )
+								
+							mc.setKeyframe(obj , time =  frameNr  , attribute = str(attr)  , value =  float(self.dataObj.getKeyAnimData(objID, attr, key, 'value')), breakdown=False, hierarchy='none', controlPoints=False, shape=False )
+	
+							
+							
+						# Set Tangents
+						mc.keyTangent(obj + '.' + attr, edit=True, wt = int(self.dataObj.getAttrData(objID, attr, 'weightedTangents')))
+	
+						
+						for keyID in self.dataObj.getAttrKeyID(objID , attr):
+		
+							try:
+								frameNr = (float(self.dataObj.getKeyAnimData(objID, attr, keyID, 'time')) + animOffset)
+								
+								inAngleVal = float(self.dataObj.getKeyAnimData(objID, attr, keyID, 'inAngle'))
+								outAngleVal = float(self.dataObj.getKeyAnimData(objID, attr, keyID, 'outAngle'))
+								inWeightVal = float(self.dataObj.getKeyAnimData(objID, attr, keyID, 'inWeight'))
+								outWeightVal = float(self.dataObj.getKeyAnimData(objID, attr, keyID, 'outWeight'))
+								inTangentTypeVal = str(self.dataObj.getKeyAnimData(objID, attr, keyID, 'inTangentType')) 
+								outTangentTypeVal = str(self.dataObj.getKeyAnimData(objID, attr, keyID, 'outTangentType'))
+								lockVal = int(self.dataObj.getKeyAnimData(objID, attr, keyID, 'lock'))
+								
+								mc.keyTangent(obj + '.' + attr, time=( frameNr ,frameNr ), edit=True, inAngle = inAngleVal, outAngle = outAngleVal, inWeight = inWeightVal, outWeight = outWeightVal)
+								mc.keyTangent(obj + '.' + attr, time=( frameNr ,frameNr ), edit=True, inTangentType = inTangentTypeVal, outTangentType = outTangentTypeVal)
+								mc.keyTangent(obj + '.' + attr, time=( frameNr ,frameNr ), edit=True, lock = lockVal)
+								if int(self.dataObj.getAttrData(objID, attr, 'weightedTangents')):
+									
+									weightLockVal = int(self.dataObj.getKeyAnimData(objID, attr, keyID, 'weightLock'))
+									mc.keyTangent(obj + '.' + attr, time=( frameNr ,frameNr ), edit=True, weightLock = weightLockVal)
+							except:
+								print "# paie.writeToScene caught this kind of error while applying keyframes:"
+								raise
+								
+			
+						###	Setting infinity
+						preInfinity = self.dataObj.getAttrData(objID, attr, "preInfinity")
+						postInfinity = self.dataObj.getAttrData(objID, attr, "postInfinity")
+						
+						if preInfinity != "constant":
+							mc.setInfinity(obj, attribute = attr, pri = preInfinity )
+							
+						if postInfinity != "constant":
+							mc.setInfinity(obj, attribute = attr, poi = postInfinity )
+					else:
+						# set attribute value with setAttr if it is different than current value
+						currentVal = mc.getAttr(obj + '.' + attr)
+						importValue = self.dataObj.getAttrData(objID, attr, 'value')
+						
+						if currentVal != importValue:
+							try:
+								mc.setAttr(obj + '.' + attr, importValue)
+							except:
+								print ""
+								print "# writeToScene >> " + obj + '.' + attr + " cannot be modified. Skipping...",
 	
 class DataContainer:
 	'''Container class for attribute data'''

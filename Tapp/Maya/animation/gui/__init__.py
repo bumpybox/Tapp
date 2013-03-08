@@ -171,7 +171,6 @@ class tatDialog(QtGui.QDialog):
         
         self.tools_importAnim=QtGui.QPushButton(text='Import')
         gb_layout.addWidget(self.tools_importAnim,1,0)
-        self.tools_importAnim.setEnabled(False)
         self.tools_importAnimHelp=QtGui.QPushButton(text='?')
         gb_layout.addWidget(self.tools_importAnimHelp,1,1)
         self.tools_importAnimHelp.setEnabled(False)
@@ -228,7 +227,8 @@ class tatDialog(QtGui.QDialog):
         self.connect(self.tools_keyValueDragger, QtCore.SIGNAL('clicked()'),maumlk.drag)
         self.connect(self.tools_keyValueDraggerHelp, QtCore.SIGNAL('clicked()'),self.keyValueDraggerHelp)
         self.connect(self.tools_keyCleanUp, QtCore.SIGNAL('clicked()'),self.keyCleanUp_click)
-        self.connect(self.tools_exportAnim, QtCore.SIGNAL('clicked()'),tools.exportAnim)
+        self.connect(self.tools_exportAnim, QtCore.SIGNAL('clicked()'),tools.ExportAnim)
+        self.connect(self.tools_importAnim, QtCore.SIGNAL('clicked()'),tools.ImportAnim)
     
     def breakdownDraggerHelp(self):
         webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_breakdownDragger')
