@@ -9,12 +9,9 @@ import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
 import Tapp.Maya.utils.yaml as muy
 
-def __importModule__(module):
-    modulesPath=mrc.config['modules'].replace('\\','/')
-    modulePath=modulesPath+'/'+module+'.py'
-    
-    f = os.path.basename( modulePath )
-    d = os.path.dirname( modulePath )
+def __importModule__(module,dirPath):
+    f = module+'.py'
+    d = dirPath
  
     toks = f.split( '.' )
     modname = toks[0]
@@ -59,7 +56,7 @@ def Connect():
             #importing module
             data=mum.GetData(module)
             
-            __importModule__(data['component'])
+            __importModule__(data['component'],mrc.config['modules'].replace('\\','/'))
             
             #attaching modules
             mrm.Attach(module, parentModule)
@@ -219,7 +216,7 @@ def SetWorld():
                 #importing module
                 data=mum.GetData(module)
                 
-                __importModule__(data['component'])
+                __importModule__(data['component'],mrc.config['modules'].replace('\\','/'))
                 
                 #setting world for modules
                 mrm.SetWorld(module, parentModule)
@@ -239,7 +236,7 @@ def SetWorld():
                 #importing module
                 data=mum.GetData(module)
                 
-                __importModule__(data['component'])
+                __importModule__(data['component'],mrc.config['modules'].replace('\\','/'))
                 
                 #setting world for modules
                 mrm.SetWorld(module, parentModule,downStream=True)
@@ -248,7 +245,7 @@ def SetWorld():
                 #importing module
                 data=mum.GetData(module)
                 
-                __importModule__(data['component'])
+                __importModule__(data['component'],mrc.config['modules'].replace('\\','/'))
                 
                 #setting world for modules
                 mrm.SetWorld(module, parentModule)
@@ -256,69 +253,6 @@ def SetWorld():
         cmds.warning('Not enough modules selected!')
     
     cmds.undoInfo(closeChunk=True)
-
-def HierarchyExport():
-    ''' Exports hierarchy data to external hierarchy files. '''
-    
-    sel=cmds.ls(selection=True)
-    
-    #collecting modules
-    modules=[]
-    
-    for node in sel:
-        modules.append(mum.UpStream(node, 'module'))
-    
-    #if no modules selected
-    if len(modules)>0:
-        
-        basicFilter = 'Hierarchy (*.hierarchy)'
-        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
-                                  caption='Export Hierarchy')
-        if filePath!=None:
-            root=mum.UpStream(modules[0], 'root')
-            
-            hierarchyData=__hierarchyData__(root)
-            
-            f=open(filePath[0],'w')
-            muy.dump(hierarchyData, f)
-            f.close()
-        
-    else:
-        cmds.warning('No enough modules selected!')
-
-def HierarchyImport():
-    ''' Queries user for hierarchy files and
-        sets up the hierarchy.
-    '''
-    
-    basicFilter = 'Hierarchy (*.hierarchy)'
-    filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
-                              caption='Import Hierarchy',fileMode=1)
-    
-    if filePath!=None:
-        
-        f=open(filePath[0],'r')
-        hierarchyData=muy.load(f)
-        
-        for module in hierarchyData:
-            
-            parent=hierarchyData[module]['metaParent']
-            
-            if parent!=None:
-                
-                moduleCnts=mum.DownStream(module, 'control')
-                moduleCnt=mum.GetTransform(moduleCnts[0])
-                
-                parentCnts=mum.DownStream(parent, 'control')
-                if len(parentCnts)>0:
-                    
-                    parentCnt=mum.GetTransform(parentCnts[0])
-                    
-                    cmds.select(moduleCnt,parentCnt,r=True)
-                    
-                    Connect()
-                    
-                    cmds.select(cl=True)
 
 def __hierarchyData__(root):
     ''' Queries the hierarchy of the meta rig.
@@ -342,6 +276,108 @@ def __hierarchyData__(root):
         hierarchyData[str(module)]=moduleData
     
     return hierarchyData
+
+def HierarchyExport():
+    ''' Exports hierarchy data to external hierarchy files. '''
+    
+    #getting root node
+    root=None
+    
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='root':
+            
+            root=node
+    
+    #root node checking
+    if root!=None:
+        
+        #user input for filepath
+        basicFilter = 'Hierarchy (*.hierarchy)'
+        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                                  caption='Export Hierarchy')
+        
+        #generating data
+        data=__hierarchyData__(root)
+        
+        data['root']=mum.GetData(root)
+        rootchild=mum.DownStream(root, 'module', allNodes=False)
+        data['root']['child']=str(rootchild[0])
+        
+        #exporting hierarchy data
+        f=open(filePath[0],'w')
+        muy.dump(data, f)
+        f.close()
+    else:
+        cmds.warning('No root nodes in scene!')
+
+def HierarchyImport():
+    ''' Queries user for hierarchy files and
+        sets up the hierarchy.
+    '''
+    
+    #user input for filepath
+    basicFilter = 'Hierarchy (*.hierarchy)'
+    filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                              caption='Import Hierarchy',fileMode=1)
+    
+    if filePath!=None:
+        
+        __hierarchyImport__(filePath[0])
+
+def __hierarchyImport__(filePath):
+    ''' Builds hierarchy from hierarchy file
+    '''
+    
+    #getting hierarchy data
+    f=open(filePath,'r')
+    hierarchyData=muy.load(f)
+    
+    #checking for existing root node
+    root=False
+    
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='root':
+            root=True
+    
+    #hierarchy data process
+    for module in hierarchyData:
+        
+        #building hierarchy
+        parent=hierarchyData[module]['metaParent']
+        
+        if parent!=None:
+            if cmds.objExists(parent)!=False:
+            
+                moduleCnts=mum.DownStream(module, 'control')
+                moduleCnt=mum.GetTransform(moduleCnts[0])
+                
+                parentCnts=mum.DownStream(parent, 'control')
+                if len(parentCnts)>0:
+                    
+                    parentCnt=mum.GetTransform(parentCnts[0])
+                    
+                    cmds.select(moduleCnt,parentCnt,r=True)
+                    
+                    Connect()
+                    
+                    cmds.select(cl=True)
+                
+        #creating root node
+        if not root:
+            if module=='root':
+                
+                assetName=hierarchyData[module]['asset']
+                data={'asset':assetName}
+                root=mum.SetData('meta_'+assetName, 'root', None, None, data)
+                
+                #attaching root node
+                rootchild=hierarchyData[module]['child']
+                
+                cmds.connectAttr(root+'.message',rootchild+'.metaParent',force=True)
 
 def ControlsExport():
     
@@ -370,80 +406,85 @@ def ControlsImport():
     
     #getting file path and name
     basicFilter = "Controls (*.controls)"
-    fileName=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,fileMode=1)
+    filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,fileMode=1)
     
-    if fileName!=None:
+    if filePath!=None:
         
-        cnts={}
-        for node in cmds.ls(type='network'):
+        __controlsImport__(filePath[0])
+
+def __controlsImport__(filePath):
+    ''' Builds controls from controls file. '''
+    
+    cnts={}
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='control':
+            cnts[node]=data
+            
+            module=mum.UpStream(node, 'module')
+            mData=mum.GetData(module)
+            
+            cnts[node]['module_side']=mData['side']
+            cnts[node]['module']=mData['component']
+            cnts[node]['module_index']=mData['index']
+            cnts[node]['module_subcomponent']=mData['subcomponent']
+        
+    #importing nodes
+    importNodes=cmds.file(filePath,i=True,defaultNamespace=False,
+                     returnNewNodes=True,renameAll=True,
+                     mergeNamespacesOnClash=False,
+                     namespace='mr_importControls')
+    
+    importCnts=[]
+    #importNodes loop
+    for node in importNodes:
+        
+        if cmds.nodeType(node)=='network':
             
             data=mum.GetData(node)
             if data['type']=='control':
-                cnts[node]=data
-                
-                module=mum.UpStream(node, 'module')
-                mData=mum.GetData(module)
-                
-                cnts[node]['module_side']=mData['side']
-                cnts[node]['module']=mData['component']
-                cnts[node]['module_index']=mData['index']
-                cnts[node]['module_subcomponent']=mData['subcomponent']
-            
-        #importing nodes
-        importNodes=cmds.file(fileName,i=True,defaultNamespace=False,
-                         returnNewNodes=True,renameAll=True,
-                         mergeNamespacesOnClash=False,
-                         namespace='mr_importControls')
+                importCnts.append(mum.GetTransform(node))
+    
+    for cnt in importCnts:
         
-        importCnts=[]
-        #importNodes loop
-        for node in importNodes:
-            
-            if cmds.nodeType(node)=='network':
-                
-                data=mum.GetData(node)
-                if data['type']=='control':
-                    importCnts.append(mum.GetTransform(node))
+        data=mum.GetData(cnt)
         
-        for cnt in importCnts:
-            
-            data=mum.GetData(cnt)
-            
-            module=mum.UpStream(cnt, 'module')
-            mData=mum.GetData(module)
-            
-            data['module_side']=mData['side']
-            data['module']=mData['component']
-            data['module_index']=mData['index']
-            data['module_subcomponent']=mData['subcomponent']
-            
-            metaMatch=mum.Compare(data, cnts)[1]
-            cntMatch=mum.GetTransform(metaMatch)
-            
-            shapeNode=cmds.listRelatives(cnt,shapes=True)
-            
-            origShapeNode=cmds.listRelatives(cntMatch,shapes=True)[0]
-            
-            #delete original shape node
-            tempGroup=cmds.createNode( 'transform', ss=True )
-            
-            cmds.parent(origShapeNode,tempGroup,absolute=True,shape=True)
-            
-            cmds.delete(tempGroup)
-            
-            #adding new shape node
-            cmds.parent(shapeNode,cntMatch,add=True,shape=True)
-            
-            cmds.rename(shapeNode,shapeNode[0].split(':')[-1])
-            
-        #delete imported nodes
-        for node in importNodes:
-            try:
-                cmds.delete(node)
-            except:
-                pass
+        module=mum.UpStream(cnt, 'module')
+        mData=mum.GetData(module)
         
-        cmds.namespace(force=True,removeNamespace='mr_importControls')
+        data['module_side']=mData['side']
+        data['module']=mData['component']
+        data['module_index']=mData['index']
+        data['module_subcomponent']=mData['subcomponent']
+        
+        metaMatch=mum.Compare(data, cnts)[0]
+        cntMatch=mum.GetTransform(metaMatch)
+        
+        shapeNode=cmds.listRelatives(cnt,shapes=True)
+        
+        origShapeNode=cmds.listRelatives(cntMatch,shapes=True)[0]
+        
+        #delete original shape node
+        tempGroup=cmds.createNode( 'transform', ss=True )
+        
+        cmds.parent(origShapeNode,tempGroup,absolute=True,shape=True)
+        
+        cmds.delete(tempGroup)
+        
+        #adding new shape node
+        cmds.parent(shapeNode,cntMatch,add=True,shape=True)
+        
+        cmds.rename(shapeNode,shapeNode[0].split(':')[-1])
+        
+    #delete imported nodes
+    for node in importNodes:
+        try:
+            cmds.delete(node)
+        except:
+            pass
+    
+    cmds.namespace(force=True,removeNamespace='mr_importControls')
 
 def __colorModule__(module):
     

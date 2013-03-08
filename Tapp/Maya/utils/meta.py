@@ -2,8 +2,6 @@ import operator
 
 import maya.cmds as cmds
 
-import Tapp.Maya.utils.yaml as muy
-
 def Filter(objects,filterData):
     ''' Filters objects based on a dictionary.
         objects is a list of nodes.

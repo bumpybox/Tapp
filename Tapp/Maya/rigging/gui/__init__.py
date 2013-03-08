@@ -54,17 +54,18 @@ class tmrDialog(QtGui.QDialog):
         #buttons
         self.create_importButton=QtGui.QPushButton('Import')
         self.create_exportButton=QtGui.QPushButton('Export')
-        self.create_exportButton.setEnabled(False)
         self.create_deleteButton=QtGui.QPushButton('Delete')
         self.create_mirrorButton=QtGui.QPushButton('Mirror')
         self.create_mirrorButton.setEnabled(False)
         self.create_rigButton=QtGui.QPushButton('Create Rig')
+        self.create_characterButton=QtGui.QPushButton('Create Character')
         
         tab_layout.addWidget(self.create_importButton,2,0)
         tab_layout.addWidget(self.create_exportButton,2,1)
         tab_layout.addWidget(self.create_deleteButton,3,0)
         tab_layout.addWidget(self.create_mirrorButton,3,1)
         tab_layout.addWidget(self.create_rigButton,4,0)
+        tab_layout.addWidget(self.create_characterButton,4,1)
         
         #///create setup tab///
         setup_tab=QtGui.QWidget()
@@ -215,8 +216,9 @@ class tmrDialog(QtGui.QDialog):
         self.connect(self.create_pathButton, QtCore.SIGNAL('clicked()'),self.browsePath)
         self.connect(self.create_pathLineEdit, QtCore.SIGNAL('returnPressed()'),self.refreshList)
         self.connect(self.create_importButton, QtCore.SIGNAL('clicked()'),self.CreateImport)
+        self.connect(self.create_exportButton, QtCore.SIGNAL('clicked()'),create.ExportTemplate)
         self.connect(self.create_rigButton, QtCore.SIGNAL('clicked()'),create.Rig)
-        self.connect(self.create_mirrorButton, QtCore.SIGNAL('clicked()'),create.Mirror)
+        self.connect(self.create_characterButton, QtCore.SIGNAL('clicked()'),create.CreateCharacter)
         self.connect(self.create_deleteButton, QtCore.SIGNAL('clicked()'),create.Delete)
         
         #///setup connections///
@@ -258,7 +260,9 @@ class tmrDialog(QtGui.QDialog):
     def CreateImport(self):
         module=str(self.create_moduleList.selectedItems()[0].text())
         
-        create.Create(module)
+        dirPath=str(self.create_pathLineEdit.text())
+        
+        create.Create(module,dirPath)
 
 def show():
     #closing previous dialog

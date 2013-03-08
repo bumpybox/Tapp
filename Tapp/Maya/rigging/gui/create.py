@@ -4,16 +4,14 @@ import sys
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.modules as mrm
-import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
+import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
+import setup
 
-def __importModule__(module):
-    modulesPath=mrc.config['modules'].replace('\\','/')
-    modulePath=modulesPath+'/'+module+'.py'
-    
-    f = os.path.basename( modulePath )
-    d = os.path.dirname( modulePath )
+def __importModule__(module,dirPath):
+    f = module+'.py'
+    d = dirPath
  
     toks = f.split( '.' )
     modname = toks[0]
@@ -65,17 +63,11 @@ def Delete():
                 
                 cmds.delete(cmds.container(q=True,fc=tn))
 
-def Create(component):
+def Create(module,dirPath):
     
-    __importModule__(component)
+    __importModule__(module,dirPath)
     
     return mrm.Create()
-
-def __createMirror__(component,module):
-    
-    __importModule__(component)
-    
-    return mrm.__createMirror__(module)
 
 def Rig():
     ''' Rigs all modules in the scene. '''
@@ -128,14 +120,100 @@ def __rig__(module):
     data=mum.GetData(module)
     moduleName=data['component']
     
-    __importModule__(moduleName)
+    __importModule__(moduleName,mrc.config['modules'].replace('\\','/'))
     
     mrm.Rig(module)
     
     cmds.undoInfo(closeChunk=True)
 
+def ExportTemplate():
+    
+    #getting file path and name
+    basicFilter = "Template (*.ma)"
+    filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,caption='Export Template')
+    
+    if filePath!=None:
+        
+        #getting containers
+        containers=[]
+        for node in cmds.ls(type='network'):
+            
+            data=mum.GetData(node)
+            if data['type']=='root':
+                
+                cnts=mum.DownStream(node, 'control')
+                cnt=mum.GetTransform(cnts[0])
+                
+                containers.append(cmds.container(q=True,fc=cnt))
+        
+        #exporting containers
+        cmds.select(containers,r=True)
+        
+        cmds.file(filePath[0],exportSelected=True,type='mayaAscii')
+        
+        cmds.select(cl=True)
+        
+        #generating python file
+        fileName=os.path.basename(filePath[0]).split('.')[0]
+        dirPath=os.path.dirname(filePath[0])
+        
+        cmd='import os\n\n'
+        cmd+='import maya.cmds as cmds\n\n'
+        cmd+='def Create():\n\t'
+        cmd+='path=os.path.realpath(__file__)\n\n\t'
+        cmd+='filePath=path.replace(\'\\\\\',\'/\').split(\'.py\')[0]+\'.ma\'\n\n\t'
+        cmd+='return cmds.file(filePath,i=True,defaultNamespace=False,'
+        cmd+='returnNewNodes=True,renameAll=True,'
+        cmd+='mergeNamespacesOnClash=True,'
+        cmd+='namespace=\''+fileName+'\')'
+        
+        f=open(dirPath+'/'+fileName+'.py','w')
+        f.write(cmd)
+        f.close()
+
+def CreateCharacter():
+    
+    #user input for filepath
+    basicFilter = 'Hierarchy (*.hierarchy)'
+    hierarchyFilePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                              caption='Import Hierarchy',fileMode=1)
+    
+    #getting file path and name
+    basicFilter = "Controls (*.controls)"
+    controlsFilePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,fileMode=1)
+    
+    #rigging all modules in the scene
+    modules=[]
+    for meta in cmds.ls(type='network'):
+        data=mum.GetData(meta)
+        
+        if data['type']=='root':
+            modules.append(meta)
+    
+    for module in modules:
+        __rig__(module)
+    
+    #builds hierarchy
+    if hierarchyFilePath!=None:
+        
+        setup.__hierarchyImport__(hierarchyFilePath[0])
+    else:
+        cmds.warning('Hierarchy NOT build!')
+    
+    #builds controls
+    if controlsFilePath!=None:
+        
+        setup.__controlsImport__(controlsFilePath[0])
+    else:
+        cmds.warning('Controls NOT build!')
+'''
+def __createMirror__(component,module):
+    
+    __importModule__(component)
+    
+    return mrm.__createMirror__(module)
+
 def Mirror():
-    ''' Mirrors modules across YZ axis. '''
     
     cmds.undoInfo(openChunk=True)
         
@@ -158,8 +236,8 @@ def Mirror():
     
     cmds.undoInfo(closeChunk=True)
 
+
 def __mirror__(module):
-    ''' Mirrors provided module across YZ axis. '''
     
     #getting module data
     mData=mum.GetData(module)
@@ -204,7 +282,7 @@ def __mirror__(module):
         cntPairs.append(iCnt)
     
     #look at ControlsImport for comparing nodes
-    '''
+    
     #mirroring translation and rotation
     for count in xrange(0,len(cnts)):
         
