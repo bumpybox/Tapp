@@ -5,10 +5,16 @@ import maya.cmds as cmds
 import Tapp.Maya.utils.paie as mup
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.utils.yaml as muy
+import Tapp.Maya.animation.utils.playblast as maup
 
 def __exportAnim__(filePath,objs):
     ''' Exports selection or rig animation. '''
     
+    #splitting filePath
+    fileName=os.path.basename(filePath).split('.')[0]
+    dirPath=os.path.dirname(filePath)
+    
+    #exporting animation data
     mup.exportData(filePath, 'anim')
     
     #getting controls data
@@ -31,13 +37,13 @@ def __exportAnim__(filePath,objs):
             
             data[nodeName]=nData
     
-    #exporting controls data
-    fileName=os.path.basename(filePath).split('.')[0]
-    dirPath=os.path.dirname(filePath)
-    
+    #exporting controls data    
     f=open(dirPath+'/'+fileName+'.yml','w')
     muy.dump(data, f)
     f.close()
+    
+    #exporting quicktime
+    maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov')
 
 def ExportAnim():
     ''' User exports selection or rig animation. '''
