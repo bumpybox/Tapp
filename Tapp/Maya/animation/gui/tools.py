@@ -56,8 +56,12 @@ def __exportAnim__(filePath,objs):
             for c in curves:
                 animCurves.append(c)
     
+    startTime=cmds.playbackOptions(q=True,minTime=True)
+    endTime=cmds.playbackOptions(q=True,maxTime=True)
+    
     charSet=cmds.character(objs)
-    animClip=cmds.clip(charSet,sc=0,leaveOriginal=True,allAbsolute=True,startTime=-25,endTime=185)
+    animClip=cmds.clip(charSet,sc=0,leaveOriginal=True,allAbsolute=True,
+                       n=fileName,startTime=startTime,endTime=endTime)
     sourceClip=cmds.clip(animClip,q=True,scn=True)
     charClip=cmds.character(charSet,q=True,library=True)
     
@@ -117,6 +121,8 @@ def ExportAnim():
                 cmds.warning('Need to select a control on the rig!')
             else:
                 cmds.warning('Nothing is selected!')
+
+ExportAnim()
 
 def ImportAnim():
     ''' User import animation to selection or rig. '''
@@ -192,8 +198,54 @@ def __importAnim__(filePath,selection=False,trax=False):
         root=mum.UpStream(sel[0], 'root')
         nodes=mum.DownStream(root, 'control', allNodes=True)
     
-    if trax:
-        print 'USING TRAX!'
+    if trax:        
+        #query existing character
+        characters=cmds.ls(type='character')
+        charNode=None
+        if characters!=None:
+            for char in characters:
+                
+                charobjs=cmds.character(char,q=True,nodesOnly=True)
+                
+                if nodes[0] in charobjs:
+                    charNode=char
+        
+        #creating character if none is present
+        if charNode==None:
+            
+            transformNodes=[]
+            for node in nodes:
+                
+                tn=mum.GetTransform(node)
+                transformNodes.append(tn)
+                
+            charNode=cmds.character(transformNodes)
+        
+        #importing nodes
+        importNodes=cmds.file(dirPath+'/'+fileName+'.traxclip',
+                              i=True,defaultNamespace=False,
+                              returnNewNodes=True,renameAll=True,
+                              mergeNamespacesOnClash=False,
+                              namespace='clipImport_temp')
+        
+        animClip=cmds.ls(importNodes,type='animClip')[0]
+        
+        cmds.clip(animClip,copy=True)
+        cmds.clip(charNode,paste=True,sc=True,allAbsolute=True)
+        
+        #delete imported nodes
+        for node in importNodes:
+            try:
+                cmds.delete(node)
+            except:
+                pass
+        
+        #this might need to be a recursive function in the future
+        namespaces=cmds.namespaceInfo('clipImport_temp',listOnlyNamespaces=True)
+        for nSpace in namespaces:
+            cmds.namespace(force=True,removeNamespace=nSpace)
+        
+        cmds.namespace(force=True,removeNamespace='clipImport_temp')
     else:
         #building paie data
         paieId={}
@@ -236,5 +288,3 @@ def __importAnim__(filePath,selection=False,trax=False):
     
     #inform user of end of import
     cmds.warning('Import Successfull!')
-
-ImportAnim()
