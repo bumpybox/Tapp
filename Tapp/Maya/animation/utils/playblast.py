@@ -10,8 +10,12 @@ def ExportPlayblast():
     #exporting playblast
     __exportPlayblast__(filePath[0])
 
-def __exportPlayblast__(filePath,width=640,height=360):
+def __exportPlayblast__(filePath,width=640,height=360,exportType='movie'):
     ''' Exports playblast to filePath
+        
+        type=['movie','still']
+            movie = exports video
+            still = exports image from middle of timeline
     '''
     
     panel=cmds.getPanel(wf=True)
@@ -37,8 +41,21 @@ def __exportPlayblast__(filePath,width=640,height=360):
                          nurbsCurves=False)
         
         #playblasting
-        cmds.playblast(f=filePath,format='qt',forceOverwrite=True,offScreen=True,percent=100,
-                       compression='H.264',quality=100,widthHeight=(width,height))
+        if exportType=='movie':
+            
+            cmds.playblast(f=filePath,format='qt',forceOverwrite=True,offScreen=True,percent=100,
+                           compression='H.264',quality=100,widthHeight=(width,height),
+                           viewer=False)
+        elif exportType=='still':
+            
+            startTime=cmds.playbackOptions(q=True,minTime=True)
+            endTime=cmds.playbackOptions(q=True,maxTime=True)
+            
+            midTime=((endTime-startTime)/2)+startTime
+            
+            cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
+                           compression='png',quality=100,widthHeight=(width,height),
+                           startTime=midTime,endTime=midTime,viewer=False)
         
         #revert to settings
         cmds.currentTime(currentTime)

@@ -2235,7 +2235,7 @@ def __checkNamespaceCount(selList):
 	
 
 
-def exportData(filePath, dataType, attrsType='keyable', exportTimeline=1, startFrame=None, endFrame=None, objs=None, userInput=None):
+def exportData(filePath, dataType, attrsType='keyable', exportTimeline=1, startFrame=None, endFrame=None, objs=None, userInput=None,overWrite=False):
 	'''
 	filepath: full path and filename to export to
 	dataType: 'anim' = include animation data, 'pose' forces only attribute values to be stored
@@ -2287,8 +2287,22 @@ def exportData(filePath, dataType, attrsType='keyable', exportTimeline=1, startF
 				
 		fixedPath = __fixPath(filePath)
 		
-		if __checkFile(fixedPath) == 'Yes':
-
+		if not overWrite:
+			
+			if __checkFile(fixedPath) == 'Yes':
+	
+				wrapperObj = DataWrapper()
+				
+				if wrapperObj.getData(objs, startFrame, endFrame, dataType, attrsType, userInput):
+					wrapperObj.save(fixedPath)
+					wrapperObj.clear()
+				else:
+					raise StandardError, "# exportData >> Could not get any data from selected objects"
+				
+			else:
+				print "# exportData >> Export was cancelled",
+		else:
+			
 			wrapperObj = DataWrapper()
 			
 			if wrapperObj.getData(objs, startFrame, endFrame, dataType, attrsType, userInput):
@@ -2296,9 +2310,6 @@ def exportData(filePath, dataType, attrsType='keyable', exportTimeline=1, startF
 				wrapperObj.clear()
 			else:
 				raise StandardError, "# exportData >> Could not get any data from selected objects"
-			
-		else:
-			print "# exportData >> Export was cancelled",
 				
 	except StandardError, arg:
 		mc.confirmDialog( title='Error', message=arg.__str__(), button='OK' )

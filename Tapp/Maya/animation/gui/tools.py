@@ -18,7 +18,7 @@ def __exportAnim__(filePath,objs):
     #exporting animation data
     cmds.select(objs,r=True)
     
-    mup.exportData(filePath, 'anim')
+    mup.exportData(filePath, 'anim',overWrite=True)
     
     #getting controls data
     data={}
@@ -45,8 +45,11 @@ def __exportAnim__(filePath,objs):
     muy.dump(data, f)
     f.close()
     
-    #exporting quicktime
+    #exporting movie
     maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov')
+    
+    #exporting thumbnail
+    maup.__exportPlayblast__(dirPath+'/'+fileName+'.png',exportType='still')
     
     #exporting trax clip
     animCurves=[]
@@ -121,8 +124,6 @@ def ExportAnim():
                 cmds.warning('Need to select a control on the rig!')
             else:
                 cmds.warning('Nothing is selected!')
-
-ExportAnim()
 
 def ImportAnim():
     ''' User import animation to selection or rig. '''
