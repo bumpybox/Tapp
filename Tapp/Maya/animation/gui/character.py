@@ -121,11 +121,11 @@ def ZeroControl():
     if len(sel)>=1:
         for node in cmds.ls(sl=True):
             __zeroNode__(node)
+        
+        #revert selection
+        cmds.select(sel)
     else:
         cmds.warning('No nodes select!')
-    
-    #revert selection
-    cmds.select(sel)
     
     cmds.undoInfo(closeChunk=True)
 
@@ -155,11 +155,11 @@ def ZeroLimb():
                     __zeroNode__(tn)
         else:
             cmds.warning('Could not find any limbs connected to the selected nodes.')
+        
+        #revert selection
+        cmds.select(sel)
     else:
         cmds.warning('No nodes select!')
-    
-    #revert selection
-    cmds.select(sel)
     
     cmds.undoInfo(closeChunk=True)
 
@@ -182,11 +182,11 @@ def ZeroCharacter():
                 __zeroNode__(tn)
         else:
             cmds.warning('Could not find any character connected to the selected nodes.')
+    
+        #revert selection
+        cmds.select(sel)
     else:
         cmds.warning('No nodes select!')
-    
-    #revert selection
-    cmds.select(sel)
     
     cmds.undoInfo(closeChunk=True)
 
@@ -215,11 +215,11 @@ def KeyLimb():
                     cmds.setKeyframe(tn)
         else:
             cmds.warning('Could not find any limbs connected to the selected nodes.')
+        
+        #revert selection
+        cmds.select(sel)
     else:
         cmds.warning('No nodes select!')
-    
-    #revert selection
-    cmds.select(sel)
     
     cmds.undoInfo(closeChunk=True)
 
@@ -242,11 +242,11 @@ def KeyCharacter():
                 cmds.setKeyframe(tn)
         else:
             cmds.warning('Could not find any character connected to the selected nodes.')
+        
+        #revert selection
+        cmds.select(sel)
     else:
         cmds.warning('No nodes select!')
-    
-    #revert selection
-    cmds.select(sel)
     
     cmds.undoInfo(closeChunk=True)
 

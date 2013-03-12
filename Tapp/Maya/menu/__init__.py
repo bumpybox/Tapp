@@ -13,13 +13,13 @@ tappMenu=cmds.menu('tappMenu',label='Tapp',parent=gMainWindow,tearOff=True)
 #rigging menu
 subMenu=cmds.menuItem(label='rigging',subMenu=True,parent=tappMenu)
 
-cmd='import Tapp.Maya.rigging.gui as mrg;mrg.show()'
+cmd='import Tapp.Maya.rigging.gui as mrg;reload(mrg);mrg.show()'
 cmds.menuItem(label='Tapp Maya Rigging',parent=subMenu,command=cmd)
 
 #animation menu
 subMenu=cmds.menuItem(label='animation',subMenu=True,parent=tappMenu)
 
-cmd='import Tapp.Maya.animation.gui as mag;mag.show()'
+cmd='import Tapp.Maya.animation.gui as mag;reload(mag);mag.show()'
 cmds.menuItem(label='Tapp Maya Animation',parent=subMenu,command=cmd)
 
 #repository menu

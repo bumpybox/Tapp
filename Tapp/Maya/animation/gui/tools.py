@@ -1,4 +1,5 @@
 import os
+from shutil import move
 
 import maya.cmds as cmds
 
@@ -15,6 +16,8 @@ def __exportAnim__(filePath,objs):
     dirPath=os.path.dirname(filePath)
     
     #exporting animation data
+    cmds.select(objs,r=True)
+    
     mup.exportData(filePath, 'anim')
     
     #getting controls data
@@ -44,10 +47,33 @@ def __exportAnim__(filePath,objs):
     
     #exporting quicktime
     maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov')
+    
+    #exporting trax clip
+    animCurves=[]
+    for obj in objs:
+        curves=cmds.listConnections(obj, source=True, type="animCurve")
+        if curves!=None:
+            for c in curves:
+                animCurves.append(c)
+    
+    charSet=cmds.character(objs)
+    animClip=cmds.clip(charSet,sc=0,leaveOriginal=True,allAbsolute=True,startTime=-25,endTime=185)
+    sourceClip=cmds.clip(animClip,q=True,scn=True)
+    charClip=cmds.character(charSet,q=True,library=True)
+    
+    cmds.select(charClip,sourceClip,animCurves,r=True)
+    oldFileName=cmds.file(dirPath+'/'+fileName+'.ma',type='mayaAscii',exportSelected=True)
+    move(oldFileName,dirPath+'/'+fileName+'.traxclip')
+    
+    cmds.delete(charSet)
+    
+    #inform user of end of export
+    cmds.warning('Export Successfull!')
 
 def ExportAnim():
     ''' User exports selection or rig animation. '''
     
+    #user input
     result=cmds.confirmDialog( title='Export Anim',
                                message='What do you want to export?',
                                button=['Selected','Rig','Cancel'])
@@ -62,27 +88,30 @@ def ExportAnim():
             filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
                                       caption='Export Animation')
             
-            #case of selected export
-            if result=='Selected':
-                #exporting animation
-                if filePath!=None:
+            if filePath!=None:
+                #case of selected export
+                if result=='Selected':
                     
+                    #exporting animation
                     __exportAnim__(filePath[0],sel)
-            
-            #case of rig export
-            if result=='Rig':
                 
-                #getting all controls
-                root=mum.UpStream(sel[0], 'root')
-                cnts=mum.DownStream(root, 'control', allNodes=True)
-                
-                nodes=[]
-                for cnt in cnts:
+                #case of rig export
+                if result=='Rig':
                     
-                    nodes.append(mum.GetTransform(cnt))
-                
-                #exporting animation
-                __exportAnim__(filePath[0],nodes)
+                    #getting all controls
+                    root=mum.UpStream(sel[0], 'root')
+                    cnts=mum.DownStream(root, 'control', allNodes=True)
+                    
+                    nodes=[]
+                    for cnt in cnts:
+                        
+                        nodes.append(mum.GetTransform(cnt))
+                    
+                    #exporting animation
+                    __exportAnim__(filePath[0],nodes)
+            
+            #revert selection
+            cmds.select(sel,r=True)
         else:
             if result=='Rig':
                 cmds.warning('Need to select a control on the rig!')
@@ -107,25 +136,34 @@ def ImportAnim():
                                       fileMode=1,
                                       caption='Import Animation')
             
-            #case of selected export
-            if result=='Selected':
-                #exporting animation
-                if filePath!=None:
-                    
-                    __importAnim__(filePath[0],selection=True)
-            
-            #case of rig export
-            if result=='Rig':
+            if filePath!=None:
                 
-                #exporting animation
-                __importAnim__(filePath[0])
+                traxresult=cmds.confirmDialog( title='Import Anim',
+                                               message='Using Trax Editor?',
+                                               button=['Yes','No'])
+                
+                if traxresult=='Yes':
+                    traxresult=True
+                else:
+                    traxresult=False
+                #case of selected export
+                if result=='Selected':
+                    
+                    #importing animation 
+                    __importAnim__(filePath[0],selection=True,trax=traxresult)
+                
+                #case of rig export
+                if result=='Rig':
+                    
+                    #importing animation
+                    __importAnim__(filePath[0],selection=False,trax=traxresult)
         else:
             if result=='Rig':
                 cmds.warning('Need to select a control on the rig!')
             else:
                 cmds.warning('Nothing is selected!')
 
-def __importAnim__(filePath,selection=False):
+def __importAnim__(filePath,selection=False,trax=False):
     ''' Imports animation to selection or rig. '''
     
     #getting paie data
@@ -154,41 +192,49 @@ def __importAnim__(filePath,selection=False):
         root=mum.UpStream(sel[0], 'root')
         nodes=mum.DownStream(root, 'control', allNodes=True)
     
-    #building paie data
-    paieId={}
-    
-    for node in nodes:
+    if trax:
+        print 'USING TRAX!'
+    else:
+        #building paie data
+        paieId={}
         
-        data=mum.GetControlData(node)
-        if data!=None:
-        
-            del(data['name'])
-            del(data['metaParent'])
-            del(data['transform'])
-            #possible obsolete attribute
-            del(data['root_asset'])
+        for node in nodes:
             
-            if 'switch' in data:
+            data=mum.GetControlData(node)
+            if data!=None:
+            
+                del(data['name'])
+                del(data['metaParent'])
+                del(data['transform'])
+                #possible obsolete attribute
+                del(data['root_asset'])
                 
-                del(data['switch'])
-            
-            [metaMatch,pct]=mum.Compare(data, metaData)
-            
-            if pct>90.0:
+                if 'switch' in data:
+                    
+                    del(data['switch'])
                 
-                if metaMatch!=None:
-        
-                    for namespace in mupd.dataObj.listNamespaces():
-                        
-                        iddict=mupd.dataObj.getObjIdDict(namespace)
-                        for nodeId in iddict:
+                [metaMatch,pct]=mum.Compare(data, metaData)
+                
+                if pct>90.0:
+                    
+                    if metaMatch!=None:
+            
+                        for namespace in mupd.dataObj.listNamespaces():
                             
-                            if iddict[nodeId].split('|')[-1]==metaMatch:
+                            iddict=mupd.dataObj.getObjIdDict(namespace)
+                            for nodeId in iddict:
                                 
-                                nodeData={}
-                                nodeData['node']=mum.GetTransform(node)
-                                nodeData['namespace']=namespace
-                                
-                                paieId[nodeId]=nodeData
+                                if iddict[nodeId].split('|')[-1]==metaMatch:
+                                    
+                                    nodeData={}
+                                    nodeData['node']=mum.GetTransform(node)
+                                    nodeData['namespace']=namespace
+                                    
+                                    paieId[nodeId]=nodeData
+        
+        mupd.writeToObjs(paieId, animOffset=cmds.currentTime(q=True))
     
-    mupd.writeToObjs(paieId, animOffset=cmds.currentTime(q=True))
+    #inform user of end of import
+    cmds.warning('Import Successfull!')
+
+ImportAnim()
