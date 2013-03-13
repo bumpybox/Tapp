@@ -1,4 +1,9 @@
+import getpass
+import datetime
+import time
+
 import maya.cmds as cmds
+import maya.mel as mel
 
 def ExportPlayblast():
     
@@ -10,41 +15,81 @@ def ExportPlayblast():
     #exporting playblast
     __exportPlayblast__(filePath[0])
 
-def __exportPlayblast__(filePath,width=640,height=360,exportType='movie'):
+def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',HUD=None):
     ''' Exports playblast to filePath
         
         type=['movie','still']
             movie = exports video
             still = exports image from middle of timeline
+        
+        HUD is a list of dictionaries following this format:
+        HUD=[]
+        HUD.append({'label':'Animator: Toke Jepsen',
+                    'block':1,
+                    'section':5,
+                    'labelFontSize':'small',
+                    'dataFontSize':'small'})
     '''
     
-    panel=cmds.getPanel(wf=True)
-    panelType=cmds.getPanel(typeOf=panel)
+    result=cmds.objExists(camera)
     
-    if panelType=='modelPanel':
-        cam=cmds.modelEditor(panel, q=True,camera=True)
+    if result:
+        
+        #string $visPanels[] = `getPanel -vis`; < for fail safe of active panel
+        panel = "modelPanel4"
+        prevcam=cmds.modelEditor(panel, q=True,camera=True)
+        
+        mel.eval("lookThroughModelPanel "+camera+" "+panel)
         
         #getting current settings
         currentTime=cmds.currentTime(q=True)
-        displayFilmGate=cmds.camera(cam,q=True,displayFilmGate=True)
-        displayResolution=cmds.camera(cam,q=True,displayResolution=True)
-        overscan=cmds.camera(cam,q=True,overscan=True)
+        displayFilmGate=cmds.camera(camera,q=True,displayFilmGate=True)
+        displayResolution=cmds.camera(camera,q=True,displayResolution=True)
+        overscan=cmds.camera(camera,q=True,overscan=True)
         grid=cmds.modelEditor(panel,q=True,grid=True)
         displayAppearance=cmds.modelEditor(panel,q=True,displayAppearance=True)
-        headsUpDisplay=cmds.modelEditor(panel,q=True,headsUpDisplay=True)
         nurbsCurves=cmds.modelEditor(panel,q=True,nurbsCurves=True)
         
         #prepping for playblast
-        cmds.camera(cam,edit=True,displayFilmGate=False,displayResolution=False,overscan=1)
+        cmds.camera(camera,edit=True,displayFilmGate=False,displayResolution=False,overscan=1)
         cmds.modelEditor(panel,e=True,grid=False,
-                         displayAppearance='flatShaded',headsUpDisplay=False,
+                         displayAppearance='flatShaded',
                          nurbsCurves=False)
+        
+        #query and hide previous huds
+        prevHUD={}
+        for headsup in cmds.headsUpDisplay(listHeadsUpDisplays=True):
+            
+            vis=cmds.headsUpDisplay(headsup,q=True,vis=True)
+            prevHUD[headsup]=vis
+            
+            cmds.headsUpDisplay(headsup,e=True,vis=False)
+        
+        #creating custom huds
+        customHUD=[]
+        if HUD!=None:
+            itr=1
+            for headsup in HUD:
+                
+                cmd='cmds.headsUpDisplay(\'temp'+str(itr)+'\''
+                for key in headsup:
+                    if type(headsup[key])==str:
+                        cmd+=','+key+'=\''+str(headsup[key])+'\''
+                    else:
+                        cmd+=','+key+'='+str(headsup[key])
+                
+                cmd+=')'
+                eval(cmd)
+                
+                customHUD.append('temp'+str(itr))
+                
+                itr+=1
         
         #playblasting
         if exportType=='movie':
             
             cmds.playblast(f=filePath,format='qt',forceOverwrite=True,offScreen=True,percent=100,
-                           compression='H.264',quality=100,widthHeight=(width,height),
+                           compression='H.264',quality=100,width=width,height=height,
                            viewer=False)
         elif exportType=='still':
             
@@ -54,19 +99,49 @@ def __exportPlayblast__(filePath,width=640,height=360,exportType='movie'):
             midTime=((endTime-startTime)/2)+startTime
             
             cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
-                           compression='png',quality=100,widthHeight=(width,height),
-                           startTime=midTime,endTime=midTime,viewer=False)
+                           compression='png',quality=100,startTime=midTime,endTime=midTime,
+                           width=width,height=height,viewer=False,showOrnaments=True)
         
         #revert to settings
         cmds.currentTime(currentTime)
-        cmds.camera(cam,edit=True,displayFilmGate=displayFilmGate,
+        cmds.camera(camera,edit=True,displayFilmGate=displayFilmGate,
                     displayResolution=displayResolution,
                     overscan=overscan)
         cmds.modelEditor(panel,e=True,grid=grid,
                          displayAppearance=displayAppearance,
-                         headsUpDisplay=headsUpDisplay,
                          nurbsCurves=nurbsCurves)
+        
+        for headsup in prevHUD:
+            
+            cmds.headsUpDisplay(headsup,e=True,vis=prevHUD[headsup])
+        
+        for headsup in customHUD:
+            
+            cmds.headsUpDisplay(headsup,remove=True)
+        
+        mel.eval("lookThroughModelPanel "+prevcam+" "+panel)
     else:
-        cmds.warning('Current view is not a camera view! Please select correct view.')
+        cmds.warning('Request camera cant be found!')
         
         return None
+'''
+HUD=[]
+time=time.time()
+timestamp=str(datetime.datetime.fromtimestamp(time).strftime('%d-%m-%Y %H:%M:%S'))
+HUD.append({'label':timestamp,
+            'block':0,
+            'section':1})
+HUD.append({'label':'Bait Studio',
+            'block':0,
+            'section':2})
+username = str(getpass.getuser())
+HUD.append({'label':username,
+            'block':0,
+            'section':3})
+filePath='c:/temp.ext'
+HUD.append({'label':filePath,
+            'block':1,
+            'section':7})
+
+__exportPlayblast__('c:/temp', 'shotCam', HUD=HUD,exportType='still')
+'''

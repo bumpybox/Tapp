@@ -8,7 +8,7 @@ import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.utils.yaml as muy
 import Tapp.Maya.animation.utils.playblast as maup
 
-def __exportAnim__(filePath,objs):
+def __exportAnim__(filePath,objs,cam):
     ''' Exports selection or rig animation. '''
     
     #splitting filePath
@@ -46,10 +46,10 @@ def __exportAnim__(filePath,objs):
     f.close()
     
     #exporting movie
-    maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov')
+    maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov',cam)
     
     #exporting thumbnail
-    maup.__exportPlayblast__(dirPath+'/'+fileName+'.png',exportType='still')
+    maup.__exportPlayblast__(dirPath+'/'+fileName+'.png',cam,exportType='still')
     
     #exporting trax clip
     animCurves=[]
@@ -80,15 +80,28 @@ def __exportAnim__(filePath,objs):
 def ExportAnim():
     ''' User exports selection or rig animation. '''
     
-    #user input
-    result=cmds.confirmDialog( title='Export Anim',
-                               message='What do you want to export?',
-                               button=['Selected','Rig','Cancel'])
-    if result!='Cancel':
+    sel=cmds.ls(selection=True)
+    
+    if len(sel)>0:
+    
+        #getting cameras in scene
+        cams=[]
+        exclude=['front','side','top']
+        for cam in cmds.ls(cameras=True):
+            
+            tn=cmds.listRelatives(cam,parent=True)[0]
+            
+            if tn not in exclude:
+                cams.append(tn)
         
-        sel=cmds.ls(selection=True)
+        cams.append('Cancel')
         
-        if len(sel)>0:
+        #user input
+        result=cmds.confirmDialog( title='Export Anim',
+                                   message='Select camera to preview from.',
+                                   button=cams)
+    
+        if result!='Cancel':
         
             #getting file path and name
             basicFilter = "ANIM (*.xad)"
@@ -96,79 +109,52 @@ def ExportAnim():
                                       caption='Export Animation')
             
             if filePath!=None:
-                #case of selected export
-                if result=='Selected':
                     
-                    #exporting animation
-                    __exportAnim__(filePath[0],sel)
+                #getting all controls
+                root=mum.UpStream(sel[0], 'root')
+                cnts=mum.DownStream(root, 'control', allNodes=True)
                 
-                #case of rig export
-                if result=='Rig':
+                nodes=[]
+                for cnt in cnts:
                     
-                    #getting all controls
-                    root=mum.UpStream(sel[0], 'root')
-                    cnts=mum.DownStream(root, 'control', allNodes=True)
-                    
-                    nodes=[]
-                    for cnt in cnts:
-                        
-                        nodes.append(mum.GetTransform(cnt))
-                    
-                    #exporting animation
-                    __exportAnim__(filePath[0],nodes)
+                    nodes.append(mum.GetTransform(cnt))
+                
+                #exporting animation
+                __exportAnim__(filePath[0],nodes,result)
             
             #revert selection
             cmds.select(sel,r=True)
-        else:
-            if result=='Rig':
-                cmds.warning('Need to select a control on the rig!')
-            else:
-                cmds.warning('Nothing is selected!')
+    else:
+        cmds.warning('Need to select a control on the rig!')
 
 def ImportAnim():
     ''' User import animation to selection or rig. '''
     
-    result=cmds.confirmDialog( title='Import Anim',
-                               message='Where do you want to import the animation?',
-                               button=['Selected','Rig','Cancel'])
-    if result!='Cancel':
+    sel=cmds.ls(selection=True)
+    
+    if len(sel)>0:
         
-        sel=cmds.ls(selection=True)
+        #getting file path and name
+        basicFilter = "ANIM (*.xad)"
+        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                                  fileMode=1,
+                                  caption='Import Animation')
         
-        if len(sel)>0:
-        
-            #getting file path and name
-            basicFilter = "ANIM (*.xad)"
-            filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
-                                      fileMode=1,
-                                      caption='Import Animation')
+        if filePath!=None:
             
-            if filePath!=None:
-                
-                traxresult=cmds.confirmDialog( title='Import Anim',
-                                               message='Using Trax Editor?',
-                                               button=['Yes','No'])
-                
-                if traxresult=='Yes':
-                    traxresult=True
-                else:
-                    traxresult=False
-                #case of selected export
-                if result=='Selected':
-                    
-                    #importing animation 
-                    __importAnim__(filePath[0],selection=True,trax=traxresult)
-                
-                #case of rig export
-                if result=='Rig':
-                    
-                    #importing animation
-                    __importAnim__(filePath[0],selection=False,trax=traxresult)
-        else:
-            if result=='Rig':
-                cmds.warning('Need to select a control on the rig!')
+            traxresult=cmds.confirmDialog( title='Import Anim',
+                                           message='Using Trax Editor?',
+                                           button=['Yes','No'])
+            
+            if traxresult=='Yes':
+                traxresult=True
             else:
-                cmds.warning('Nothing is selected!')
+                traxresult=False
+            
+            #importing animation
+            __importAnim__(filePath[0],selection=False,trax=traxresult)
+        else:
+            cmds.warning('Need to select a control on the rig!')
 
 def __importAnim__(filePath,selection=False,trax=False):
     ''' Imports animation to selection or rig. '''
