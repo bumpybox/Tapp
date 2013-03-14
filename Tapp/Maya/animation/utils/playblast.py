@@ -1,6 +1,4 @@
-import getpass
-import datetime
-import time
+from shutil import move
 
 import maya.cmds as cmds
 import maya.mel as mel
@@ -18,17 +16,37 @@ def ExportPlayblast():
 def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',HUD=None):
     ''' Exports playblast to filePath
         
+        filePath=path to file with no extension
+                    eg. c:/temp
+        
+        camera=camera to generate playblast from
+        
         type=['movie','still']
             movie = exports video
             still = exports image from middle of timeline
         
-        HUD is a list of dictionaries following this format:
+        HUD is a list of dictionaries following this format.
+        
+        usage:
         HUD=[]
-        HUD.append({'label':'Animator: Toke Jepsen',
+        time=time.time()
+        timestamp=str(datetime.datetime.fromtimestamp(time).strftime('%d-%m-%Y %H:%M:%S'))
+        HUD.append({'label':timestamp,
+                    'block':0,
+                    'section':1})
+        HUD.append({'label':'Bait Studio',
+                    'block':0,
+                    'section':2})
+        username = str(getpass.getuser())
+        HUD.append({'label':username,
+                    'block':0,
+                    'section':3})
+        filePath='c:/temp.ext'
+        HUD.append({'label':filePath,
                     'block':1,
-                    'section':5,
-                    'labelFontSize':'small',
-                    'dataFontSize':'small'})
+                    'section':7})
+        
+        __exportPlayblast__('c:/temp', 'shotCam', HUD=HUD,exportType='still')
     '''
     
     result=cmds.objExists(camera)
@@ -98,9 +116,17 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
             
             midTime=((endTime-startTime)/2)+startTime
             
-            cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
+            result=cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
                            compression='png',quality=100,startTime=midTime,endTime=midTime,
                            width=width,height=height,viewer=False,showOrnaments=True)
+            
+            path=result.split('.')[0]
+            ext=result.split('.')[-1]
+            
+            oldfile=filePath+'.'+str(int(midTime)).zfill(4)+'.'+ext
+            newfile=path+'.'+ext
+            
+            move(oldfile,newfile)
         
         #revert to settings
         cmds.currentTime(currentTime)
@@ -124,24 +150,3 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
         cmds.warning('Request camera cant be found!')
         
         return None
-'''
-HUD=[]
-time=time.time()
-timestamp=str(datetime.datetime.fromtimestamp(time).strftime('%d-%m-%Y %H:%M:%S'))
-HUD.append({'label':timestamp,
-            'block':0,
-            'section':1})
-HUD.append({'label':'Bait Studio',
-            'block':0,
-            'section':2})
-username = str(getpass.getuser())
-HUD.append({'label':username,
-            'block':0,
-            'section':3})
-filePath='c:/temp.ext'
-HUD.append({'label':filePath,
-            'block':1,
-            'section':7})
-
-__exportPlayblast__('c:/temp', 'shotCam', HUD=HUD,exportType='still')
-'''

@@ -46,10 +46,10 @@ def __exportAnim__(filePath,objs,cam):
     f.close()
     
     #exporting movie
-    maup.__exportPlayblast__(dirPath+'/'+fileName+'.mov',cam)
+    maup.__exportPlayblast__(dirPath+'/'+fileName,cam)
     
     #exporting thumbnail
-    maup.__exportPlayblast__(dirPath+'/'+fileName+'.png',cam,exportType='still')
+    maup.__exportPlayblast__(dirPath+'/'+fileName,cam,exportType='still')
     
     #exporting trax clip
     animCurves=[]
