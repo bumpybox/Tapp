@@ -24,8 +24,17 @@ def SkeletonParent():
             closestJnt=min(nodes, key=nodes.get)
             
             cmds.parentConstraint(closestJnt,obj,mo=True)
-            cmds.scaleConstraint(closestJnt,obj,mo=True)
+            #cmds.scaleConstraint(closestJnt,obj)
             
-            cmds.setAttr(obj+'.segmentScaleCompensate',0)
+            #scaling linking
+            cmds.connectAttr(closestJnt+'.sx',obj+'.sx')
+            cmds.connectAttr(closestJnt+'.sy',obj+'.sy')
+            cmds.connectAttr(closestJnt+'.sz',obj+'.sz')
+            
+            #cmds.setAttr(obj+'.inheritsTransform',0)
+            
+            #cmds.setAttr(obj+'.segmentScaleCompensate',0)
     
     cmds.undoInfo(closeChunk=True)
+
+#SkeletonParent()

@@ -3,7 +3,6 @@ import os
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
-from PyQt4 import phonon
 #from PyQt4 import uic
 #import maya.cmds as cmds
 import maya.OpenMayaUI as omu
@@ -30,6 +29,7 @@ class Form(QtGui.QDialog):
         self.treeView=QtGui.QTreeView(parent=self)
         
         self.setObjectName('tmLibrary')
+        self.setWindowTitle('Tapp Library')
         
         self.setFixedHeight(500)
         self.setFixedWidth(500)
@@ -72,6 +72,8 @@ class Form(QtGui.QDialog):
         layout.addWidget(self.thumbslider)
         
         #--------------------------------------------
+        
+        
     
     def on_listwidget_doubleclicked(self):
         
