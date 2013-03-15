@@ -3,6 +3,7 @@ import os
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
+from PyQt4 import phonon
 #from PyQt4 import uic
 #import maya.cmds as cmds
 import maya.OpenMayaUI as omu
@@ -50,51 +51,69 @@ class Form(QtGui.QDialog):
         
         self.treeView.clicked.connect(self.on_treeView_clicked)
         
+        #------------------------------------------
         
-        self.graphicsView=QtGui.QGraphicsView()
-        self._scene = QtGui.QGraphicsScene()
+        self.listwidget=QtGui.QListWidget()
+        self.listwidget.setViewMode(QtGui.QListView.IconMode)
+        self.listwidget.setMovement(QtGui.QListView.Static)
+        self.listwidget.setIconSize(QtCore.QSize(100,100))
         
-        images=['c:/library/animations/dance.png']
+        self.listwidget.doubleClicked.connect(self.on_listwidget_doubleclicked)
         
-        current = 0
-        for image in images:
-            #print current, 'of', total, os.path.basename(image)
-            if os.path.isdir(image) or os.path.basename(image).startswith('.'):
-                continue
-            current += 1
- 
-            item = QdGraphicsPixmapItem(image)
-            item.setPos(0, 200*current)
-            self._scene.addItem(item)
- 
-        self._scene.setSceneRect(0, 0, 200, 200*current)
-        self.graphicsView.setScene(self._scene)
+        layout.addWidget(self.listwidget)
         
-        layout.addWidget(self.graphicsView)
+        #------------------------------------------
+        
+        self.thumbslider=QtGui.QSlider()
+        self.thumbslider.setOrientation(QtCore.Qt.Horizontal)
+        
+        self.thumbslider.valueChanged.connect(self.on_thumbslider_changed)
+        
+        layout.addWidget(self.thumbslider)
+        
+        #--------------------------------------------
     
-    def on_treeView_clicked(self, index):
-        indexItem = self.model.index(index.row(), 0, index.parent())
-
-        fileName = self.model.fileName(indexItem)
+    def on_listwidget_doubleclicked(self):
+        
+        itemtext=self.listwidget.currentItem().text()
+        
+        indexItem = self.treeView.selectedIndexes()[0]
+        
         filePath = self.model.filePath(indexItem)
         
-        print fileName
-        print filePath
-
-class QdGraphicsPixmapItem(QtGui.QGraphicsPixmapItem):
-    def __init__(self, image, parent=None):
-        QtGui.QGraphicsPixmapItem.__init__(self, parent)
-        self._image = image
-        self._loaded = False
-        self.setFlags(self.flags() | QtGui.QGraphicsItem.ItemIsSelectable | QtGui.QGraphicsItem.ItemIsMovable )
+        f=filePath+'/'+itemtext+'.mov'
+        os.startfile(f)
+    
+    def on_thumbslider_changed(self):
         
-    def paint(self, painter, styleopt, widget):
-        if not self._loaded:
-            self._loaded = True
-            pixmap = QtGui.QPixmap(self._image)
-            thumb = pixmap.scaled(200, 200, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            self.setPixmap(QtGui.QPixmap(self._image).scaled(200, 200))
-        QtGui.QGraphicsPixmapItem.paint(self, painter, styleopt, widget)
+        value=self.thumbslider.value()
+        self.listwidget.setIconSize(QtCore.QSize(100+value,100+value))
+    
+    def on_treeView_clicked(self, index):
+        self.listwidget.clear()
+        
+        indexItem = self.model.index(index.row(), 0, index.parent())
+        
+        filePath = self.model.filePath(indexItem)
+        
+        items=[]
+        for f in os.listdir(filePath):
+            
+            if len(f.split('.'))>1:
+                
+                items.append(f.split('.')[0])
+        
+        filterItems=set(items)
+        for f in filterItems:
+            
+            item = QtGui.QListWidgetItem(f)
+            
+            image=filePath+'/'+f+'.png'
+            icon=QtGui.QIcon()
+            icon.addFile(image)
+            item.setIcon(icon)
+            
+            self.listwidget.addItem(item)
 
 def show():
     #closing previous dialog
