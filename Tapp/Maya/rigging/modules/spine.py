@@ -575,7 +575,9 @@ def Rig(module):
             
             cmds.poleVectorConstraint(upGRP,ikHandle[0])
             
-            cmds.setAttr(ikHandle[0]+'.twist',-90)
+            #bit of a work around to get the right ik alignment
+            x=mru.ClosestOrient(fkjnts[count], ikjnts[count], align=False)[0]
+            cmds.setAttr(ikHandle[0]+'.twist',x)
     
     #create extra control
     extraCNT=mru.Pin(prefix+'extra_cnt')
