@@ -21,9 +21,10 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
         
         camera=camera to generate playblast from
         
-        type=['movie','still']
+        type=['movie','still','sequence']
             movie = exports video
             still = exports image from middle of timeline
+            sequence = exports image sequence
         
         HUD is a list of dictionaries following this format.
         
@@ -71,7 +72,7 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
         #prepping for playblast
         cmds.camera(camera,edit=True,displayFilmGate=False,displayResolution=False,overscan=1)
         cmds.modelEditor(panel,e=True,grid=False,
-                         displayAppearance='flatShaded',
+                         displayAppearance='smoothShaded',
                          nurbsCurves=False)
         
         #query and hide previous huds
@@ -127,6 +128,14 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
             newfile=path+'.'+ext
             
             move(oldfile,newfile)
+        elif exportType=='sequence':
+            
+            startTime=cmds.playbackOptions(q=True,minTime=True)
+            endTime=cmds.playbackOptions(q=True,maxTime=True)
+            
+            result=cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
+                           compression='png',quality=100,startTime=startTime,endTime=endTime,
+                           width=width,height=height,viewer=False,showOrnaments=True)
         
         #revert to settings
         cmds.currentTime(currentTime)
@@ -147,6 +156,6 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
         
         mel.eval("lookThroughModelPanel "+prevcam+" "+panel)
     else:
-        cmds.warning('Request camera cant be found!')
+        cmds.warning('Requested camera cant be found!')
         
         return None
