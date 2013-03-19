@@ -107,9 +107,9 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
         #playblasting
         if exportType=='movie':
             
-            cmds.playblast(f=filePath,format='qt',forceOverwrite=True,offScreen=True,percent=100,
-                           compression='H.264',quality=100,width=width,height=height,
-                           viewer=False)
+            result=cmds.playblast(f=filePath,format='qt',forceOverwrite=True,offScreen=True,percent=100,
+                                   compression='H.264',quality=100,width=width,height=height,
+                                   viewer=False)
         elif exportType=='still':
             
             startTime=cmds.playbackOptions(q=True,minTime=True)
@@ -118,8 +118,8 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
             midTime=((endTime-startTime)/2)+startTime
             
             result=cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
-                           compression='png',quality=100,startTime=midTime,endTime=midTime,
-                           width=width,height=height,viewer=False,showOrnaments=True)
+                                   compression='png',quality=100,startTime=midTime,endTime=midTime,
+                                   width=width,height=height,viewer=False,showOrnaments=True)
             
             path=result.split('.')[0]
             ext=result.split('.')[-1]
@@ -128,14 +128,16 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
             newfile=path+'.'+ext
             
             move(oldfile,newfile)
+            
+            result=newfile
         elif exportType=='sequence':
             
             startTime=cmds.playbackOptions(q=True,minTime=True)
             endTime=cmds.playbackOptions(q=True,maxTime=True)
             
             result=cmds.playblast(f=filePath,format='iff',forceOverwrite=True,offScreen=True,percent=100,
-                           compression='png',quality=100,startTime=startTime,endTime=endTime,
-                           width=width,height=height,viewer=False,showOrnaments=True)
+                                   compression='png',quality=100,startTime=startTime,endTime=endTime,
+                                   width=width,height=height,viewer=False,showOrnaments=True)
         
         #revert to settings
         cmds.currentTime(currentTime)
@@ -155,6 +157,8 @@ def __exportPlayblast__(filePath,camera,width=640,height=360,exportType='movie',
             cmds.headsUpDisplay(headsup,remove=True)
         
         mel.eval("lookThroughModelPanel "+prevcam+" "+panel)
+        
+        return result
     else:
         cmds.warning('Requested camera cant be found!')
         
