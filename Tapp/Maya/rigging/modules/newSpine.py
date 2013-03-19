@@ -137,10 +137,8 @@ def Rig(module):
     
     for count in xrange(1,jointAmount+1):
         
-        print (spineLength/jointAmount+1)*count
-        
         #create joint
-        jnt=cmds.joint(position=((spineLength/jointAmount+1)*count,0,0),
+        jnt=cmds.joint(position=((spineLength/(jointAmount-1))*count,0,0),
                        name=prefix+'jnt'+str(count))
         
         cmds.container(asset,e=True,addNode=jnt)
@@ -176,6 +174,56 @@ def Rig(module):
                                   worldUpVector=(1,0,0)))
     
     cmds.delete(grp)
+    
+    #create fk chain
+    fkjnts=[]
+    fkcnts=[]
+    fkgrps=[]
+    
+    for count in xrange(1,jointAmount+1):
+        
+        #create joint
+        fk=cmds.joint(position=((spineLength/(jointAmount-1))*count,0,0),
+                       name=prefix+'fk'+str(count))
+        
+        cmds.container(asset,e=True,addNode=fk)
+        
+        #create fk controls
+        [grp,cnt]=mru.Square(prefix+'fk'+str(count)+'_cnt',
+                       group=True)
+        
+        cmds.container(asset,e=True,addNode=[grp,cnt])
+        
+        fkcnts.append(cnt)
+        fkgrps.append(grp)
+        
+        #setup fk controls
+        cmds.parent(cnt,grp)
+        
+        #mru.Snap(fk,grp)
+        
+        cmds.parent(fk,cnt)
+        
+        if len(fkjnts)>0:
+            cmds.parent(grp,fkjnts[-1])
+        
+        fkjnts.append(fk)
+        
+        data={'system':'fk','index':count}
+        mNode=mum.SetData(('meta_'+cnt),'control',
+                           'joint',module,data)
+        mum.SetTransform(cnt, mNode)
+    
+    grp=cmds.group(empty=True)
+    cmds.xform(grp,worldSpace=True,translation=endTrans)
+    
+    cmds.xform(fkjnts[0],worldSpace=True,translation=startTrans)
+    cmds.delete(cmds.aimConstraint(grp,fkjnts[0],
+                                  worldUpVector=(1,0,0)))
+    
+    cmds.delete(grp)
+    
+    
     
 templateModule='spine:meta_spine'
 Rig(templateModule)
