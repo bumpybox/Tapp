@@ -153,8 +153,8 @@ def ImportAnim():
             
             #importing animation
             __importAnim__(filePath[0],selection=False,trax=traxresult)
-        else:
-            cmds.warning('Need to select a control on the rig!')
+    else:
+        cmds.warning('Need to select a control on the rig!')
 
 def __importAnim__(filePath,selection=False,trax=False):
     ''' Imports animation to selection or rig. '''
