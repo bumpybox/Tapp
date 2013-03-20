@@ -131,7 +131,7 @@ def Rig(module):
     
     mum.SetTransform(plug, metaParent)
     
-    #create jnts
+    #create jnts------------------------------------------------------
     jnts=[]
     sockets=[]
     
@@ -166,6 +166,7 @@ def Rig(module):
         
         sockets.append(socket)
     
+    #transforming chain
     grp=cmds.group(empty=True)
     cmds.xform(grp,worldSpace=True,translation=endTrans)
     
@@ -175,7 +176,10 @@ def Rig(module):
     
     cmds.delete(grp)
     
-    #create fk chain
+    #parent to plug
+    cmds.parent(jnts[0],plug)
+    
+    #create fk chain------------------------------------------------------------
     fkjnts=[]
     fkcnts=[]
     fkgrps=[]
@@ -214,6 +218,7 @@ def Rig(module):
                            'joint',module,data)
         mum.SetTransform(cnt, mNode)
     
+    #transforming chain
     grp=cmds.group(empty=True)
     cmds.xform(grp,worldSpace=True,translation=endTrans)
     
@@ -223,7 +228,8 @@ def Rig(module):
     
     cmds.delete(grp)
     
-    
+    #parent to plug
+    cmds.parent(fkgrps[0],plug)
     
 templateModule='spine:meta_spine'
 Rig(templateModule)
