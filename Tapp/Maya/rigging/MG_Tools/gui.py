@@ -7,7 +7,7 @@ import sip
 
 import utils
 
-uiPath=os.path.dirname(__file__)
+uiPath=os.path.dirname(__file__)+'/resources/ui.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -22,7 +22,7 @@ class Form(base,form):
         
         self.setObjectName('MG_Tools_dialog')
     
-    def on_ps_create_pushButton_clicked(self):
+    def on_ps_create_pushButton_released(self):
         
         #selection failsafe
         sel=cmds.ls(selection=True)
@@ -46,8 +46,16 @@ class Form(base,form):
                     if state==2:
                         skinCurve=True
                     
+                    #get check box state
+                    state=self.ps_defaultValues_checkBox.checkState()
+                    
+                    if state==0:
+                        defaultValues=False
+                    if state==2:
+                        defaultValues=True
+                    
                     #create MG_pathSpine
-                    utils.MG_pathSpine(node,locAmount,skinCurve)
+                    utils.MG_pathSpine(node,locAmount,skinCurve,defaultValues)
                     
                 else:
                     cmds.warning('%s is not a nurbsCurve!' % node)
