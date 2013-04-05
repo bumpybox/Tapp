@@ -81,6 +81,12 @@ def __modifyData__(mNode,data):
             else:
                 cmds.setAttr(mNode+'.'+attr,str(data[attr]),
                              type='string')
+        elif attr=='metaParent' or attr=='switch':
+            cmds.addAttr(mNode,longName=attr,
+                         attributeType='message')
+            cmds.connectAttr(data[attr]+'.message',
+                             mNode+'.'+attr,
+                             force=True)
         else:
             cmds.addAttr(mNode,longName=attr,
                          dataType='string')

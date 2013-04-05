@@ -4,6 +4,7 @@ import maya.cmds as cmds
 
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
+import MG_Tools.python.MG_pathSpine as mpps
 
 def Create():
     ''' Imports the template module to rig.
@@ -45,8 +46,6 @@ def Rig(module):
     for control in controls:
         if mum.GetData(control)['component']=='start':
             start=mum.GetTransform(control)
-        if mum.GetData(control)['component']=='line':
-            line=mum.GetTransform(control)
         if mum.GetData(control)['component']=='end':
             end=mum.GetTransform(control)
     
@@ -68,21 +67,6 @@ def Rig(module):
                       rotation=True)
     
     spineLength=mru.Distance(start, end)
-    
-    jntsTrans=[]
-    
-    grp=cmds.group(empty=True)
-    path=cmds.pathAnimation(grp,follow=True,c=line)
-    
-    for count in xrange(0,jointAmount+1):
-        pct=1.0/jointAmount*count
-        
-        cmds.setAttr(path+'.uValue',pct)
-        
-        trans=cmds.xform(grp,q=True,ws=True,translation=True)
-        jntsTrans.append(trans)
-    
-    cmds.delete(grp,path)
     
     #establish side
     side='center'
@@ -116,8 +100,18 @@ def Rig(module):
     prefix=side[0]+'_'+spineType+str(index)+'_'
     suffix='_'+side[0]+'_'+spineType+str(index)
     
+    #systems
+    fksystem=True
+    iksystem=True
+    
+    #initial setup---
+    
     #creating asset
-    asset=cmds.container(n=prefix+'rig')
+    asset=cmds.container(n=prefix+'rig',type='dagContainer')
+    
+    #setup asset
+    attrs=['tx','ty','tz','ry','rz','rx','sx','sy','sz','v']
+    mru.ChannelboxClean(asset, attrs)
     
     #create module
     data={'side':side,'index':str(index),'system':'rig','subcomponent':spineType}
@@ -130,8 +124,14 @@ def Rig(module):
     #create plug
     plug=cmds.spaceLocator(name=prefix+'plug')[0]
     
-    phgrp=cmds.group(plug,n=(plug+'_PH'))
-    sngrp=cmds.group(plug,n=(plug+'_SN'))
+    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+    
+    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
+    
+    #setup plug
+    cmds.parent(sngrp,phgrp)
+    cmds.parent(plug,sngrp)
     
     cmds.xform(phgrp,worldSpace=True,translation=startTrans)
     
@@ -140,63 +140,31 @@ def Rig(module):
     
     mum.SetTransform(plug, metaParent)
     
-    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
-    
-    #create fkjnts, ikjnts, jnts, sockets, fkcnts, ikcnts
-    ikcnts=[]
-    ikcntsGRP=[]
-    fkcnts=[]
-    fkcntsGRP=[]
-    fkjnts=[]
-    ikjnts=[]
+    #create jnts---
     jnts=[]
     sockets=[]
-    iktwistcnts=[]
-    ikfinecnts=[]
     
-    for pos in jntsTrans:
+    for count in xrange(1,jointAmount+1):
         
-        count=jntsTrans.index(pos)+1
-        
-        #create joints
-        jnt=cmds.joint(position=(pos[0],pos[1],pos[2]),
-                              name=prefix+'jnt'+str(count))
+        #create joint
+        jnt=cmds.joint(position=((spineLength/(jointAmount-1))*count,0,0),
+                       name=prefix+'jnt'+str(count))
         
         cmds.container(asset,e=True,addNode=jnt)
         
-        meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
-        mum.SetTransform(jnt, meta)
-        
+        #setup joint
         if len(jnts)>0:
             cmds.parent(jnt,jnts[-1])
-            
-            try:
-                cmds.connectAttr(jnts[-1]+'.scale',
-                                 jnt+'.inverseScale')
-            except:
-                pass
         
         jnts.append(jnt)
         
-        if len(jnts)<jointAmount+1:
-            grp=cmds.group(empty=True)
-            newPos=jntsTrans[count]
-            cmds.xform(grp,worldSpace=True,
-                       translation=newPos)
-            aimCon=cmds.aimConstraint(grp,jnt,
-                                      worldUpVector=(1,0,0))
-            cmds.delete(aimCon)
-            
-            cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
-            
-            cmds.delete(grp)
-        else:
-            mru.Snap(jnts[-2],jnt,point=False)
-        
-        #create sockets
+        #create socket
         socket=cmds.spaceLocator(name=prefix+'socket'+
                                  str(count))[0]
         
+        cmds.container(asset,e=True,addNode=socket)
+        
+        #setup socket
         mru.Snap(jnt,socket)
         cmds.parent(socket,jnt)
         
@@ -206,587 +174,326 @@ def Rig(module):
         mum.SetTransform(socket, metaParent)
         
         sockets.append(socket)
+    
+    #transforming chain
+    grp=cmds.group(empty=True)
+    cmds.xform(grp,worldSpace=True,translation=endTrans)
+    
+    cmds.xform(jnts[0],worldSpace=True,translation=startTrans)
+    cmds.delete(cmds.aimConstraint(grp,jnts[0],
+                                  worldUpVector=(1,0,0)))
+    
+    cmds.delete(grp)
+    
+    #parent to plug
+    cmds.parent(jnts[0],plug)
+    
+    #create fk---
+    
+    if fksystem:
+        fkcnts=[]
+        fkgrps=[]
         
-        cmds.container(asset,e=True,addNode=socket)
-        
-        #create fk
-        cmds.select(cl=True)
-        fk=cmds.joint(position=(pos[0],pos[1],pos[2]),
-                              name=prefix+'fk'+str(count))
-        
-        mru.Snap(jnt,fk)
-        cmds.makeIdentity(fk,apply=True,t=1,r=1,s=1,n=0)
-        
-        cmds.container(asset,e=True,addNode=fk)
-        
-        #create fk controls
-        [grp,cnt]=mru.Square(prefix+'fk'+str(count)+'_cnt',
-                       group=True)
-        
-        cmds.container(asset,e=True,addNode=[grp,cnt])
-        
-        fkcnts.append(cnt)
-        fkcntsGRP.append(grp)
-        
-        #create ik
-        cmds.select(cl=True)
-        ik=cmds.joint(position=(pos[0],pos[1],pos[2]),
-                              name=prefix+'ik'+str(count))
-        
-        mru.Snap(jnt,ik)
-        cmds.makeIdentity(ik,apply=True,t=1,r=1,s=1,n=0)
-        
-        cmds.container(asset,e=True,addNode=ik)
-        
-        #setup fk controls
-        mru.Snap(fk,grp)
-        
-        cmds.parent(fk,cnt)
-        
-        if len(fkjnts)>0:
-            cmds.parent(grp,fkjnts[-1])
-        
-        fkjnts.append(fk)
-        
-        data={'system':'fk','switch':ik,'index':count}
-        mNode=mum.SetData(('meta_'+cnt),'control',
-                           'joint',module,data)
-        mum.SetTransform(cnt, mNode)
-        
-        #setup ik jnts
-        if count<jointAmount+1:
-            if len(ikjnts)>0:
-                cmds.parent(ik,ikjnts[-1])
+        for count in xrange(1,jointAmount+1):
             
-            ikjnts.append(ik)
-        else:
-            cmds.parent(ik,ikjnts[-1])
-            
-            ikjnts.append(ik)
-        
-        #create ik controls
-        if count<=jointAmount and count>1:
-            [grp,cnt]=mru.Sphere(prefix+'ik'+str(count-1)+'_cnt',
+            #create fk controls
+            [grp,cnt]=mru.Square(prefix+'fk'+str(count)+'_cnt',
                            group=True)
             
             cmds.container(asset,e=True,addNode=[grp,cnt])
+            
+            #setup fk controls
+            cmds.parent(cnt,grp)
+            
+            mru.Snap(jnts[count-1], grp)
+            
+            if len(fkcnts)>0:
+                cmds.parent(grp,fkcnts[-1])
+            
+            data={'system':'fk','index':count}
+            mNode=mum.SetData(('meta_'+cnt),'control',
+                               'joint',module,data)
+            mum.SetTransform(cnt, mNode)
+            
+            fkcnts.append(cnt)
+            fkgrps.append(grp)
+            
+            #channelbox clean
+            attrs=['v']
+            mru.ChannelboxClean(cnt, attrs,lock=False)
+        
+        #parent to plug
+        cmds.parent(fkgrps[0],plug)
+        
+        #orienting first and last fk cnt to guide
+        children=cmds.listRelatives(fkcnts[0],c=True,type='transform')
+        cmds.parent(children,w=True)
+        cmds.xform(fkgrps[0],ws=True,translation=startTrans,rotation=startRot)
+        mru.ClosestOrient(jnts[0], fkgrps[0])
+        cmds.parent(children,fkcnts[0])
+        
+        cmds.xform(fkgrps[-1],ws=True,translation=endTrans,rotation=endRot)
+        mru.ClosestOrient(jnts[-1], fkgrps[-1])
+    
+    #create ik---
+    
+    if iksystem:
+        #create curve
+        curve=cmds.curve(d=1,p=[startTrans,endTrans],n=prefix+'ik_curve')
+        
+        cmds.container(asset,e=True,addNode=curve)
+        
+        #setup curve
+        cmds.rebuildCurve(curve,rpo=1,rt=0,end=1,kr=0,kcp=0,kep=1,kt=0,s=1,d=2,tol=0.01)
+        
+        cmds.select(cl=True)
+        ikstart=cmds.joint(position=startTrans,n=prefix+'ik_start')
+        cmds.select(cl=True)
+        ikend=cmds.joint(position=endTrans,n=prefix+'ik_end')
+        
+        cmds.container(asset,e=True,addNode=[ikstart,ikend])
+        
+        skin=cmds.skinCluster(ikstart,ikend,curve,tsb=True)
+        
+        cmds.skinPercent(skin[0],curve+'.cv[0]',tv=[(ikstart,1.0)])
+        cmds.skinPercent(skin[0],curve+'.cv[1]',tv=[(ikstart,1.0)])
+        cmds.skinPercent(skin[0],curve+'.cv[2]',tv=[(ikend,1.0)])
+        cmds.skinPercent(skin[0],curve+'.cv[3]',tv=[(ikend,1.0)])
+        
+        #create controls
+        [ikendgrp,ikendcnt]=mru.Sphere(prefix+'ik_end_cnt', group=True)
+        
+        if spineType=='spine':
+            [ikrootgrp,ikrootcnt]=mru.Circle(prefix+'ik_root_cnt', group=True)
+            [ikstartgrp,ikstartcnt]=mru.Sphere(prefix+'ik_start_cnt', group=True)
+        
+        #setup controls
+        cmds.container(asset,e=True,addNode=[ikendcnt,ikendgrp])
+        
+        cmds.parent(ikendcnt,ikendgrp)
+        
+        cmds.xform(ikendgrp,translation=endTrans,rotation=endRot)
+        mru.ClosestOrient(jnts[-1],ikendgrp)
+        
+        cmds.parent(ikend,ikendcnt)
+        
+        data={'system':'ik','index':2}
+        mNode=mum.SetData(('meta_'+ikendcnt),'control',
+                           'root',module,data)
+        mum.SetTransform(ikendcnt, mNode)
+        
+        attrs=['v']
+        mru.ChannelboxClean(ikendcnt, attrs,lock=False)
+        
+        if spineType=='spine':
+            cmds.container(asset,e=True,addNode=[ikrootcnt,ikrootgrp])
+            cmds.container(asset,e=True,addNode=[ikstartcnt,ikstartgrp])
+            
+            cmds.parent(ikrootgrp,plug)
+            cmds.parent(ikrootcnt,ikrootgrp)
+            cmds.parent(ikstartcnt,ikstartgrp)
+            
+            cmds.xform(ikrootgrp,translation=startTrans,rotation=startRot)
+            mru.ClosestOrient(jnts[0],ikrootgrp)
+            cmds.xform(ikstartgrp,translation=startTrans,rotation=startRot)
+            mru.ClosestOrient(jnts[0],ikstartgrp)
+            
+            cmds.parent(ikstartgrp,ikrootcnt)
+            cmds.parent(ikendgrp,ikrootcnt)
+            
+            cmds.parent(ikstart,ikstartcnt)
+            
+            data={'system':'ik'}
+            mNode=mum.SetData(('meta_'+ikrootcnt),'control',
+                               'root',module,data)
+            mum.SetTransform(ikrootcnt, mNode)
+            
+            data={'system':'ik','index':1}
+            mNode=mum.SetData(('meta_'+ikstartcnt),'control',
+                               'root',module,data)
+            mum.SetTransform(ikstartcnt, mNode)
+            
+            attrs=['v']
+            mru.ChannelboxClean(ikrootcnt, attrs,lock=False)
+            mru.ChannelboxClean(ikstartcnt, attrs,lock=False)
+        else:
+            cmds.parent(ikendgrp,plug)
+            
+            cmds.parent(ikstart,plug)
+        
+        #create pathSpine
+        pathSpine=mpps.MG_pathSpine(curve, jointAmount-1)
+        
+        #setup pathSpine
+        for key in pathSpine:
+            cmds.container(asset,e=True,addNode=pathSpine[key])
+        
+        cmds.delete(pathSpine['root'])
+        del(pathSpine['root'])
+        
+        ikpathspine=cmds.rename(pathSpine['MG_pathSpine'],prefix+'ik_pathSpine')
+        
+        cmds.rename(pathSpine['vector'],prefix+'ik_vector')
+        
+        iktwistend=cmds.rename(pathSpine['twist_end'],prefix+'ik_twistend')
+        iktwiststart=cmds.rename(pathSpine['twist_start'],prefix+'ik_twiststart')
+        
+        ikupvectors=[]
+        for item in pathSpine['up_vector']:
+            
+            item=cmds.rename(item,prefix+'ik_upvector1')
+            
+            ikupvectors.append(item)
+        
+        iklocators=[]
+        for item in pathSpine['locators']:
+            
+            item=cmds.rename(item,prefix+'ik_loc1')
+            
+            iklocators.append(item)
+        
+        iktwistendgrp=cmds.group(empty=True,n=prefix+'ik_twistend_grp')
+        cmds.container(asset,e=True,addNode=iktwistendgrp)
+        mru.Snap(iktwistend, iktwistendgrp)
+        cmds.parent(iktwistend,iktwistendgrp)
+        
+        iktwiststartgrp=cmds.group(empty=True,n=prefix+'ik_twiststart_grp')
+        cmds.container(asset,e=True,addNode=iktwiststartgrp)
+        mru.Snap(iktwiststart, iktwiststartgrp)
+        cmds.parent(iktwiststart,iktwiststartgrp)
+        
+        cmds.setAttr(ikpathspine+'.keepTwistVolume',0)
+        cmds.connectAttr(plug+'.sx',ikpathspine+'.globalScale')
+        
+        cmds.parentConstraint(ikendcnt,iktwistend,maintainOffset=True)
+        
+        if spineType=='spine':
+            cmds.parent(iktwistendgrp,ikrootcnt)
+            
+            cmds.parent(iktwiststartgrp,ikrootcnt)
+            
+            cmds.parent(ikupvectors,ikrootcnt)
+            
+            cmds.parentConstraint(ikstartcnt,iktwiststart,maintainOffset=True)
+        else:
+            cmds.parent(iktwistendgrp,plug)
+            
+            cmds.parent(iktwiststartgrp,plug)
+            
+            cmds.parent(ikupvectors,plug)
+        
+        #individual controls
+        ikcnts=[]
+        ikgrps=[]
+        
+        for count in xrange(1,jointAmount+1):
+            
+            #create fk controls
+            [grp,cnt]=mru.Square(prefix+'ik'+str(count)+'_cnt',
+                           group=True)
+            
+            cmds.container(asset,e=True,addNode=[grp,cnt])
+            
+            #setup fk controls
+            cmds.parent(cnt,grp)
+            
+            mru.Snap(jnts[count-1], grp)
+            
+            if len(ikcnts)<jointAmount-1:
+                
+                cmds.parent(grp,iklocators[count-1])
+            
+            data={'system':'ik','index':count+2}
+            mNode=mum.SetData(('meta_'+cnt),'control',
+                               'joint',module,data)
+            mum.SetTransform(cnt, mNode)
             
             ikcnts.append(cnt)
-            ikcntsGRP.append(grp)
-            ikfinecnts.append(cnt)
+            ikgrps.append(grp)
             
-            #setup ik controls
-            mru.Snap(ik,grp)
-            
-            data={'system':'ik','switch':fk,'index':count+3}
-            mNode=mum.SetData(('meta_'+cnt),'control',
-                               'joint',module,data)
-            mum.SetTransform(cnt, mNode)
+            attrs=['v']
+            mru.ChannelboxClean(cnt, attrs,lock=False)
         
-        #create ik twist controls
-        if count<=jointAmount and count>1:
-            [grp,cnt]=mru.Circle(prefix+'ikTwist'+str(count-1)+'_cnt',
-                           group=True)
-            
-            cmds.container(asset,e=True,addNode=[grp,cnt])
-            
-            iktwistcnts.append(cnt)
-            
-            #setup ik controls
-            mru.Snap(ik,grp)
-            
-            data={'system':'ik','switch':fk,'index':count+3+(jointAmount-1)}
-            mNode=mum.SetData(('meta_'+cnt),'control',
-                               'joint',module,data)
-            mum.SetTransform(cnt, mNode)
-    
-    cmds.parent(jnts[0],plug)
-    cmds.parent(fkcntsGRP[0],plug)
-    
-    #create end fk joint
-    endFk=cmds.joint(position=(0,0,0),n=prefix+'fk_end')
-    
-    cmds.container(asset,e=True,addNode=endFk)
-    
-    #setup end fk joint
-    cmds.xform(endFk,ws=True,translation=endTrans)
-    cmds.xform(endFk,ws=True,rotation=endRot)
-    
-    mru.ClosestOrient(fkjnts[-1], endFk)
-    
-    cmds.parent(endFk,fkjnts[-1])
-    
-    #create controls
-    ikhighcnts=[]
-    
-    [endGRP,endCNT]=mru.Sphere(prefix+'end_cnt',group=True)
-    [midGRP,midCNT]=mru.Sphere(prefix+'mid_cnt',group=True)
-    
-    cnts=[endCNT,midCNT]
-    cntsGRP=[endGRP,midGRP]
-    
-    cmds.container(asset,e=True,addNode=cnts)
-    cmds.container(asset,e=True,addNode=cntsGRP)
-    
-    ikhighcnts.append(endCNT)
-    ikhighcnts.append(midCNT)
-    
-    #create master control
-    if spineType=='spine':
-        [masterGRP,masterCNT]=mru.FourWay(prefix+'master_cnt',
-                                        group=True)
+        cmds.parent(ikgrps[-1],ikendcnt)
         
-        cmds.container(asset,e=True,addNode=[masterGRP,masterCNT])
+        #orienting first and last fk cnt to guide
+        children=cmds.listRelatives(ikcnts[0],c=True,type='transform')
+        cmds.xform(ikgrps[0],ws=True,translation=startTrans,rotation=startRot)
+        mru.ClosestOrient(jnts[0], ikgrps[0])
         
-        #setup master control
-        cmds.xform(masterGRP,ws=True,translation=startTrans)
-        cmds.xform(masterGRP,ws=True,rotation=startRot)
+        cmds.xform(ikgrps[-1],ws=True,translation=endTrans,rotation=endRot)
+        mru.ClosestOrient(jnts[-1], ikgrps[-1])
+    
+    #blending system---
+    
+    if iksystem and fksystem:
         
-        mru.ClosestOrient(jnts[0], masterGRP, align=True)
+        #create extra control
+        extracnt=mru.Pin(prefix+'extra_cnt')
         
-        cmds.parent(masterGRP,plug)
-        cmds.parent(fkcntsGRP[0],masterCNT)
+        mNode=mum.SetData(('meta_'+extracnt),'control',
+                           'extra',module,None)
+        mum.SetTransform(extracnt, mNode)
         
-        mNode=mum.SetData(('meta_'+masterCNT),'control',
-                           'master',module,None)
-        mum.SetTransform(masterCNT, mNode)
-    
-    #create start joint
-    cmds.select(cl=True)
-    startJNT=cmds.joint(n=prefix+'start_jnt')
-    
-    cmds.container(asset,e=True,addNode=startJNT)
-    
-    #setup start joint
-    cmds.xform(startJNT,ws=True,translation=startTrans)
-    cmds.xform(startJNT,ws=True,rotation=startRot)
-    
-    mru.ClosestOrient(jnts[0],startJNT, align=True)
-    
-    cmds.parent(startJNT,plug)
-    
-    #setup end control
-    cmds.xform(endGRP,ws=True,translation=endTrans)
-    cmds.xform(endGRP,ws=True,rotation=endRot)
-    
-    mru.ClosestOrient(jnts[0],endGRP, align=True)
-    
-    if spineType=='spine':
-        cmds.parent(endGRP,masterCNT)
-    else:
-        cmds.parent(endGRP,plug)
-    
-    cmds.select(cl=True)
-    endJNT=cmds.joint(n=prefix+'end_jnt')
-    
-    cmds.container(asset,e=True,addNode=endJNT)
-    
-    mru.Snap(endCNT,endJNT)
-    cmds.parent(endJNT,endCNT)
-    
-    data={'system':'ik','switch':fkcnts[-1],'index':1}
-    mNode=mum.SetData(('meta_'+endCNT),'control',
-                       'end',module,data)
-    mum.SetTransform(endCNT, mNode)
-    
-    ikcnts.append(endCNT)
-    
-    data={'switch':endJNT}
-    mum.ModifyData(fkcnts[-1], data)
-    
-    #setup mid control
-    cmds.delete(cmds.parentConstraint(startJNT,endJNT,midGRP))
-    
-    midposGRP=cmds.group(empty=True,n=prefix+'midPos_grp')
-    midaimatGRP=cmds.group(empty=True,n=prefix+'midAimAt_grp')
-    midaimupGRP=cmds.group(empty=True,n=prefix+'midAimUp_grp')
-    
-    cmds.container(asset,e=True,addNode=[midposGRP,
-                                         midaimatGRP,
-                                         midaimupGRP])
-    
-    mru.Snap(midGRP,midposGRP)
-    mru.Snap(midGRP,midaimatGRP)
-    mru.Snap(midGRP,midaimupGRP)
-    
-    cmds.move(spineLength/10.0,0,0,midaimatGRP,r=True,os=True)
-    cmds.move(0,spineLength/10.0,0,midaimupGRP,r=True,os=True)
-    
-    cmds.pointConstraint(midposGRP,midGRP)
-    cmds.aimConstraint(midaimatGRP,midGRP,aimVector=[1,0,0],
-                       upVector=[0,1,0],worldUpType='object',
-                       worldUpObject=midaimupGRP)
-    cmds.parentConstraint(startJNT,endJNT,midposGRP,
-                          maintainOffset=True)
-    cmds.parentConstraint(startJNT,endJNT,midaimatGRP,
-                          maintainOffset=True)
-    cmds.parentConstraint(startJNT,endJNT,midaimupGRP,
-                          maintainOffset=True)
-    
-    cmds.scaleConstraint(plug,midGRP)
-    
-    cmds.select(cl=True)
-    midJNT=cmds.joint(n=prefix+'mid_jnt')
-    
-    cmds.container(asset,e=True,addNode=midJNT)
-    
-    mru.Snap(midCNT,midJNT)
-    cmds.parent(midJNT,midCNT)
-    
-    zeroGRP=cmds.group(empty=True,n=prefix+'zero_grp')
-    
-    cmds.container(asset,e=True,addNode=zeroGRP)
-    
-    mru.Snap(midGRP,zeroGRP)
-    cmds.parent(zeroGRP,midGRP)
-    
-    data={'system':'ik','switch':zeroGRP,'index':2}
-    mNode=mum.SetData(('meta_'+midCNT),'control',
-                       'mid',module,data)
-    mum.SetTransform(midCNT, mNode)
-    
-    ikcnts.append(midCNT)
-    
-    #create start control
-    if spineType=='spine':
-        [startGRP,startCNT]=mru.Sphere(prefix+'start_cnt',
-                                       group=True)
+        cmds.container(asset,e=True,addNode=extracnt)
         
-        cmds.container(asset,e=True,addNode=startCNT)
+        #setup extra control
+        mru.Snap(jnts[-1],extracnt)
         
-        #setup start control
-        mru.ClosestOrient(jnts[0], startGRP, align=True)
+        cmds.parent(extracnt,jnts[-1])
         
-        cmds.parent(startGRP,masterCNT)
+        cmds.setAttr(extracnt+'.ry',-90)
         
-        mru.Snap(startJNT,startGRP)
-        cmds.parent(startJNT,startCNT)
+        cmds.addAttr(extracnt,ln='squashStretch',at='float',
+                     keyable=True,min=0,max=1,defaultValue=1)
+        cmds.addAttr(extracnt,ln='FKIK',at='float',
+                     keyable=True,min=0,max=1)
         
-        data={'system':'ik','switch':fkcnts[0],'index':3}
-        mNode=mum.SetData(('meta_'+startCNT),'control',
-                           'start',module,data)
-        mum.SetTransform(startCNT, mNode)
+        cmds.connectAttr(extracnt+'.squashStretch',ikpathspine+'.stretchMult')
+        cmds.connectAttr(extracnt+'.squashStretch',ikpathspine+'.stretch')
+        cmds.connectAttr(extracnt+'.squashStretch',ikpathspine+'.squashMult')
         
-        ikcnts.append(startCNT)
-        ikhighcnts.append(startCNT)
-    
-    #create spine geo
-    spineGEO=cmds.nurbsPlane(p=[0,0,0],ax=[0,1,0],
-                             w=spineLength/3,
-                             lr=spineLength/(spineLength/3),
-                             d=3,u=1,v=2,ch=True,
-                             n=prefix+'geo')[0]
-    
-    cmds.container(asset,e=True,addNode=spineGEO)
-    
-    #setup spine geo
-    mru.Snap(midCNT,spineGEO)
-    
-    temp=cmds.group(empty=True)
-    mru.Snap(midCNT,temp)
-    cmds.move(0,0,spineLength,temp,os=True,r=True)
-    
-    cmds.delete(cmds.aimConstraint(endCNT,spineGEO,
-                                   aimVector=[0,0,-1],
-                                   upVector=[0,1,0],
-                                   worldUpType='object',
-                                   worldUpObject=temp))
-    
-    cmds.delete(temp)
-    
-    cmds.rebuildSurface(spineGEO,ch=True,rpo=True,rt=False,
-                        end=True,kr=False,kcp=False,kc=False,
-                        su=True,du=True,sv=5,dv=True,tol=0.01,
-                        fr=False,dir=False)
-    
-    cmds.select(spineGEO,r=True)
-    cmds.DeleteHistory()
-    cmds.select(cl=True)
-    
-    skin=cmds.skinCluster(startJNT,midJNT,endJNT,spineGEO,
-                          tsb=True)
-    
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][0]',
-                     tv=[(startJNT,1.0)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][1]',
-                     tv=[(startJNT,1.0)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][3]',
-                     tv=[(endJNT,1.0)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][4]',
-                     tv=[(endJNT,1.0)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][2]',
-                     tv=[(midJNT,1.0)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][1]',
-                     tv=[(midJNT,0.333)])
-    cmds.skinPercent(skin[0],spineGEO+'.cv[0:1][3]',
-                     tv=[(midJNT,0.333)])
-    
-    cmds.setAttr(spineGEO+'.v',False)
-    
-    #setup ik jnts
-    cmds.parent(ikjnts[0],startJNT)
-    
-    posgrps=[startJNT]
-    
-    for jnt in ikjnts:
-        count=ikjnts.index(jnt)+1
+        fkikREV=cmds.shadingNode('reverse',asUtility=True,
+                                 n=prefix+'fkikREV')
+        cmds.connectAttr(extracnt+'.FKIK',fkikREV+'.inputX')
         
-        if count<jointAmount+1:
-            #create surface grps
-            posGRP=cmds.group(empty=True,
-                              n=prefix+'pos'+str(count)+'_grp')
-            upGRP=cmds.group(empty=True,
-                             n=prefix+'up'+str(count)+'_grp')
-            psi=cmds.createNode('pointOnSurfaceInfo',
-                                n=prefix+str(count)+'_psi')
-            
-            cmds.container(asset,e=True,addNode=[posGRP,upGRP,
-                                                 psi])
-            
-            posgrps.append(posGRP)
-            
-            #setup surface grps
-            cmds.parent(upGRP,posGRP)
-            
-            cmds.setAttr(psi+'.parameterU',0.5)
-            cmds.setAttr(psi+'.parameterV',
-                         (1.0/jointAmount)*count)
-            
-            cmds.connectAttr(spineGEO+'.worldSpace',
-                             psi+'.inputSurface')
-            cmds.connectAttr(psi+'.position',
-                             posGRP+'.translate')
-            cmds.connectAttr(psi+'.tangentU',
-                             upGRP+'.translate')
-            
-            #create ik handle
-            ikHandle=cmds.ikHandle(sj=jnt,ee=ikjnts[count],
-                                   sol='ikRPsolver')
-            
-            cmds.container(asset,e=True,addNode=ikHandle)
-            
-            #setup ik handle
-            if count<jointAmount:
-                cmds.parent(ikcntsGRP[count-1],posgrps[count])
-                
-                cmds.parent(iktwistcnts[count-1],ikjnts[count])
-            
-            cmds.parent(ikHandle[0],ikcnts[count-1])
-            
-            cmds.poleVectorConstraint(upGRP,ikHandle[0])
-            
-            #bit of a work around to get the right ik alignment
-            x=mru.ClosestOrient(fkjnts[count], ikjnts[count], align=False)[0]
-            cmds.setAttr(ikHandle[0]+'.twist',x)
-    
-    #create extra control
-    extraCNT=mru.Pin(prefix+'extra_cnt')
-    
-    mNode=mum.SetData(('meta_'+extraCNT),'control',
-                       'extra',module,None)
-    mum.SetTransform(extraCNT, mNode)
-    
-    cmds.container(asset,e=True,addNode=extraCNT)
-    
-    #setup extra control
-    mru.Snap(endCNT,extraCNT)
-    
-    cmds.parent(extraCNT,jnts[-1])
-    
-    cmds.setAttr(extraCNT+'.ry',-90)
-    
-    #setup fine tune controls
-    cmds.addAttr(extraCNT,ln='ikFineTune',at='float',
-                 keyable=True,min=0,max=1)
-    
-    for cnt in iktwistcnts:
-        cmds.connectAttr(extraCNT+'.ikFineTune',
-                         cnt+'.v')
-    
-    for cnt in ikfinecnts:
-        cmds.connectAttr(extraCNT+'.ikFineTune',
-                         cnt+'.v')
-    
-    #setup stretching
-    cmds.addAttr(extraCNT,ln='squashStretch',at='float',
-                 keyable=True,min=0,max=1)
-    cmds.addAttr(plug,ln='squashStretch',at='float')
-    cmds.setKeyframe(plug,at='squashStretch',t=0,v=0)
-    cmds.setKeyframe(plug,at='squashStretch',t=jointAmount+1,
-                     v=0)
-    cmds.setKeyframe(plug,at='squashStretch',
-                     t=(jointAmount+1)/2.0,
-                     v=1)
-    cmds.keyTangent(plug,at='squashStretch',wt=1)
-    cmds.keyTangent(plug,at='squashStretch',weightLock=False)
-    
-    ikblend=[]
-    iksquash=[]
-    
-    for ik in ikjnts:
-        count=ikjnts.index(ik)+1
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+        mru.ChannelboxClean(extracnt, attrs)
         
-        if count<=jointAmount:
-            dist=cmds.shadingNode('distanceBetween',
-                                  n=prefix+'stretch_dist',
-                                  asUtility=True)
-            blend=cmds.shadingNode('blendColors',
-                                   n=prefix+'stretch_blend',
-                                   asUtility=True)
-            fc=cmds.shadingNode('frameCache',
-                                n=prefix+'stretch_fc',
-                                asUtility=True)
-            md01=cmds.shadingNode('multiplyDivide',
-                                n=prefix+'stretch_md',
-                                asUtility=True)
-            md02=cmds.shadingNode('multiplyDivide',
-                                n=prefix+'stretch_md',
-                                asUtility=True)
-            md03=cmds.shadingNode('multiplyDivide',
-                                n=prefix+'stretch_md',
-                                asUtility=True)
-            md04=cmds.shadingNode('multiplyDivide',
-                                n=prefix+'stretch_md',
-                                asUtility=True)
-            md05=cmds.shadingNode('multiplyDivide',
-                                n=prefix+'stretch_md',
-                                asUtility=True)
+        #setup jnts
+        for count in xrange(1,jointAmount+1):
             
-            ikblend.append(blend)
-            iksquash.append(md05)
+            parentCon=cmds.parentConstraint(ikcnts[count-1],fkcnts[count-1],jnts[count-1])[0]
+            scaleCon=cmds.scaleConstraint(ikcnts[count-1],fkcnts[count-1],jnts[count-1])[0]
             
-            cmds.connectAttr(ikcnts[count-1]+'.worldMatrix[0]',
-                             dist+'.inMatrix1')
-            cmds.connectAttr(ikcnts[count]+'.worldMatrix[0]',
-                             dist+'.inMatrix2')
-            
-            cmds.setAttr(md01+'.operation',2)
-            cmds.connectAttr(dist+'.distance',md01+'.input1X')
-            cmds.connectAttr(plug+'.sx',md01+'.input2X')
-            
-            cmds.setAttr(md02+'.operation',2)
-            cmds.setAttr(md02+'.input2X',
-                         cmds.getAttr(dist+'.distance'))
-            cmds.connectAttr(md01+'.outputX',md02+'.input1X')
-            
-            cmds.setAttr(blend+'.color2R',1)
-            cmds.connectAttr(md02+'.outputX',blend+'.color1R')
-            cmds.connectAttr(extraCNT+'.squashStretch',
-                             blend+'.blender')
-            
-            cmds.setAttr(md03+'.operation',3)
-            cmds.setAttr(md03+'.input2X',0.5)
-            cmds.connectAttr(blend+'.outputR',md03+'.input1X')
-            
-            cmds.setAttr(md04+'.operation',2)
-            cmds.setAttr(md04+'.input1X',1)
-            cmds.connectAttr(md03+'.outputX',md04+'.input2X')
-            
-            cmds.setAttr(fc+'.varyTime',count)
-            cmds.connectAttr(plug+'.squashStretch',
-                             fc+'.stream')
-            cmds.setAttr(md05+'.operation',3)
-            cmds.connectAttr(fc+'.varying',md05+'.input2X')
-            cmds.connectAttr(md04+'.outputX',md05+'.input1X')
-            
-            cmds.connectAttr(blend+'.outputR',ik+'.sx')
-            cmds.connectAttr(md05+'.outputX',ik+'.sy')
-            cmds.connectAttr(md05+'.outputX',ik+'.sz')
-    
-    #setup blending
-    cmds.addAttr(extraCNT,ln='FKIK',at='float',
-                 keyable=True,min=0,max=1)
-    
-    fkikREV=cmds.shadingNode('reverse',asUtility=True,
-                             n=prefix+'fkikREV')
-    
-    cmds.connectAttr(extraCNT+'.FKIK',fkikREV+'.inputX')
-    
-    ikjnts=[ikjnts[0]]
-    for cnt in iktwistcnts:
-        ikjnts.append(cnt)
-    
-    ikjnts.append(endJNT)
-    
-    #changing last fk joint
-    
-    fkjnts[-1]=endFk
-    print fkjnts
-    
-    for jnt in jnts:
-        count=jnts.index(jnt)
+            cmds.connectAttr(fkikREV+'.outputX',parentCon+'.'+fkcnts[count-1]+'W1')
+            cmds.connectAttr(extracnt+'.FKIK',parentCon+'.'+ikcnts[count-1]+'W0')
+            cmds.connectAttr(fkikREV+'.outputX',scaleCon+'.'+fkcnts[count-1]+'W1')
+            cmds.connectAttr(extracnt+'.FKIK',scaleCon+'.'+ikcnts[count-1]+'W0')
         
-        #orient blending
-        orientCon=cmds.orientConstraint(ikjnts[count],
-                                        fkjnts[count],
-                                        jnt)[0]
+        #setup controls
+        for count in xrange(1,jointAmount+1):
+            cmds.connectAttr(fkikREV+'.outputX',fkcnts[count-1]+'.v')
+            data={'switch':ikcnts[count-1]}
+            mum.ModifyData(fkcnts[count-1], data)
+            
+            cmds.connectAttr(extracnt+'.FKIK',ikcnts[count-1]+'.v')
+            data={'switch':fkcnts[count-1]}
+            mum.ModifyData(ikcnts[count-1], data)
         
-        cmds.connectAttr(fkikREV+'.outputX',
-                         orientCon+'.'+fkjnts[count]+'W1')
-        cmds.connectAttr(extraCNT+'.FKIK',
-                         orientCon+'.'+ikjnts[count]+'W0')
-    
-    for jnt in jnts[0:-1]:
-        count=jnts.index(jnt)
+        cmds.connectAttr(extracnt+'.FKIK',ikendcnt+'.v')
+        data={'switch':fkcnts[-1]}
+        mum.ModifyData(ikendcnt, data)
         
-        #scale x blending
-        blend=cmds.shadingNode('blendColors',asUtility=True,
-                                n=prefix+'blend')
-        stretch=cmds.shadingNode('blendColors',asUtility=True,
-                                 n=prefix+'stretch')
+        if spineType=='spine':
+            
+            cmds.connectAttr(extracnt+'.FKIK',ikstartcnt+'.v')
+            data={'switch':fkcnts[0]}
+            mum.ModifyData(ikstartcnt, data)
         
-        cmds.setAttr(blend+'.color2R',1)
-        cmds.connectAttr(extraCNT+'.FKIK',blend+'.blender')
-        cmds.connectAttr(ikblend[count]+'.outputR',
-                         blend+'.color1R')
-        
-        cmds.setAttr(stretch+'.color2R',1)
-        cmds.connectAttr(extraCNT+'.squashStretch',
-                         stretch+'.blender')
-        cmds.connectAttr(blend+'.outputR',
-                         stretch+'.color1R')
-        cmds.connectAttr(stretch+'.outputR',
-                         jnt+'.sx')
-        
-        #scale yz blending
-        blend=cmds.shadingNode('blendColors',asUtility=True,
-                                n=prefix+'blend')
-        stretch=cmds.shadingNode('blendColors',asUtility=True,
-                                 n=prefix+'stretch')
-        
-        cmds.setAttr(blend+'.color2R',1)
-        cmds.connectAttr(extraCNT+'.FKIK',blend+'.blender')
-        cmds.connectAttr(iksquash[count]+'.outputX',
-                         blend+'.color1R')
-        
-        cmds.setAttr(stretch+'.color2R',1)
-        cmds.connectAttr(extraCNT+'.squashStretch',
-                         stretch+'.blender')
-        cmds.connectAttr(blend+'.outputR',
-                         stretch+'.color1R')
-        cmds.connectAttr(stretch+'.outputR',
-                         jnt+'.sy')
-        cmds.connectAttr(stretch+'.outputR',
-                         jnt+'.sz')
+            cmds.connectAttr(extracnt+'.FKIK',ikrootcnt+'.v')
     
-    #visibility blending
-    for cnt in fkcnts:
-        cmds.connectAttr(fkikREV+'.outputX',cnt+'.v')
-    
-    for cnt in ikhighcnts:
-        cmds.connectAttr(extraCNT+'.FKIK',cnt+'.v')
-    
-    #position blending
-    pCon=cmds.pointConstraint(ikjnts[0],fkjnts[0],jnts[0])[0]
-    
-    cmds.connectAttr(fkikREV+'.outputX',
-                     pCon+'.'+fkjnts[0]+'W1')
-    cmds.connectAttr(extraCNT+'.FKIK',
-                     pCon+'.'+ikjnts[0]+'W0')
-    
-    #create hip
-    hipCNT=''
-    
+    #hip control---
     if hipsAttach and spineType=='spine':
         #create hip jnt
         cmds.select(cl=True)
@@ -795,14 +502,13 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=jnt)
         
         #setup jnt
-        
         meta=mum.SetData('meta_'+jnt, 'joint', 'hip', module, None)
         mum.SetTransform(jnt, meta)
         
-        mru.Snap(masterCNT,jnt)
+        mru.Snap(plug,jnt)
         cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
         
-        cmds.move(-spineLength/3,0,0,jnt,r=True,os=True)
+        cmds.move(0,-spineLength/3,0,jnt,r=True,os=True)
         
         #create socket
         socket=cmds.spaceLocator(n=prefix+'socket')[0]
@@ -826,11 +532,10 @@ def Rig(module):
         
         cmds.container(asset,e=True,addNode=[grp,cnt])
         
-        hipCNT=cnt
-        
         #setup hip control
-        mru.Snap(jnt,grp)
-        mru.Snap(jnts[0], grp,orient=False)
+        cmds.parent(cnt,grp)
+        mru.Snap(plug, grp)
+        mru.ClosestOrient(jnts[0], grp)
         
         cmds.parent(jnt,cnt)
         cmds.parent(grp,plug)
@@ -839,13 +544,13 @@ def Rig(module):
                   r=True,os=True)
         
         #setup hip extra control
-        cmds.addAttr(extraCNT,ln='hipFollow',at='float',
+        cmds.addAttr(extracnt,ln='hipFollow',at='float',
                      keyable=True,min=0,max=1)
         
         hipREV=cmds.shadingNode('reverse',asUtility=True,
                                  n=prefix+'hipREV')
         
-        cmds.connectAttr(extraCNT+'.hipFollow',
+        cmds.connectAttr(extracnt+'.hipFollow',
                          hipREV+'.inputX')
         
         parentGRP=cmds.group(empty=True,
@@ -866,52 +571,14 @@ def Rig(module):
         
         pCon=cmds.parentConstraint(parentGRP,pointGRP,grp)[0]
         
-        cmds.connectAttr(extraCNT+'.hipFollow',
+        cmds.connectAttr(extracnt+'.hipFollow',
                          pCon+'.'+parentGRP+'W0')
         cmds.connectAttr(hipREV+'.outputX',
                          pCon+'.'+pointGRP+'W1')
         
         #clean channel box
-        attrs=['tx','ty','tz','sx','sy','sz','v']
-        mru.ChannelboxClean(cnt, attrs)
-    
-    #clean channel box
-    cnts=[]
-    
-    attrs=['v']
-    for cnt in fkcnts:
+        attrs=['v']
         mru.ChannelboxClean(cnt, attrs)
         
-        cnts.append(cnt)
-    
-    attrs=['sx','sy','sz','v']
-    for cnt in ikcnts:
-        mru.ChannelboxClean(cnt, attrs)
-        
-        cnts.append(cnt)
-
-    attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
-    mru.ChannelboxClean(extraCNT, attrs)
-    
-    cnts.append(extraCNT)
-    
-    attrs=['tx','ty','tz','ry','rz','sx','sy','sz','v']
-    for cnt in iktwistcnts:
-        mru.ChannelboxClean(cnt,attrs)
-        
-        cnts.append(cnt)
-    
-    #publishing controllers
-    if spineType=='spine':
-        cnts.append(masterCNT)
-        cnts.append(hipCNT)
-    
-    for cnt in cnts:
-        cmds.container(asset,e=True,addNode=[cnt])
-        cmds.containerPublish(asset,publishNode=(cnt,''))
-        cmds.containerPublish(asset,bindNode=(cnt,cnt))
-
-'''
-templateModule='spine:meta_spine'
-Rig(templateModule)
-'''
+#templateModule='spine:meta_spine'
+#Rig(templateModule)
