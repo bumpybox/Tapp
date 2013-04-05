@@ -52,7 +52,7 @@ def Rig(module):
     #getting module data
     data=mum.GetData(module)
     
-    jointAmount=int(data['joints'])
+    jointAmount=int(data['joints'])+1
     hipsAttach=data['hips']
     spineType=data['spineType']
     
@@ -147,16 +147,21 @@ def Rig(module):
     for count in xrange(1,jointAmount+1):
         
         #create joint
-        jnt=cmds.joint(position=((spineLength/(jointAmount-1))*count,0,0),
-                       name=prefix+'jnt'+str(count))
+        jnt=cmds.spaceLocator(n=prefix+'jnt'+str(count))[0]
         
         cmds.container(asset,e=True,addNode=jnt)
         
         #setup joint
+        cmds.move((spineLength/(jointAmount-1))*count,0,0,jnt)
+        
         if len(jnts)>0:
             cmds.parent(jnt,jnts[-1])
         
         jnts.append(jnt)
+        
+        metaParent=mum.SetData('meta_'+jnt,'joint',None,
+                                module,None)
+        mum.SetTransform(jnt, metaParent)
         
         #create socket
         socket=cmds.spaceLocator(name=prefix+'socket'+
@@ -185,8 +190,11 @@ def Rig(module):
     
     cmds.delete(grp)
     
-    #parent to plug
-    cmds.parent(jnts[0],plug)
+    #parent to plug   
+    for jnt in jnts:
+        
+        if jnt!=jnts[0]:
+            cmds.parent(jnt,asset)
     
     #create fk---
     
@@ -293,9 +301,9 @@ def Rig(module):
             cmds.parent(ikrootcnt,ikrootgrp)
             cmds.parent(ikstartcnt,ikstartgrp)
             
-            cmds.xform(ikrootgrp,translation=startTrans,rotation=startRot)
+            cmds.xform(ikrootgrp,ws=True,translation=startTrans,rotation=startRot)
             mru.ClosestOrient(jnts[0],ikrootgrp)
-            cmds.xform(ikstartgrp,translation=startTrans,rotation=startRot)
+            cmds.xform(ikstartgrp,ws=True,translation=startTrans,rotation=startRot)
             mru.ClosestOrient(jnts[0],ikstartgrp)
             
             cmds.parent(ikstartgrp,ikrootcnt)
@@ -502,7 +510,7 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=jnt)
         
         #setup jnt
-        meta=mum.SetData('meta_'+jnt, 'joint', 'hip', module, None)
+        meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
         mum.SetTransform(jnt, meta)
         
         mru.Snap(plug,jnt)
@@ -579,6 +587,8 @@ def Rig(module):
         #clean channel box
         attrs=['v']
         mru.ChannelboxClean(cnt, attrs)
+
+#CONTINUE GETTING THE PLUG SCALING TO WORK!
         
-#templateModule='spine:meta_spine'
-#Rig(templateModule)
+templateModule='tegan_template:spine:meta_spine'
+Rig(templateModule)

@@ -37,4 +37,4 @@ def SkeletonParent():
     
     cmds.undoInfo(closeChunk=True)
 
-#SkeletonParent()
+SkeletonParent()
