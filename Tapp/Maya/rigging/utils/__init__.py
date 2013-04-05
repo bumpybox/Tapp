@@ -348,15 +348,15 @@ def Snap(source,target,point=True,orient=True):
         rot=cmds.xform(source,q=True,ws=True,rotation=True)
         cmds.xform(target,ws=True,rotation=rot)
 
-def ChannelboxClean(node,attrs):
+def ChannelboxClean(node,attrs,lock=True,keyable=False):
     ''' Removes list of attributes from the channelbox.
     Attributes are locked and unkeyable.
     attrs is a list.
     '''
     
     for attr in attrs:
-        cmds.setAttr('%s.%s' % (node,attr),lock=True,
-                     keyable=False,channelBox=False)
+        cmds.setAttr('%s.%s' % (node,attr),lock=lock,
+                     keyable=keyable,channelBox=False)
 
 def ClosestOrient(source,target,align=True):
     ''' Rotates target to align closest to source, 
