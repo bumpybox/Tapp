@@ -428,7 +428,8 @@ def Rig(module):
         cmds.scaleConstraint(ikendcnt,ikgrps[-1])
         
         #linking ik start scale to individual ik
-        cmds.scaleConstraint(ikstartcnt,ikgrps[0])
+        if spineType=='spine':
+            cmds.scaleConstraint(ikstartcnt,ikgrps[0])
         
         #orienting first and last ik cnt to guide
         children=cmds.listRelatives(ikcnts[0],c=True,type='transform')
@@ -596,5 +597,5 @@ def Rig(module):
         attrs=['v']
         mru.ChannelboxClean(cnt, attrs)
         
-templateModule='tegan_template:spine:meta_spine'
-Rig(templateModule)
+#templateModule='tegan_template:spine:meta_spine1'
+#Rig(templateModule)
