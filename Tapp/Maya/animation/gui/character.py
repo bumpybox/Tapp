@@ -4,53 +4,12 @@ import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
 
 def FkSwitch():
-    #undo enable
-    cmds.undoInfo(openChunk=True)
-    
-    #error checking for selection count
-    nodeSelection=cmds.ls(selection=True)
-    
-    if len(nodeSelection)>=1:
-        
-        #getting modules
-        modules=[]
-        for node in nodeSelection:
-            
-            modules.append(mum.UpStream(node, 'module'))
-        
-        modules=set(modules)
-        
-        #module loop
-        for module in modules:
-            #switching to fk with extra control and finding fk cnts
-            cnts=mum.DownStream(module, 'control')
-            for cnt in cnts:
-                
-                data=mum.GetData(cnt, stripNamespace=False)
-                
-                if data['component']=='extra':
-                    
-                    transformNode=mum.GetTransform(cnt)
-                    
-                    cmds.setAttr(transformNode+'.FKIK',0)
-            
-            #finding fk cnts
-            filterData={'system':'fk'}
-            fkcnts=mum.Filter(cnts, filterData)
-            
-            #transforming fk cnts to their switch node
-            for cnt in mum.Sort(fkcnts, 'index'):
-                data=mum.GetData(cnt,stripNamespace=False)
-                
-                switch=data['switch']
-                transformNode=mum.GetTransform(cnt)
-                mru.Snap(switch, transformNode)
-    else:
-        cmds.warning('Nothing is selected!')
-    
-    cmds.undoInfo(closeChunk=True)
+    __switch__('fk')
 
 def IkSwitch():
+    __switch__('ik')
+
+def __switch__(mode):
     #undo enable
     cmds.undoInfo(openChunk=True)
     
@@ -77,10 +36,16 @@ def IkSwitch():
                 if data['component']=='extra':
                     transformNode=mum.GetTransform(cnt)
                     
-                    cmds.setAttr(transformNode+'.FKIK',1)
+                    if mode=='ik':
+                        cmds.setAttr(transformNode+'.FKIK',1)
+                    if mode=='fk':
+                        cmds.setAttr(transformNode+'.FKIK',0)
             
             #finding ik cnts
-            filterData={'system':'ik'}
+            if mode=='ik':
+                filterData={'system':'ik'}
+            if mode=='fk':
+                filterData={'system':'fk'}
             ikcnts=mum.Filter(cnts, filterData)
             
             #transforming ik cnts to their switch node
@@ -90,7 +55,21 @@ def IkSwitch():
                 switch=data['switch']
                 transformNode=mum.GetTransform(cnt)
                 
-                mru.Snap(switch, transformNode)
+                mru.Snap(switch, transformNode,scale=True)
+                
+                #scale switching
+                transscl=mru.GetWorldScale(transformNode)
+                transscl=mru.RoundList(transscl, 9)
+                switchscl=mru.GetWorldScale(switch)
+                switchscl=mru.RoundList(switchscl, 9)
+                
+                scl=[1,1,1]
+                for count in xrange(0,3):
+                    if transscl[count]!=switchscl[count]:
+                        
+                        scl[count]=switchscl[count]/transscl[count]
+                
+                cmds.xform(transformNode,r=True,scale=scl)
     else:
         cmds.warning('Nothing is selected!')
     

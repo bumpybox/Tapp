@@ -147,7 +147,8 @@ def Rig(module):
     for count in xrange(1,jointAmount+1):
         
         #create joint
-        jnt=cmds.spaceLocator(n=prefix+'jnt'+str(count))[0]
+        cmds.select(cl=True)
+        jnt=cmds.joint(n=prefix+'jnt'+str(count))
         
         cmds.container(asset,e=True,addNode=jnt)
         
@@ -422,9 +423,14 @@ def Rig(module):
             attrs=['v']
             mru.ChannelboxClean(cnt, attrs,lock=False)
         
-        cmds.parent(ikgrps[-1],ikendcnt)
+        #compensate for lack of end locator from MG_pathSpine
+        cmds.parentConstraint(ikendcnt,ikgrps[-1])
+        cmds.scaleConstraint(ikendcnt,ikgrps[-1])
         
-        #orienting first and last fk cnt to guide
+        #linking ik start scale to individual ik
+        cmds.scaleConstraint(ikstartcnt,ikgrps[0])
+        
+        #orienting first and last ik cnt to guide
         children=cmds.listRelatives(ikcnts[0],c=True,type='transform')
         cmds.xform(ikgrps[0],ws=True,translation=startTrans,rotation=startRot)
         mru.ClosestOrient(jnts[0], ikgrps[0])
@@ -505,7 +511,7 @@ def Rig(module):
     if hipsAttach and spineType=='spine':
         #create hip jnt
         cmds.select(cl=True)
-        jnt=cmds.joint(position=(0,0,0),name=prefix+'hip_jnt')
+        jnt=cmds.joint(name=prefix+'hip_jnt')
         
         cmds.container(asset,e=True,addNode=jnt)
         
@@ -528,7 +534,7 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=socket)
         
         #setup socket
-        mru.Snap(jnt,socket)
+        cmds.delete(cmds.parentConstraint(jnt,socket))
         
         cmds.parent(socket,jnt)
         
@@ -545,11 +551,13 @@ def Rig(module):
         mru.Snap(plug, grp)
         mru.ClosestOrient(jnts[0], grp)
         
-        cmds.parent(jnt,cnt)
         cmds.parent(grp,plug)
         
         cmds.move(-spineLength/3,0,0,cnt+'.cv[0:7]',
                   r=True,os=True)
+        
+        cmds.parentConstraint(cnt,jnt,maintainOffset=True)
+        cmds.scaleConstraint(cnt,jnt)
         
         #setup hip extra control
         cmds.addAttr(extracnt,ln='hipFollow',at='float',
@@ -587,8 +595,6 @@ def Rig(module):
         #clean channel box
         attrs=['v']
         mru.ChannelboxClean(cnt, attrs)
-
-#CONTINUE GETTING THE PLUG SCALING TO WORK!
         
 templateModule='tegan_template:spine:meta_spine'
 Rig(templateModule)

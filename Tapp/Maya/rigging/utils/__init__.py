@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 import maya.mel as mel
+import maya.OpenMaya as om
 
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.utils.ZvParentMaster as muz
@@ -332,21 +333,58 @@ def Sphere(name,group=False):
     #return
     return node
 
-def Snap(source,target,point=True,orient=True):
+def Snap(source,target,point=True,orient=True,scale=False):
     ''' Snaps target object to source object.
     If point is True, translation will snap.
     If orient is True, orientation will snap.
     '''
     
     #translation
-    if point==True:
+    if point:
         trans=cmds.xform(source,q=True,ws=True,translation=True)
         cmds.xform(target,ws=True,translation=trans)
     
     #orientation
-    if orient==True:
+    if orient:
         rot=cmds.xform(source,q=True,ws=True,rotation=True)
         cmds.xform(target,ws=True,rotation=rot)
+    
+    #scale
+    if scale:
+        scl=cmds.xform(source,q=True,r=True,scale=True)
+        cmds.xform(target,scale=scl)
+
+def GetWorldScale(node):
+    ''' Gets scale in worldspace.
+    
+        Returns list [value,value,value]
+    '''
+    
+    matrix=cmds.xform(node,q=True,ws=True,matrix=True)
+    # create MMatrix from list
+    mm = om.MMatrix()
+    om.MScriptUtil.createMatrixFromList(matrix,mm)
+    # create MTransformationMatrix from MMatrix
+    mt = om.MTransformationMatrix(mm)
+    # for scale we need to utilize MScriptUtil to deal with the native
+    # double pointers
+    scaleUtil = om.MScriptUtil()
+    scaleUtil.createFromList([0,0,0],3)
+    scaleVec = scaleUtil.asDoublePtr()
+    mt.getScale(scaleVec,om.MSpace.kWorld)
+    
+    scl = [om.MScriptUtil.getDoubleArrayItem(scaleVec,i) for i in range(0,3)]
+    
+    return scl
+
+def RoundList(lst,digits):
+    ''' Rounds a list of numbers '''
+    
+    newlist=[]
+    for n in lst:
+        newlist.append(round(n,digits))
+    
+    return newlist
 
 def ChannelboxClean(node,attrs,lock=True,keyable=False):
     ''' Removes list of attributes from the channelbox.
