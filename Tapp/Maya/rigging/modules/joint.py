@@ -100,7 +100,7 @@ def Rig(module):
     suffix='_'+side[0]+'_'+moduleName+str(index)
     
     #creating asset
-    asset=cmds.container(n=prefix+'rig')
+    asset=cmds.container(n=prefix+'rig',type='dagContainer')
     
     #create module
     data={'side':side,'index':str(index),'system':'rig','subcomponent':'joint'}
@@ -113,15 +113,20 @@ def Rig(module):
     #create plug
     plug=cmds.spaceLocator(name=prefix+'plug')[0]
     
-    phgrp=cmds.group(plug,n=(plug+'_PH'))
-    sngrp=cmds.group(plug,n=(plug+'_SN'))
+    cmds.container(asset,e=True,addNode=plug)
+    
+    #setup plug
+    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+    
+    cmds.container(asset,e=True,addNode=[phgrp,sngrp])
+    
+    cmds.parent(plug,sngrp)
+    cmds.parent(sngrp,phgrp)
     
     metaParent=mum.SetData('meta_'+plug,'plug',None,module,
                             None)
-    
     mum.SetTransform(plug, metaParent)
-    
-    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
     #create control
     if controlShape=='Square':
@@ -140,6 +145,7 @@ def Rig(module):
     cmds.container(asset,e=True,addNode=cnt)
     
     #create joint
+    cmds.select(cl=True)
     jnt=cmds.joint(n=prefix+'jnt')
     
     cmds.container(asset,e=True,addNode=jnt)
@@ -147,6 +153,9 @@ def Rig(module):
     #setup joint
     meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
     mum.SetTransform(jnt, meta)
+    
+    cmds.parentConstraint(cnt,jnt)
+    cmds.scaleConstraint(cnt,jnt)
     
     #create socket
     socket=cmds.spaceLocator(name=prefix+'socket')[0]
@@ -176,7 +185,5 @@ def Rig(module):
     cmds.containerPublish(asset,publishNode=(cnt,''))
     cmds.containerPublish(asset,bindNode=(cnt,cnt))
 
-'''
-templateModule='tegan_template:joint:meta_joint1'
-Rig(templateModule)
-'''
+#templateModule='tegan_template:joint:meta_joint'
+#Rig(templateModule)

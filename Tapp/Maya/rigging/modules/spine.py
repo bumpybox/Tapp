@@ -243,6 +243,11 @@ def Rig(module):
         
         cmds.xform(fkgrps[-1],ws=True,translation=endTrans,rotation=endRot)
         mru.ClosestOrient(jnts[-1], fkgrps[-1])
+        
+        #publishing controls
+        for cnt in fkcnts:
+            cmds.containerPublish(asset,publishNode=(cnt,''))
+            cmds.containerPublish(asset,bindNode=(cnt,cnt))
     
     #create ik---
     
@@ -438,6 +443,21 @@ def Rig(module):
         
         cmds.xform(ikgrps[-1],ws=True,translation=endTrans,rotation=endRot)
         mru.ClosestOrient(jnts[-1], ikgrps[-1])
+        
+        #publishing controls
+        for cnt in ikcnts:
+            cmds.containerPublish(asset,publishNode=(cnt,''))
+            cmds.containerPublish(asset,bindNode=(cnt,cnt))
+        
+        cmds.containerPublish(asset,publishNode=(ikendcnt,''))
+        cmds.containerPublish(asset,bindNode=(ikendcnt,ikendcnt))
+        
+        if spineType=='spine':
+            cmds.containerPublish(asset,publishNode=(ikstartcnt,''))
+            cmds.containerPublish(asset,bindNode=(ikstartcnt,ikstartcnt))
+            
+            cmds.containerPublish(asset,publishNode=(ikrootcnt,''))
+            cmds.containerPublish(asset,bindNode=(ikrootcnt,ikrootcnt))
     
     #blending system---
     
