@@ -278,7 +278,7 @@ def Rig(module):
         [ikendgrp,ikendcnt]=mru.Sphere(prefix+'ik_end_cnt', group=True)
         
         if spineType=='spine':
-            [ikrootgrp,ikrootcnt]=mru.Circle(prefix+'ik_root_cnt', group=True)
+            [ikrootgrp,ikrootcnt]=mru.Square(prefix+'ik_root_cnt', group=True)
             [ikstartgrp,ikstartcnt]=mru.Sphere(prefix+'ik_start_cnt', group=True)
         
         #setup controls
@@ -403,7 +403,7 @@ def Rig(module):
         for count in xrange(1,jointAmount+1):
             
             #create fk controls
-            [grp,cnt]=mru.Square(prefix+'ik'+str(count)+'_cnt',
+            [grp,cnt]=mru.Circle(prefix+'ik'+str(count)+'_cnt',
                            group=True)
             
             cmds.container(asset,e=True,addNode=[grp,cnt])
@@ -459,7 +459,7 @@ def Rig(module):
             cmds.containerPublish(asset,publishNode=(ikrootcnt,''))
             cmds.containerPublish(asset,bindNode=(ikrootcnt,ikrootcnt))
     
-    #blending system---
+    #blending---
     
     if iksystem and fksystem:
         

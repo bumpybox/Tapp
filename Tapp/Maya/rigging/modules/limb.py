@@ -831,6 +831,3 @@ class TwistJoints():
         
         #return
         return nodes
-
-module='limb:meta_limb'
-Rig(module)
