@@ -403,7 +403,7 @@ def Rig(module):
         for count in xrange(1,jointAmount+1):
             
             #create fk controls
-            [grp,cnt]=mru.Circle(prefix+'ik'+str(count)+'_cnt',
+            [grp,cnt]=mru.Square(prefix+'ik'+str(count)+'_cnt',
                            group=True)
             
             cmds.container(asset,e=True,addNode=[grp,cnt])
