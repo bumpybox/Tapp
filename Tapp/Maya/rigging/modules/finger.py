@@ -53,6 +53,21 @@ def __create__(jointAmount):
     #control collection
     cnts=[]
     
+    #create root control
+    root=mru.Sphere(asset+'_root_cnt')
+    
+    cmds.container(asset,e=True,addNode=root)
+    
+    #setup base control
+    data={'index':0}
+    mNode=mum.SetData(('meta_'+root),'control','root',module,
+                        data)
+    mum.SetTransform(root, mNode)
+    
+    cnts.append(root)
+    
+    cmds.move(-3,0,0,root)
+    
     #create base control
     base=mru.Box(asset+'_base_cnt')
     
@@ -65,6 +80,8 @@ def __create__(jointAmount):
     mum.SetTransform(base, mNode)
     
     cnts.append(base)
+    
+    cmds.parent(root,base)
     
     #create jnts
     jnts=[]
@@ -168,6 +185,8 @@ def Rig(module):
     for control in controls:
         if mum.GetData(control)['component']=='base':
             base=mum.GetTransform(control)
+        if mum.GetData(control)['component']=='root':
+            root=mum.GetTransform(control)
         if mum.GetData(control)['component']=='joint':
             jnts.append(mum.GetTransform(control))
         if mum.GetData(control)['component']=='end':
@@ -179,6 +198,8 @@ def Rig(module):
     #getting transform data
     jntsTrans=[]
     
+    rootTrans=cmds.xform(root,worldSpace=True,query=True,
+                          translation=True)
     baseTrans=cmds.xform(base,worldSpace=True,query=True,
                           translation=True)
     baseRot=cmds.xform(base,worldSpace=True,query=True,
@@ -221,8 +242,13 @@ def Rig(module):
     prefix=side[0]+'_'+'finger'+str(index)+'_'
     suffix='_'+side[0]+'_'+'finger'+str(index)
     
+    #initial setup---
+    
     #creating asset
-    asset=cmds.container(n=prefix+'rig')
+    asset=cmds.container(n=prefix+'rig',type='dagContainer')
+    
+    attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+    mru.ChannelboxClean(asset, attrs)
     
     #create module
     data={'side':side,'index':str(index),'system':'rig','subcomponent':'finger'}
@@ -232,26 +258,16 @@ def Rig(module):
     
     cmds.container(asset,e=True,addNode=module)
     
-    #create jnts
-    baseJNT=cmds.joint(position=(baseTrans[0],baseTrans[1],
-                                 baseTrans[2]),
-                       name=prefix+'jnt1')
-    
-    meta=mum.SetData('meta_'+baseJNT, 'joint', 'base', module, None)
-    mum.SetTransform(baseJNT, meta)
-    
-    cmds.select(cl=True)
-    endJNT=cmds.joint(position=(endTrans[0],endTrans[1],
-                                 endTrans[2]),
-                       name=prefix+'jnt'+str(len(jnts)+2))
-    
-    cmds.container(asset,e=True,addNode=[baseJNT,endJNT])
-    
     #create plug
     plug=cmds.spaceLocator(name=prefix+'plug')[0]
     
-    phgrp=cmds.group(plug,n=(plug+'_PH'))
-    sngrp=cmds.group(plug,n=(plug+'_SN'))
+    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+    
+    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
+    
+    cmds.parent(sngrp,phgrp)
+    cmds.parent(plug,sngrp)
     
     cmds.xform(phgrp,worldSpace=True,translation=baseTrans)
     
@@ -260,10 +276,23 @@ def Rig(module):
     
     mum.SetTransform(plug, metaParent)
     
-    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
+    #create jnts---
+    
+    #create base joint
+    baseJNT=cmds.joint(position=(baseTrans[0],baseTrans[1],
+                                 baseTrans[2]),
+                       name=prefix+'jnt1')
+    
+    cmds.container(asset,e=True,addNode=baseJNT)
     
     #setup base joint
+    meta=mum.SetData('meta_'+baseJNT, 'joint', 'base', module, None)
+    mum.SetTransform(baseJNT, meta)
+    
     baseGRP=cmds.group(empty=True,n=baseJNT+'_grp')
+    
+    cmds.container(asset,e=True,addNode=baseGRP)
+    
     cmds.xform(baseGRP,worldSpace=True,translation=baseTrans)
     
     cmds.parent(baseJNT,baseGRP)
@@ -271,36 +300,78 @@ def Rig(module):
     
     cmds.makeIdentity(baseJNT,apply=True,t=1,r=1,s=1,n=0)
     
-    cmds.container(asset,e=True,addNode=[baseGRP])
+    #create root joint
+    cmds.select(cl=True)
+    rootJNT=cmds.joint(position=(rootTrans[0],rootTrans[1],
+                                 rootTrans[2]),
+                       name=prefix+'jnt0')
+    
+    cmds.container(asset,e=True,addNode=rootJNT)
+    
+    #setup root joint
+    meta=mum.SetData('meta_'+baseJNT, 'joint', 'root', module, None)
+    mum.SetTransform(rootJNT, meta)
+    
+    rootGRP=cmds.group(empty=True,n=rootJNT+'_grp')
+    
+    cmds.container(asset,e=True,addNode=rootGRP)
+    
+    cmds.xform(rootGRP,worldSpace=True,translation=rootTrans)
+    
+    cmds.parent(rootJNT,rootGRP)
+    
+    aimCon=cmds.aimConstraint(baseJNT,
+                              rootGRP,
+                              worldUpType='objectrotation',
+                              aimVector=[1,0,0],
+                              upVector=[0,1,0],
+                              worldUpVector=[0,1,0],
+                              worldUpObject=baseJNT)
+    
+    cmds.delete(aimCon)
+    
+    #create end joint
+    cmds.select(cl=True)
+    endJNT=cmds.joint(position=(endTrans[0],endTrans[1],
+                                 endTrans[2]),
+                       name=prefix+'jnt'+str(len(jnts)+2))
+    
+    cmds.container(asset,e=True,addNode=endJNT)
     
     #setup end joint
     endGRP=cmds.group(empty=True,n=endJNT+'_grp')
+    
+    cmds.container(asset,e=True,addNode=endGRP)
+    
     cmds.xform(endGRP,worldSpace=True,translation=endTrans)
     
     cmds.parent(endJNT,endGRP)
     
     cmds.makeIdentity(endJNT,apply=True,t=1,r=1,s=1,n=0)
     
-    cmds.container(asset,e=True,addNode=[endGRP])
-    
-    #create jnts
+    #create individual joints
     jnts=[]
     jntsGRP=[]
     
     for pos in jntsTrans:
         count=jntsTrans.index(pos)+2
         
+        #create joint
         cmds.select(cl=True)
         jnt=cmds.joint(position=(0,0,0),
                        name=prefix+'jnt'+str(count))
         
+        cmds.container(asset,e=True,addNode=jnt)
+        
+        #setup joint
         meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
         mum.SetTransform(jnt, meta)
         
         grp=cmds.group(jnt,n=jnt+'_grp')
-        cmds.xform(grp,worldSpace=True,translation=pos)
         
-        cmds.container(asset,e=True,addNode=[jnt,grp])
+        cmds.container(asset,e=True,addNode=grp)
+        
+        cmds.xform(grp,worldSpace=True,translation=pos)
         
         jnts.append(jnt)
         jntsGRP.append(grp)
@@ -325,6 +396,7 @@ def Rig(module):
     #adding base joint to jnts
     q = collections.deque(jnts)
     q.appendleft(baseJNT)
+    q.appendleft(rootJNT)
     
     jnts=[]
     for item in q:
@@ -332,6 +404,7 @@ def Rig(module):
     
     del jnts[-1]
     
+    #create fk---
     #controls
     cnts=[]
     cntsGRP=[]
@@ -341,7 +414,10 @@ def Rig(module):
         count=jnts.index(jnt)+1
         
         #create control
-        cnt=mru.Square(prefix+str(count)+'_cnt')
+        if count==1:
+            cnt=mru.Pin(prefix+str(count)+'_cnt')
+        else:
+            cnt=mru.Square(prefix+str(count)+'_cnt')
         
         cmds.container(asset,e=True,addNode=cnt)
         
@@ -351,14 +427,17 @@ def Rig(module):
                            module,data)
         mum.SetTransform(cnt, mNode)
         
-        grp=cmds.group(cnt,n=(cnt+'_grp_grp'))
-        cntGRP=cmds.group(cnt,n=(cnt+'_grp'))
+        grp=cmds.group(empty=True,n=(prefix+str(count)+'_grp'))
+        cntGRP=cmds.group(empty=True,n=(cnt+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=[grp,cntGRP])
+        
+        cmds.parent(cnt,cntGRP)
+        cmds.parent(cntGRP,grp)
         
         mru.Snap(jnt,grp)
         
         cmds.parent(jnt,cnt)
-        
-        cmds.container(asset,e=True,addNode=[grp,cntGRP])
         
         if count!=1:
             cmds.parent(grp,jnts[count-2])
@@ -380,6 +459,16 @@ def Rig(module):
     #removing end joint
     cmds.delete(endGRP)
     
+    #removing root control
+    rootCNT=cnts[0]
+    del(cnts[0])
+    del(cntsGRP[0])
+    del(cntsgrpGRP[0])
+    
+    cmds.delete(rootGRP)
+    
+    #base control---
+    
     #create base control
     baseCNT=mru.Pin(prefix+'base_cnt')
     
@@ -392,14 +481,12 @@ def Rig(module):
     
     grp=cmds.group(empty=True,n=(baseCNT+'_grp'))
     
+    cmds.container(asset,e=True,addNode=grp)
+    
     cmds.parent(baseCNT,grp)
-    cmds.parent(grp,plug)
+    cmds.parent(grp,rootCNT)
     
     mru.Snap(cnts[0], grp)
-    cmds.xform(baseCNT+'.cv[0:11]',os=True,r=True,
-               rotation=[0,0,90])
-    
-    cmds.container(asset,e=True,addNode=grp)
     
     for grp in cntsGRP:
         cmds.connectAttr(baseCNT+'.rx',grp+'.rx')
@@ -416,13 +503,13 @@ def Rig(module):
     
     #publishing controllers
     cnts.append(baseCNT)
+    cnts.append(rootCNT)
     
     for cnt in cnts:
         
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
-'''
+
 #Create()
-templateModule='meta_finger3'
-Rig(templateModule)
-'''
+#templateModule='meta_finger'
+#Rig(templateModule)

@@ -258,7 +258,7 @@ def Pin(name,group=False):
                             (0.380423,1.476393,0),
                             (0.235114,1.276393,0),(0,1.2,0)])
     #transform to standard
-    cmds.rotate(-90,-90,0,curve)
+    cmds.rotate(0,-90,0,curve)
     
     cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
     

@@ -407,35 +407,35 @@ def Rig(module):
                          '%s.sx' % ik02jnt,force=True)
         
         #create controls
-        polevectorCNT=mru.Sphere(prefix+'polevector_cnt')
-        ik03jntCNT=mru.Sphere(prefix+'ik03jnt_cnt')
+        ikpolevectorcnt=mru.Sphere(prefix+'polevector_cnt')
+        ikendcnt=mru.Sphere(prefix+'end_cnt')
         
-        cmds.container(asset,e=True,addNode=[polevectorCNT,ik03jntCNT])
+        cmds.container(asset,e=True,addNode=[ikpolevectorcnt,ikendcnt])
         
-        #setup polevectorCNT
+        #setup ikpolevectorcnt
         data={'system':'ik','index':2}
-        mNode=mum.SetData(('meta_'+polevectorCNT),'control',
+        mNode=mum.SetData(('meta_'+ikpolevectorcnt),'control',
                            'polevector', module,data)
-        mum.SetTransform(polevectorCNT, mNode)
+        mum.SetTransform(ikpolevectorcnt, mNode)
         
-        cmds.xform(polevectorCNT,worldSpace=True,translation=midTrans)
+        cmds.xform(ikpolevectorcnt,worldSpace=True,translation=midTrans)
         
         rot=cmds.xform(jnt02,worldSpace=True,q=True,
                        rotation=True)
-        cmds.xform(polevectorCNT,worldSpace=True,rotation=rot)
+        cmds.xform(ikpolevectorcnt,worldSpace=True,rotation=rot)
         
         tx=mru.Distance(jnt01,jnt02)+mru.Distance(jnt02, jnt03)
-        cmds.move(0,0,-tx/3,polevectorCNT,r=True,os=True,wd=True)
+        cmds.move(0,0,-tx/3,ikpolevectorcnt,r=True,os=True,wd=True)
         
-        phgrp=cmds.group(empty=True,n=(polevectorCNT+'_PH'))
-        sngrp=cmds.group(empty=True,n=(polevectorCNT+'_SN'))
+        phgrp=cmds.group(empty=True,n=(ikpolevectorcnt+'_PH'))
+        sngrp=cmds.group(empty=True,n=(ikpolevectorcnt+'_SN'))
         
         cmds.container(asset,e=True,addNode=[phgrp,sngrp])
         
-        cmds.delete(cmds.parentConstraint(polevectorCNT,phgrp))
-        cmds.delete(cmds.parentConstraint(polevectorCNT,sngrp))
+        cmds.delete(cmds.parentConstraint(ikpolevectorcnt,phgrp))
+        cmds.delete(cmds.parentConstraint(ikpolevectorcnt,sngrp))
         
-        cmds.parent(polevectorCNT,sngrp)
+        cmds.parent(ikpolevectorcnt,sngrp)
         cmds.parent(sngrp,phgrp)
         cmds.parent(phgrp,plug)
         
@@ -450,8 +450,8 @@ def Rig(module):
         cmds.container(asset,e=True,addNode=[curve,cluster[0],
                                              cluster[1]])
         
-        mru.Snap(polevectorCNT,cluster[1])
-        cmds.parent(cluster[1],polevectorCNT)
+        mru.Snap(ikpolevectorcnt,cluster[1])
+        cmds.parent(cluster[1],ikpolevectorcnt)
         
         cmds.rename(cluster[0],prefix+'polvector_cls')
         
@@ -467,28 +467,28 @@ def Rig(module):
         cmds.rename(cluster[0],prefix+'polvector_cls')
         polevectorSHP=cmds.rename(curve,prefix+'polevector_shp')
         
-        cmds.poleVectorConstraint(polevectorCNT,ikHandle[0])
+        cmds.poleVectorConstraint(ikpolevectorcnt,ikHandle[0])
         
-        #setup ik03jntCNT
+        #setup ikendcnt
         data={'system':'ik','index':1}
-        mNode=mum.SetData(('meta_'+ik03jntCNT),'control','end',
+        mNode=mum.SetData(('meta_'+ikendcnt),'control','end',
                            module,data)
-        mum.SetTransform(ik03jntCNT, mNode)
+        mum.SetTransform(ikendcnt, mNode)
         
-        grp=cmds.group(empty=True,n=(ik03jntCNT+'_grp'))
-        phgrp=cmds.group(empty=True,n=(ik03jntCNT+'_PH'))
-        sngrp=cmds.group(empty=True,n=(ik03jntCNT+'_SN'))
+        grp=cmds.group(empty=True,n=(ikendcnt+'_grp'))
+        phgrp=cmds.group(empty=True,n=(ikendcnt+'_PH'))
+        sngrp=cmds.group(empty=True,n=(ikendcnt+'_SN'))
         
         cmds.container(asset,e=True,addNode=[grp,phgrp,sngrp])
         
         cmds.parent(grp,plug)
         cmds.parent(phgrp,grp)
         cmds.parent(sngrp,phgrp)
-        cmds.parent(ik03jntCNT,sngrp)
+        cmds.parent(ikendcnt,sngrp)
         
         mru.Snap(jnt03,grp)
         
-        cmds.select([stretch02REF,ik03jntCNT],r=True)
+        cmds.select([stretch02REF,ikendcnt],r=True)
         muz.attach()
         
         cmds.xform(phgrp,ws=True,rotation=endRot)
@@ -529,12 +529,12 @@ def Rig(module):
         
         mru.Snap(ik03jnt,ik03cnt)
         
-        cmds.parent(ik03cnt,ik03jntCNT)
+        cmds.parent(ik03cnt,ikendcnt)
         
         cmds.xform(ik03cnt,ws=True,rotation=endRot)
         
         #channelbox clean
-        cnts=[polevectorCNT,ik03jntCNT,ik01cnt,ik02cnt,ik03cnt]
+        cnts=[ikpolevectorcnt,ikendcnt,ik01cnt,ik02cnt,ik03cnt]
         
         attrs=['sx','sy','sz']
         for cnt in cnts:
@@ -621,8 +621,8 @@ def Rig(module):
         cmds.connectAttr(fkIkREV+'.outputX',fk01cnt+'.visibility')
         cmds.connectAttr(fkIkREV+'.outputX',fk02cnt+'.v')
         cmds.connectAttr(fkIkREV+'.outputX',fk03cnt+'.v')
-        cmds.connectAttr(extraCNT+'.FKIK',ik03jntCNT+'.v')
-        cmds.connectAttr(extraCNT+'.FKIK',polevectorCNT+'.v')
+        cmds.connectAttr(extraCNT+'.FKIK',ikendcnt+'.v')
+        cmds.connectAttr(extraCNT+'.FKIK',ikpolevectorcnt+'.v')
         cmds.connectAttr(extraCNT+'.FKIK',polevectorSHP+'.v')
         cmds.connectAttr(extraCNT+'.FKIK',ik01cnt+'.v')
         cmds.connectAttr(extraCNT+'.FKIK',ik02cnt+'.v')
@@ -648,10 +648,10 @@ def Rig(module):
         mum.ModifyData(ik03cnt, data)
         
         data={'switch':fk03cnt}
-        mum.ModifyData(ik03jntCNT, data)
+        mum.ModifyData(ikendcnt, data)
         
         data={'switch':fk02cnt}
-        mum.ModifyData(polevectorCNT, data)
+        mum.ModifyData(ikpolevectorcnt, data)
         
         #channelbox clean
         attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
@@ -892,5 +892,5 @@ class TwistJoints():
         #return
         return result
 
-module='limb:meta_limb'
-Rig(module)
+#module='limb:meta_limb'
+#Rig(module)
