@@ -29,6 +29,8 @@ def __createMirror__(module):
 def __create__(jointAmount):
     ''' Creates the finger module. '''
     
+    cmds.undoInfo(openChunk=True)
+    
     #creating asset
     asset=cmds.container(n='finger')
     
@@ -139,7 +141,7 @@ def __create__(jointAmount):
     cmds.container(asset,e=True,addNode=line)
     
     #setup line
-    for count in xrange(0,jointAmount+1):
+    for count in xrange(0,jointAmount+2):
         cmds.select(line+'.cv['+str(count)+']',r=True)
         cluster=mel.eval('newCluster " -envelope 1";')[1]
         
@@ -157,6 +159,8 @@ def __create__(jointAmount):
     
     #clear selection
     cmds.select(cl=True)
+    
+    cmds.undoInfo(closeChunk=True)
     
     #return
     return metas
@@ -289,14 +293,9 @@ def Rig(module):
     meta=mum.SetData('meta_'+baseJNT, 'joint', 'base', module, None)
     mum.SetTransform(baseJNT, meta)
     
-    baseGRP=cmds.group(empty=True,n=baseJNT+'_grp')
+    cmds.xform(baseJNT,worldSpace=True,translation=baseTrans)
     
-    cmds.container(asset,e=True,addNode=baseGRP)
-    
-    cmds.xform(baseGRP,worldSpace=True,translation=baseTrans)
-    
-    cmds.parent(baseJNT,baseGRP)
-    cmds.xform(baseGRP,ws=True,rotation=baseRot)
+    cmds.xform(baseJNT,ws=True,rotation=baseRot)
     
     cmds.makeIdentity(baseJNT,apply=True,t=1,r=1,s=1,n=0)
     
@@ -312,16 +311,10 @@ def Rig(module):
     meta=mum.SetData('meta_'+baseJNT, 'joint', 'root', module, None)
     mum.SetTransform(rootJNT, meta)
     
-    rootGRP=cmds.group(empty=True,n=rootJNT+'_grp')
-    
-    cmds.container(asset,e=True,addNode=rootGRP)
-    
-    cmds.xform(rootGRP,worldSpace=True,translation=rootTrans)
-    
-    cmds.parent(rootJNT,rootGRP)
+    cmds.xform(rootJNT,worldSpace=True,translation=rootTrans)
     
     aimCon=cmds.aimConstraint(baseJNT,
-                              rootGRP,
+                              rootJNT,
                               worldUpType='objectrotation',
                               aimVector=[1,0,0],
                               upVector=[0,1,0],
@@ -339,19 +332,12 @@ def Rig(module):
     cmds.container(asset,e=True,addNode=endJNT)
     
     #setup end joint
-    endGRP=cmds.group(empty=True,n=endJNT+'_grp')
-    
-    cmds.container(asset,e=True,addNode=endGRP)
-    
-    cmds.xform(endGRP,worldSpace=True,translation=endTrans)
-    
-    cmds.parent(endJNT,endGRP)
+    cmds.xform(endJNT,worldSpace=True,translation=endTrans)
     
     cmds.makeIdentity(endJNT,apply=True,t=1,r=1,s=1,n=0)
     
     #create individual joints
     jnts=[]
-    jntsGRP=[]
     
     for pos in jntsTrans:
         count=jntsTrans.index(pos)+2
@@ -367,22 +353,16 @@ def Rig(module):
         meta=mum.SetData('meta_'+jnt, 'joint', None, module, None)
         mum.SetTransform(jnt, meta)
         
-        grp=cmds.group(jnt,n=jnt+'_grp')
-        
-        cmds.container(asset,e=True,addNode=grp)
-        
-        cmds.xform(grp,worldSpace=True,translation=pos)
+        cmds.xform(jnt,worldSpace=True,translation=pos)
         
         jnts.append(jnt)
-        jntsGRP.append(grp)
     
     jnts.append(endJNT)
-    jntsGRP.append(endGRP)
     
     #setup jnts
     for count in xrange(1,len(jnts)):
-        aimCon=cmds.aimConstraint(jntsGRP[count],
-                                  jntsGRP[count-1],
+        aimCon=cmds.aimConstraint(jnts[count],
+                                  jnts[count-1],
                                   worldUpType='objectrotation',
                                   aimVector=[1,0,0],
                                   upVector=[0,1,0],
@@ -391,7 +371,7 @@ def Rig(module):
         
         cmds.delete(aimCon)
     
-    mru.Snap(jnts[len(jnts)-2], endGRP, point=False)
+    mru.Snap(jnts[len(jnts)-2], endJNT, point=False)
     
     #adding base joint to jnts
     q = collections.deque(jnts)
@@ -437,10 +417,11 @@ def Rig(module):
         
         mru.Snap(jnt,grp)
         
-        cmds.parent(jnt,cnt)
+        cmds.parentConstraint(cnt,jnt)
+        cmds.scaleConstraint(cnt,jnt)
         
         if count!=1:
-            cmds.parent(grp,jnts[count-2])
+            cmds.parent(grp,cnts[count-2])
         
         cntsGRP.append(cntGRP)
         cntsgrpGRP.append(grp)
@@ -448,24 +429,14 @@ def Rig(module):
     
     cmds.parent(cntsgrpGRP[0],plug)
     
-    #cleaning grps
-    del jntsGRP[-1]
-    
-    for grp in jntsGRP:
-        cmds.delete(grp)
-    
-    cmds.delete(baseGRP)
-    
     #removing end joint
-    cmds.delete(endGRP)
+    cmds.delete(endJNT)
     
     #removing root control
     rootCNT=cnts[0]
     del(cnts[0])
     del(cntsGRP[0])
     del(cntsgrpGRP[0])
-    
-    cmds.delete(rootGRP)
     
     #base control---
     
