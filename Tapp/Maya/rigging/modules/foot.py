@@ -225,8 +225,33 @@ def Rig(module):
     prefix=side[0]+'_'+'foot'+str(index)+'_'
     suffix='_'+side[0]+'_'+'foot'+str(index)
     
+    #initial setup---
+    
     #creating asset
-    asset=cmds.container(n=prefix+'rig')
+    asset=cmds.container(n=prefix+'rig',type='dagContainer')
+    
+    #setup asset
+    attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+    mru.ChannelboxClean(asset, attrs)
+    
+    #create plug
+    plug=cmds.spaceLocator(name=prefix+'plug')[0]
+    
+    #setup plug
+    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
+                            None)
+    
+    mum.SetTransform(plug, metaParent)
+    
+    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+    
+    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
+    
+    cmds.parent(sngrp,phgrp)
+    cmds.parent(plug,sngrp)
+    
+    cmds.xform(phgrp,worldSpace=True,translation=footTrans)
     
     #create module
     data={'side':side,'index':str(index),'system':'rig','subcomponent':'foot'}
@@ -235,6 +260,8 @@ def Rig(module):
                         data)
     
     cmds.container(asset,e=True,addNode=module)
+    
+    #create jnts---
     
     #create joints
     footJNT=cmds.joint(position=(footTrans[0],footTrans[1],
@@ -247,26 +274,13 @@ def Rig(module):
     cmds.container(asset,e=True,addNode=[footJNT,toeJNT])
     
     #setup joints
+    cmds.parent(toeJNT,footJNT)
+    
     meta=mum.SetData('meta_'+footJNT, 'joint', None, module, None)
     mum.SetTransform(footJNT, meta)
     
     meta=mum.SetData('meta_'+toeJNT, 'joint', None, module, None)
     mum.SetTransform(toeJNT, meta)
-    
-    #create plug
-    plug=cmds.spaceLocator(name=prefix+'plug')[0]
-    
-    phgrp=cmds.group(plug,n=(plug+'_PH'))
-    sngrp=cmds.group(plug,n=(plug+'_SN'))
-    
-    cmds.xform(phgrp,worldSpace=True,translation=footTrans)
-    
-    metaParent=mum.SetData('meta_'+plug,'plug',None,module,
-                            None)
-    
-    mum.SetTransform(plug, metaParent)
-    
-    cmds.container(asset,e=True,addNode=[plug,phgrp,sngrp])
     
     #create sockets
     socket01=cmds.spaceLocator(name=prefix+'socket01')[0]
@@ -275,6 +289,8 @@ def Rig(module):
     #setup sockets
     cmds.xform(socket01,worldSpace=True,translation=footTrans)
     cmds.xform(socket02,worldSpace=True,translation=toeTrans)
+    
+    cmds.container(asset,e=True,addNode=[socket01,socket02])
     
     cmds.parent(socket01,footJNT)
     cmds.parent(socket02,toeJNT)
@@ -287,8 +303,6 @@ def Rig(module):
     metaParent=mum.SetData('meta_'+socket02,'socket',None,
                             module,data)
     mum.SetTransform(socket02, metaParent)
-    
-    cmds.container(asset,e=True,addNode=[socket01,socket02])
     
     #finding the upVector for the joints
     crs=mru.CrossProduct(footTrans,toeTrans,toetipTrans)
@@ -325,6 +339,8 @@ def Rig(module):
     cmds.delete(temp)
     
     cmds.makeIdentity(toeJNT,apply=True, t=1, r=1, s=1, n=0)
+    '''
+    #create ik---
     
     #create ik chain
     footIK=cmds.duplicate(footJNT,st=True,po=True,
@@ -640,10 +656,8 @@ def Rig(module):
         
         cmds.containerPublish(asset,publishNode=(cnt,''))
         cmds.containerPublish(asset,bindNode=(cnt,cnt))
+        '''
 
 #Attach('meta_c_foot1','meta_c_arm1')
-
-'''
-templateModule='meta_foot'
+templateModule='foot:meta_foot'
 Rig(templateModule)
-'''

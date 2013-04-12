@@ -260,6 +260,8 @@ def Rig(module):
         #setup curve
         cmds.rebuildCurve(curve,rpo=1,rt=0,end=1,kr=0,kcp=0,kep=1,kt=0,s=1,d=2,tol=0.01)
         
+        cmds.setAttr(curve+'.v',0)
+        
         cmds.select(cl=True)
         ikstart=cmds.joint(position=startTrans,n=prefix+'ik_start')
         cmds.select(cl=True)

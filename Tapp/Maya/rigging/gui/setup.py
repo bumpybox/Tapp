@@ -87,6 +87,10 @@ def Hide():
             if cmds.nodeType(shape)=='locator':
             
                 cmds.setAttr('%s.visibility' % shape[0],False)
+            
+            if cmds.nodeType(shape)=='implicitBox':
+                
+                cmds.setAttr('%s.visibility' % shape[0],False)
                 
         if cmds.nodeType(node)=='ikHandle':
             

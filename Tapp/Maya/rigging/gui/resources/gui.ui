@@ -475,7 +475,7 @@ Select parent last.</string>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_14">
           <item>
-           <widget class="QPushButton" name="setup_exportControls_pushButton_2">
+           <widget class="QPushButton" name="setup_hide_pushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
@@ -488,7 +488,7 @@ Select parent last.</string>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="setup_exportControls_pushButton_3">
+           <widget class="QPushButton" name="setup_unhide_pushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
@@ -505,7 +505,7 @@ Select parent last.</string>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_15">
           <item>
-           <widget class="QPushButton" name="setup_exportControls_pushButton_4">
+           <widget class="QPushButton" name="setup_blackbox_pushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
@@ -518,7 +518,7 @@ Select parent last.</string>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="setup_exportControls_pushButton_5">
+           <widget class="QPushButton" name="setup_unblackbox_pushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
