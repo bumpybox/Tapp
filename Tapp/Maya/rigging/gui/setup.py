@@ -490,6 +490,31 @@ def __controlsImport__(filePath):
     
     cmds.namespace(force=True,removeNamespace='mr_importControls')
 
+def ColorRig():
+    ''' Color code rig into center,right and left. '''
+    
+    #finding root in scene
+    root=False
+    for node in cmds.ls(type='network'):
+        
+        data=mum.GetData(node)
+        if data['type']=='root':
+            
+            root=node
+            modules=mum.DownStream(node, 'module', allNodes=True)
+            for module in modules:
+                
+                __colorModule__(module)
+    
+    #execute color rig if root is found
+    if not root:
+        cmds.warning('No root node found in scene!')
+    else:
+        modules=mum.DownStream(root, 'module', allNodes=True)
+        for module in modules:
+            
+            __colorModule__(module)
+
 def __colorModule__(module):
     
     cnts=mum.DownStream(module, 'control')
@@ -515,27 +540,25 @@ def __colorModule__(module):
             
         cmds.setAttr('%s.overrideColor' % shape,color)
 
-def ColorRig():
-    ''' Color code rig into center,right and left. '''
+def __copyShape__(src,trg):
     
-    #finding root in scene
-    root=False
-    for node in cmds.ls(type='network'):
-        
-        data=mum.GetData(node)
-        if data['type']=='root':
-            
-            root=node
-            modules=mum.DownStream(node, 'module', allNodes=True)
-            for module in modules:
-                
-                __colorModule__(module)
+    temp=cmds.duplicate(src,returnRootsOnly=True)
     
-    #execute color rig if root is found
-    if not root:
-        cmds.warning('No root node found in scene!')
-    else:
-        modules=mum.DownStream(root, 'module', allNodes=True)
-        for module in modules:
-            
-            __colorModule__(module)
+    shapeNode=cmds.listRelatives(temp,shapes=True)
+    
+    origShapeNode=cmds.listRelatives(trg,shapes=True)[0]
+    
+    #delete original shape node
+    tempGroup=cmds.createNode( 'transform', ss=True )
+    
+    cmds.parent(origShapeNode,tempGroup,absolute=True,shape=True)
+    
+    cmds.delete(tempGroup)
+    
+    #adding new shape node
+    cmds.parent(shapeNode,trg,add=True,shape=True)
+    
+    cmds.rename(shapeNode,shapeNode[0].split(':')[-1])
+    
+    #remove temp node
+    cmds.delete(temp)

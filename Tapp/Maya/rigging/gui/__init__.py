@@ -62,7 +62,7 @@ class Form(base,form):
     def on_setup_createRoot_pushButton_released(self):
         setup.CreateRoot()
     
-    def on_setup_exportHierachy_pushButton_released(self):
+    def on_setup_exportHierarchy_pushButton_released(self):
         setup.HierarchyExport()
     
     def on_setup_importHierarchy_pushButton_released(self):
