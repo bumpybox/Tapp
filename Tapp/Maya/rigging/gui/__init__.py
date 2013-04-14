@@ -41,6 +41,9 @@ class Form(base,form):
     def on_create_export_pushButton_released(self):
         create.ExportTemplate()
     
+    def on_create_mirror_pushButton_released(self):
+        create.Mirror()
+    
     def on_create_rig_pushButton_released(self):
         create.Rig()
     

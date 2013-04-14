@@ -206,10 +206,12 @@ def CreateCharacter():
         setup.__controlsImport__(controlsFilePath[0])
     else:
         cmds.warning('Controls NOT build!')
-'''
+
 def __createMirror__(component,module):
     
-    __importModule__(component)
+    dirPath=os.path.dirname(mrm.__file__)
+    
+    __importModule__(component, dirPath)
     
     return mrm.__createMirror__(module)
 
@@ -236,7 +238,6 @@ def Mirror():
     
     cmds.undoInfo(closeChunk=True)
 
-
 def __mirror__(module):
     
     #getting module data
@@ -247,78 +248,55 @@ def __mirror__(module):
     container=cmds.container(q=True,fc=mum.GetTransform(cnts[0]))
     
     #getting imported controls
-    importCnts=[]
+    importcnts=[]
     
     importNodes=__createMirror__(mData['component'],module)
     
     for node in importNodes:
         if cmds.nodeType(node)=='network':
+            print node
+            
             data=mum.GetData(node)
             if data['type']=='control':
-                importCnts.append(node)
+                importcnts.append(node)
     
     #copy container values
-    icontainer=cmds.container(q=True,fc=mum.GetTransform(importCnts[0]))
+    icontainer=cmds.container(q=True,fc=mum.GetTransform(importcnts[0]))
     
     cmds.copyAttr(container,icontainer,values=True)
     
-    #pairing controls
-    iModule=mum.UpStream(importCnts[0], 'root')
-    
-    iData={}
-    iData[iModule]={}
-    
-    for cnt in importCnts:
-        data=mum.GetData(cnt)
-        iData[iModule][cnt]=data
-    
-    cntPairs=[]
-    
+    #getting control data
+    cntsdata={}
     for cnt in cnts:
-        
-        data=mum.GetData(cnt)
-        iCnt=mum.Compare(data,iData)
-        
-        cntPairs.append(iCnt)
-    
-    #look at ControlsImport for comparing nodes
+        cntsdata[cnt]=mum.GetData(cnt)
     
     #mirroring translation and rotation
-    for count in xrange(0,len(cnts)):
+    for cnt in importcnts:
         
-        tn=mum.GetTransform(cnts[count])
-        itn=mum.GetTransform(cntPairs[count])
+        data=mum.GetData(cnt)
         
-        print'node:'
-        print cnts[count]
-        print 'parent:'
-        print cmds.nodeType(cmds.listRelatives(tn,p=True))
+        metaMatch=mum.Compare(data, cntsdata)[0]
+        cntMatch=mum.GetTransform(metaMatch)
         
+        tn=mum.GetTransform(cnt)
         parent=cmds.nodeType(cmds.listRelatives(tn,p=True))
         
         if parent==None or parent=='dagContainer':
             
-            print 'worldspace mirror'
-            
-            [tx,ty,tz]=cmds.xform(tn,ws=True,query=True,translation=True)
-            [rx,ry,rz]=cmds.xform(tn,ws=True,query=True,rotation=True)
+            [tx,ty,tz]=cmds.xform(cntMatch,ws=True,query=True,translation=True)
+            [rx,ry,rz]=cmds.xform(cntMatch,ws=True,query=True,rotation=True)
         
-            cmds.xform(itn,ws=True,translation=(-tx,ty,tz))
-            cmds.xform(itn,ws=True,rotation=(rx,-ry,-rz))
+            cmds.xform(tn,ws=True,translation=(-tx,ty,tz))
+            cmds.xform(tn,ws=True,rotation=(rx,-ry,-rz))
             
-            cmds.rotate(0,180,0,itn,relative=True,os=True)
-            
+            cmds.rotate(0,180,0,tn,relative=True,os=True)
+        
         else:
             
-            print 'objectspace mirror'
+            [tx,ty,tz]=cmds.xform(cntMatch,os=True,query=True,translation=True)
+            [rx,ry,rz]=cmds.xform(cntMatch,os=True,query=True,rotation=True)
             
-            [tx,ty,tz]=cmds.xform(tn,os=True,query=True,translation=True)
-            [rx,ry,rz]=cmds.xform(tn,os=True,query=True,rotation=True)
-            
-            cmds.xform(itn,os=True,translation=(tx,ty,tz))
-            cmds.xform(itn,os=True,rotation=(rx,-ry,-rz))
-        
-        print '-----------------'
-        '''
+            cmds.xform(tn,os=True,translation=(tx,ty,tz))
+            cmds.xform(tn,os=True,rotation=(rx,-ry,-rz))
 
-#__mirror__('meta_finger1')
+#__mirror__('meta_finger4','meta_finger7')

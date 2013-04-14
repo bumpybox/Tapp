@@ -22,7 +22,7 @@ def Create():
 
 def __createMirror__(module):
     
-    jointAmount=len(mum.DownStream(module, 'control'))-1
+    jointAmount=len(mum.DownStream(module, 'control'))-2
     
     return __create__(jointAmount)
 
@@ -30,6 +30,9 @@ def __create__(jointAmount):
     ''' Creates the finger module. '''
     
     cmds.undoInfo(openChunk=True)
+    
+    #return variable
+    result=[]
     
     #creating asset
     asset=cmds.container(n='finger')
@@ -60,7 +63,7 @@ def __create__(jointAmount):
     
     cmds.container(asset,e=True,addNode=root)
     
-    #setup base control
+    #setup root control
     data={'index':0}
     mNode=mum.SetData(('meta_'+root),'control','root',module,
                         data)
@@ -69,6 +72,8 @@ def __create__(jointAmount):
     cnts.append(root)
     
     cmds.move(-3,0,0,root)
+    
+    result.append(mNode)
     
     #create base control
     base=mru.Box(asset+'_base_cnt')
@@ -83,11 +88,10 @@ def __create__(jointAmount):
     
     cnts.append(base)
     
-    cmds.parent(root,base)
+    result.append(mNode)
     
     #create jnts
     jnts=[]
-    metas=[mNode]
     
     for count in xrange(1,jointAmount):
         #create control
@@ -101,11 +105,9 @@ def __create__(jointAmount):
                            module,data)
         mum.SetTransform(cnt, mNode)
         
-        metas.append(mNode)
+        result.append(mNode)
         
         cmds.xform(cnt,ws=True,translation=[count*3,0,0])
-        
-        cmds.parent(cnt,base)
         
         jnts.append(cnt)
         cnts.append(cnt)
@@ -121,11 +123,9 @@ def __create__(jointAmount):
                         data)
     mum.SetTransform(end, mNode)
     
-    metas.append(mNode)
+    result.append(mNode)
     
     cmds.xform(end,ws=True,translation=[jointAmount*3,0,0])
-    
-    cmds.parent(end,base)
     
     cnts.append(end)
     
@@ -163,7 +163,7 @@ def __create__(jointAmount):
     cmds.undoInfo(closeChunk=True)
     
     #return
-    return metas
+    return result
 
 def Attach(childModule,parentModule):
     
