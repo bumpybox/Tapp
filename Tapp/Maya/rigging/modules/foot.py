@@ -41,24 +41,24 @@ def Attach(childModule,parentModule):
         muz.detach()
         
         #getting controls
-        ballCNT=''
+        ikballcnt=''
         controls=mum.DownStream(childModule, 'control')
         for cnt in controls:
             
             data=mum.GetData(cnt)
             
             if data['component']=='ball':
-                ballCNT=mum.GetTransform(cnt)
+                ikballcnt=mum.GetTransform(cnt)
         
         #getting joints
-        footIK=''
+        ikfoot=''
         iks=mum.DownStream(childModule, 'ik')
         for ik in iks:
             
             data=mum.GetData(ik)
             
             if data['component']=='foot':
-                footIK=mum.GetTransform(ik)
+                ikfoot=mum.GetTransform(ik)
         
         #getting groups
         rbankParent=''
@@ -75,21 +75,21 @@ def Attach(childModule,parentModule):
         plug=mum.GetTransform(plug)
         
         #getting asset
-        asset=cmds.container(q=True,fc=ballCNT)
+        asset=cmds.container(q=True,fc=ikballcnt)
         
         #attaching ik plug
-        cmds.select(ikPlug,ballCNT,r=True)
+        cmds.select(ikPlug,ikballcnt,r=True)
         muz.attach()
         
         #create fk foot align
-        footFKalign=cmds.group(empty=True,
-                               n=footIK+'_align')
+        fkfootalign=cmds.group(empty=True,
+                               n=ikfoot+'_align')
         
-        cmds.container(asset,e=True,addNode=[footFKalign])
+        cmds.container(asset,e=True,addNode=[fkfootalign])
         
-        mru.Snap(footIK,footFKalign)
+        mru.Snap(ikfoot,fkfootalign)
         
-        cmds.parent(footFKalign,footIK)
+        cmds.parent(fkfootalign,ikfoot)
         
         #setup controls
         sockets=mum.DownStream(parentModule,'socket')
@@ -117,12 +117,12 @@ def Attach(childModule,parentModule):
             #setup end fk control
             if 'system' in data and data['system']=='fk' \
             and data['component']=='end':
-                data={'switch':footFKalign}
+                data={'switch':fkfootalign}
                 mum.ModifyData(cnt, data)
                 
                 tn=mum.GetTransform(cnt)
                 
-                mru.Snap(tn,footFKalign,point=False)
+                mru.Snap(tn,fkfootalign,point=False)
         
         #attaching plug
         for socket in sockets:
@@ -194,6 +194,9 @@ def Rig(module):
     #getting module data
     data=mum.GetData(module)
     
+    fk=True
+    ik=True
+    
     #establish side
     side='center'
     
@@ -234,6 +237,14 @@ def Rig(module):
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
     mru.ChannelboxClean(asset, attrs)
     
+    #create module
+    data={'side':side,'index':str(index),'system':'rig','subcomponent':'foot'}
+    
+    module=mum.SetData(('meta'+suffix),'module','foot',None,
+                        data)
+    
+    cmds.container(asset,e=True,addNode=module)
+    
     #create plug
     plug=cmds.spaceLocator(name=prefix+'plug')[0]
     
@@ -253,34 +264,59 @@ def Rig(module):
     
     cmds.xform(phgrp,worldSpace=True,translation=footTrans)
     
-    #create module
-    data={'side':side,'index':str(index),'system':'rig','subcomponent':'foot'}
-    
-    module=mum.SetData(('meta'+suffix),'module','foot',None,
-                        data)
-    
-    cmds.container(asset,e=True,addNode=module)
-    
     #create jnts---
     
     #create joints
+    cmds.select(cl=True)
     footJNT=cmds.joint(position=(footTrans[0],footTrans[1],
                                     footTrans[2]),
                           name=prefix+'jnt01')
+    cmds.select(cl=True)
     toeJNT=cmds.joint(position=(toeTrans[0],toeTrans[1],
                                     toeTrans[2]),
                           name=prefix+'jnt02')
     
     cmds.container(asset,e=True,addNode=[footJNT,toeJNT])
     
-    #setup joints
-    cmds.parent(toeJNT,footJNT)
+    #finding the upVector for the joints
+    crs=mru.CrossProduct(footTrans,toeTrans,toetipTrans)
     
+    #setup foot joint
     meta=mum.SetData('meta_'+footJNT, 'joint', None, module, None)
     mum.SetTransform(footJNT, meta)
     
+    grp=cmds.group(empty=True)
+    cmds.xform(grp,worldSpace=True,translation=footTrans)
+    cmds.aimConstraint(toeJNT,grp,worldUpType='vector',
+                       worldUpVector=crs)
+    
+    rot=cmds.xform(grp,query=True,rotation=True)
+    cmds.rotate(rot[0],rot[1],rot[2],footJNT,
+                worldSpace=True,pcp=True)
+    
+    cmds.makeIdentity(footJNT,apply=True,t=1,r=1,s=1,n=0)
+    
+    cmds.delete(grp)
+    
+    #setup toe joint    
     meta=mum.SetData('meta_'+toeJNT, 'joint', None, module, None)
     mum.SetTransform(toeJNT, meta)
+    
+    grp=cmds.group(empty=True)
+    temp=cmds.group(empty=True)
+    cmds.xform(grp,worldSpace=True,translation=toeTrans)
+    cmds.xform(temp,worldSpace=True,translation=toetipTrans)
+    cmds.aimConstraint(temp,grp,worldUpType='vector',
+                       worldUpVector=crs)
+    
+    rot=cmds.xform(grp,query=True,rotation=True)
+    cmds.rotate(rot[0],rot[1],rot[2],toeJNT,worldSpace=True,
+                pcp=True)
+    
+    cmds.delete(grp)
+    cmds.delete(temp)
+    
+    cmds.makeIdentity(toeJNT,apply=True, t=1, r=1, s=1, n=0)
     
     #create sockets
     socket01=cmds.spaceLocator(name=prefix+'socket01')[0]
@@ -304,360 +340,400 @@ def Rig(module):
                             module,data)
     mum.SetTransform(socket02, metaParent)
     
-    #finding the upVector for the joints
-    crs=mru.CrossProduct(footTrans,toeTrans,toetipTrans)
-    
-    #setup foot joint
-    grp=cmds.group(empty=True)
-    cmds.xform(grp,worldSpace=True,translation=footTrans)
-    cmds.aimConstraint(toeJNT,grp,worldUpType='vector',
-                       worldUpVector=crs)
-    
-    rot=cmds.xform(grp,query=True,rotation=True)
-    cmds.rotate(rot[0],rot[1],rot[2],footJNT,
-                worldSpace=True,pcp=True)
-    
-    cmds.makeIdentity(footJNT,apply=True,t=1,r=1,s=1,n=0)
-    
-    cmds.delete(grp)
-    
-    cmds.parent(footJNT,plug)
-    
-    #setup toe joint
-    grp=cmds.group(empty=True)
-    temp=cmds.group(empty=True)
-    cmds.xform(grp,worldSpace=True,translation=toeTrans)
-    cmds.xform(temp,worldSpace=True,translation=toetipTrans)
-    cmds.aimConstraint(temp,grp,worldUpType='vector',
-                       worldUpVector=crs)
-    
-    rot=cmds.xform(grp,query=True,rotation=True)
-    cmds.rotate(rot[0],rot[1],rot[2],toeJNT,worldSpace=True,
-                pcp=True)
-    
-    cmds.delete(grp)
-    cmds.delete(temp)
-    
-    cmds.makeIdentity(toeJNT,apply=True, t=1, r=1, s=1, n=0)
-    '''
-    #create ik---
-    
-    #create ik chain
-    footIK=cmds.duplicate(footJNT,st=True,po=True,
-                           n=prefix+'ik01')[0]
-    toeIK=cmds.duplicate(toeJNT,st=True,po=True,
-                           n=prefix+'ik02')[0]
-    
-    mNode=mum.SetData('meta_'+footIK, 'ik', 'foot', module, None)
-    mum.SetTransform(footIK, mNode)
-    
-    cmds.container(asset,e=True,addNode=[footIK,toeIK])
-    
-    #setup ik chain
-    cmds.parent(toeIK,footIK)
-    
-    cmds.connectAttr('%s.scale' % footIK,
-                     '%s.inverseScale' % toeIK,force=True)
-    
-    #create fk chain
-    footFK=cmds.duplicate(footJNT,st=True,po=True,
-                           n=prefix+'fk01')[0]
-    toeFK=cmds.duplicate(toeJNT,st=True,po=True,
-                           n=prefix+'fk02')[0]
-    
-    cmds.container(asset,e=True,addNode=[footFK,toeFK])
-    
-    #setup fk chain
-    cmds.parent(toeFK,footFK)
-    
-    cmds.connectAttr('%s.scale' % footFK,
-                     '%s.inverseScale' % toeFK,force=True)
-    
-    #create controls
-    zeroCNT=cmds.createNode('transform',ss=True,
-                            n=prefix+'zero_cnt')
-    
-    ballCNT=mru.Circle(prefix+'ball_cnt')
-    toeIkCNT=mru.Circle(prefix+'toeIk_cnt')
-    toetipCNT=mru.Sphere(prefix+'toetip_cnt')
-    heelCNT=mru.Sphere(prefix+'heel_cnt')
-    footCNT=mru.Sphere(prefix+'foot_cnt')
-    toeFkCNT=mru.Square(prefix+'toeFk_cnt')
-    
-    cmds.container(asset,e=True,addNode=[ballCNT,toeIkCNT,
-                                         toetipCNT,heelCNT,
-                                         footCNT,toeFkCNT,
-                                         zeroCNT])
-    
-    #create right bank
-    rbankGRP=cmds.group(empty=True,n=prefix+'r_bank_grp')
-    rbankgrpGRP=cmds.group(rbankGRP,n=rbankGRP+'_grp')
-    
-    cmds.container(asset,e=True,addNode=[rbankGRP,rbankgrpGRP])
-    
-    #setup right bank
-    rbankParent=cmds.group(empty=True,n=rbankGRP+'_parent')
-    mru.Snap(plug,rbankParent)
-    
-    cmds.parent(rbankgrpGRP,rbankParent)
-    
-    data={'side':'right'}
-    mNode=mum.SetData('meta_'+rbankParent, 'group', 'bank', module, data)
-    mum.SetTransform(rbankParent, mNode)
-    
-    phgrp=cmds.group(rbankParent,n=(rbankParent+'_PH'))
-    sngrp=cmds.group(rbankParent,n=(rbankParent+'_SN'))
-    
-    cmds.xform(rbankgrpGRP,ws=True,translation=rbankTrans)
-    cmds.xform(rbankgrpGRP,ws=True,rotation=rbankRot)
-    
-    cmds.rotate(-90,0,0,rbankgrpGRP,r=True,os=True)
-    cmds.rotate(0,0,-90,rbankgrpGRP,r=True,os=True)
-    
-    cmds.container(asset,e=True,addNode=[rbankParent,phgrp,
-                                         sngrp])
-    
-    #create left bank
-    lbankGRP=cmds.group(empty=True,n=prefix+'l_bank_grp')
-    
-    cmds.container(asset,e=True,addNode=[lbankGRP])
-    
-    #setup left bank
-    grp=cmds.group(lbankGRP,n=lbankGRP+'_grp')
-    
-    cmds.xform(grp,ws=True,translation=lbankTrans)
-    cmds.xform(grp,ws=True,rotation=lbankRot)
-    
-    cmds.rotate(-90,0,0,grp,r=True,os=True)
-    cmds.rotate(0,0,-90,grp,r=True,os=True)
-    
-    cmds.parent(grp,rbankGRP)
-    
-    cmds.container(asset,e=True,addNode=[grp])
-    
-    #setup heelCNT
-    data={'system':'ik','switch':zeroCNT,'index':8}
-    mNode=mum.SetData(('meta_'+heelCNT),'control','heel',
-                       module,data)
-    mum.SetTransform(heelCNT, mNode)
-    
-    heelGRP=cmds.group(heelCNT,n=(heelCNT+'_grp'))
-    grp=cmds.group(heelGRP,n=(heelGRP+'_grp'))
-    
-    cmds.xform(grp,ws=True,rotation=heelRot)
-    cmds.xform(grp,ws=True,translation=heelTrans)
-    
-    cmds.rotate(-90,0,0,grp,r=True,os=True)
-    cmds.rotate(0,0,-90,grp,r=True,os=True)
-    
-    cmds.parent(grp,lbankGRP)
-    
-    cmds.container(asset,e=True,addNode=[heelGRP,grp])
-    
-    #setup zeroCNT
-    mru.Snap(heelCNT, zeroCNT)
-    
-    cmds.parent(zeroCNT,plug)
-    
-    #setup toetipCNT
-    data={'system':'ik','switch':zeroCNT,'index':7}
-    mNode=mum.SetData(('meta_'+toetipCNT),'control','toetip',
-                       module,data)
-    mum.SetTransform(toetipCNT, mNode)
-    
-    toetipGRP=cmds.group(toetipCNT,n=(toetipCNT+'_grp'))
-    grp=cmds.group(toetipGRP,n=(toetipGRP+'_grp'))
-    
-    cmds.xform(grp,ws=True,rotation=heelRot)
-    cmds.xform(grp,ws=True,translation=toetipTrans)
-    
-    cmds.parent(grp,heelCNT)
-    
-    cmds.rotate(-90,0,0,grp,r=True,os=True)
-    cmds.rotate(0,0,-90,grp,r=True,os=True)
-    
-    cmds.container(asset,e=True,addNode=[toetipGRP,grp])
-    
-    #setup ballCNT
-    data={'system':'ik','switch':zeroCNT,'index':6}
-    mNode=mum.SetData(('meta_'+ballCNT),'control','ball',
-                       module,data)
-    mum.SetTransform(ballCNT, mNode)
-    
-    cmds.scale(1.5,1.5,1.5,ballCNT)
-    cmds.makeIdentity(ballCNT,apply=True, t=1, r=1, s=1, n=0)
-    
-    ballGRP=cmds.group(ballCNT,n=(ballCNT+'_grp'))
-    grp=cmds.group(ballGRP,n=ballGRP+'_grp')
-    
-    mru.Snap(toeJNT,grp)
-    
-    cmds.parent(grp,toetipCNT)
-    
-    cmds.container(asset,e=True,addNode=[ballGRP,grp])
-    
-    #setup toeIkCNT
-    data={'system':'ik','switch':toeFK,'index':5}
-    mNode=mum.SetData(('meta_'+toeIkCNT),'control','toe',
-                       module,data)
-    mum.SetTransform(toeIkCNT, mNode)
-    
-    toeIkGRP=cmds.group(toeIkCNT,n=(toeIkCNT+'_grp'))
-    grp=cmds.group(toeIkGRP,n=(toeIkGRP+'_grp'))
-    
-    mru.Snap(toeJNT,grp)
-    
-    cmds.parent(grp,toetipCNT)
-    
-    cmds.container(asset,e=True,addNode=[toeIkGRP,grp])
-    
-    #setup footCNT
-    footCNTzero=cmds.group(empty=True,n=footCNT+'_zero')
-    
-    mru.Snap(footCNT,footCNTzero)
-    
-    data={'system':'ik','switch':footCNTzero,'index':4}
-    mNode=mum.SetData(('meta_'+footCNT),'control','foot',
-                       module,data)
-    mum.SetTransform(footCNT, mNode)
-    
-    grp=cmds.group(footCNT,footCNTzero,n=(footCNT+'_grp'))
-    cmds.parent(grp,rbankParent)
-    
-    cmds.xform(grp,ws=True,rotation=heelRot)
-    cmds.xform(grp,ws=True,translation=heelTrans)
-    cmds.move(0,0,-2,grp,r=True,os=True)
-    
-    cmds.rotate(-90,0,0,grp,r=True,os=True)
-    cmds.rotate(0,0,-90,grp,r=True,os=True)
-    
-    cmds.container(asset,e=True,addNode=[grp,footCNTzero])
-    
-    #setup toeFkCNT
-    data={'system':'fk','switch':toeIK,'index':4}
-    mNode=mum.SetData(('meta_'+toeFkCNT),'control','toe',
-                       module,data)
-    mum.SetTransform(toeFkCNT, mNode)
-    
-    grp=cmds.group(toeFkCNT,n=(toeFkCNT+'_grp'))
-    cmds.parent(grp,plug)
-    
-    mru.Snap(toeJNT,grp)
-    
-    cmds.parent(toeFK,toeFkCNT)
-    
-    cmds.container(asset,e=True,addNode=[grp])
-    
-    #setup foot controls
-    cmds.transformLimits(footCNT,ry=[-90,90],ery=[1,1],
-                         rx=[-90,90],erx=[1,1])
-    
-    cmds.transformLimits(rbankGRP,rx=[-90,0],erx=[1,1])
-    cmds.transformLimits(lbankGRP,rx=[0,90],erx=[1,1])
-    
-    cmds.transformLimits(heelGRP,ry=[0,0],ery=[0,1])
-    cmds.transformLimits(ballGRP,ry=[0,0],ery=[1,0])
-    
-    cmds.connectAttr(footCNT+'.rx',rbankGRP+'.rx')
-    cmds.connectAttr(footCNT+'.rx',lbankGRP+'.rx')
-    cmds.connectAttr(footCNT+'.ry',heelGRP+'.ry')
-    
-    unit01=cmds.shadingNode('unitConversion',asUtility=True)
-    unit02=cmds.shadingNode('unitConversion',asUtility=True)
-    unit03=cmds.shadingNode('unitConversion',asUtility=True)
-    foot01REMAP=cmds.shadingNode('remapValue',asUtility=True,
-                                 n=prefix+'foot01_remap')
-    foot02REMAP=cmds.shadingNode('remapValue',asUtility=True,
-                                 n=prefix+'foot02_remap')
-    footPMS=cmds.shadingNode('plusMinusAverage',asUtility=True,
-                                 n=prefix+'foot_pms')
-    
-    cmds.addAttr(footCNT,ln='footLift',at='float',min=0,max=90,
-                 k=True)
-    
-    cmds.setAttr(footCNT+'.footLift',33)
-    cmds.setAttr(unit01+'.conversionFactor',57.29578)
-    cmds.setAttr(unit02+'.conversionFactor',0.0174533)
-    cmds.setAttr(unit03+'.conversionFactor',0.0174533)
-    cmds.setAttr(foot01REMAP+'.inputMax',90)
-    cmds.setAttr(foot01REMAP+'.outputMin',0)
-    cmds.setAttr(foot01REMAP+'.outputMax',90)
-    cmds.setAttr(foot02REMAP+'.inputMax',90)
-    cmds.setAttr(foot02REMAP+'.outputMin',0)
-    cmds.setAttr(foot02REMAP+'.outputMax',-90)
-    cmds.setAttr(footPMS+'.operation',1)
-    
-    cmds.connectAttr(footCNT+'.ry',unit01+'.input')
-    cmds.connectAttr(footCNT+'.footLift',
-                     foot01REMAP+'.inputMin')
-    cmds.connectAttr(footCNT+'.footLift',
-                     foot02REMAP+'.inputMin')
-    cmds.connectAttr(unit01+'.output',
-                     foot01REMAP+'.inputValue')
-    cmds.connectAttr(unit01+'.output',
-                     foot02REMAP+'.inputValue')
-    cmds.connectAttr(unit01+'.output',footPMS+'.input1D[0]')
-    cmds.connectAttr(foot01REMAP+'.outColorR',unit02+'.input')
-    cmds.connectAttr(unit02+'.output',toetipGRP+'.ry')
-    cmds.connectAttr(foot02REMAP+'.outColorR',
-                     footPMS+'.input1D[1]')
-    cmds.connectAttr(footPMS+'.output1D',unit03+'.input')
-    cmds.connectAttr(unit03+'.output',ballGRP+'.ry')
-    
-    cmds.parent(footIK,ballCNT)
-    cmds.parent(toeIK,toeIkCNT)
-    
-    cmds.pointConstraint(plug,footIK)
-    
-    #blending setup
-    cmds.addAttr(asset,ln='FKIK',at='float',min=0,max=1,
-                 k=True)
-    
-    fkikREV=cmds.shadingNode('reverse',asUtility=True,
-                             n=prefix+'fkikREV')
-    
-    cmds.connectAttr(asset+'.FKIK',fkikREV+'.inputX')
-    
-    orientCon=cmds.orientConstraint(footIK,footFK,footJNT)[0]
-    cmds.connectAttr(fkikREV+'.outputX',
-                     orientCon+'.'+footFK+'W1')
-    cmds.connectAttr(asset+'.FKIK',
-                     orientCon+'.'+footIK+'W0')
-    
-    orientCon=cmds.orientConstraint(toeIK,toeFK,toeJNT)[0]
-    cmds.connectAttr(fkikREV+'.outputX',
-                     orientCon+'.'+toeFK+'W1')
-    cmds.connectAttr(asset+'.FKIK',
-                     orientCon+'.'+toeIK+'W0')
-    
-    cmds.connectAttr(fkikREV+'.outputX',toeFkCNT+'.v')
-    cmds.connectAttr(asset+'.FKIK',ballCNT+'.v')
-    cmds.connectAttr(asset+'.FKIK',toeIkCNT+'.v')
-    cmds.connectAttr(asset+'.FKIK',toetipCNT+'.v')
-    cmds.connectAttr(asset+'.FKIK',heelCNT+'.v')
-    cmds.connectAttr(asset+'.FKIK',footCNT+'.v')
-    
-    pointCon=cmds.pointConstraint(footIK,footFK,footJNT)[0]
-    
-    cmds.connectAttr(fkikREV+'.outputX',
-                     pointCon+'.'+footFK+'W1')
-    cmds.connectAttr(asset+'.FKIK',
-                     pointCon+'.'+footIK+'W0')
-    
-    #clean channel box
-    cnts=[ballCNT,toeIkCNT,toetipCNT,heelCNT,footCNT,toeFkCNT]
-    attrs=['tx','ty','tz','sx','sy','sz','v']
-    
-    for cnt in cnts:
-        mru.ChannelboxClean(cnt, attrs)
-    
-    #publishing controllers
-    for cnt in cnts:
+    #create fk---
+    if fk:
         
-        cmds.containerPublish(asset,publishNode=(cnt,''))
-        cmds.containerPublish(asset,bindNode=(cnt,cnt))
-        '''
+        #create fk chain
+        fkfoot=cmds.duplicate(footJNT,st=True,po=True,
+                               n=prefix+'fk_01')[0]
+        fktoe=cmds.duplicate(toeJNT,st=True,po=True,
+                               n=prefix+'fk_02')[0]
+        
+        cmds.container(asset,e=True,addNode=[fkfoot,fktoe])
+        
+        #setup fk chain
+        cmds.parent(fktoe,fkfoot)
+        
+        cmds.parent(fkfoot,plug)
+        
+        #create controls
+        fktoecnt=mru.Square(prefix+'fk_toe_cnt')
+        
+        #setup fktoecnt
+        data={'system':'fk','index':4}
+        mNode=mum.SetData(('meta_'+fktoecnt),'control','toe',
+                           module,data)
+        mum.SetTransform(fktoecnt, mNode)
+        
+        grp=cmds.group(empty=True,n=(fktoecnt+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=grp)
+        
+        cmds.parent(fktoecnt,grp)
+        cmds.parent(grp,plug)
+        
+        mru.Snap(toeJNT,grp)
+        
+        cmds.parent(fktoe,fktoecnt)
+        cmds.parent(grp,fkfoot)
+        
+        #channelbox clean
+        attrs=['tx','ty','tz','sx','sy','sz']
+        mru.ChannelboxClean(fktoecnt, attrs)
+        
+        attrs=['v']
+        mru.ChannelboxClean(fktoecnt, attrs,lock=False)
+        
+        #publish controls
+        cmds.containerPublish(asset,publishNode=(fktoecnt,''))
+        cmds.containerPublish(asset,bindNode=(fktoecnt,fktoecnt))
+    
+    #create ik---
+    if ik:
+    
+        #create ik chain
+        ikfoot=cmds.duplicate(footJNT,st=True,po=True,
+                               n=prefix+'ik_01')[0]
+        iktoe=cmds.duplicate(toeJNT,st=True,po=True,
+                               n=prefix+'ik_02')[0]
+        
+        cmds.container(asset,e=True,addNode=[ikfoot,iktoe])
+        
+        #setup ik chain
+        mNode=mum.SetData('meta_'+ikfoot, 'ik', 'foot', module, None)
+        mum.SetTransform(ikfoot, mNode)
+        
+        cmds.parent(iktoe,ikfoot)
+        
+        #create controls
+        ikballcnt=mru.Circle(prefix+'ik_ball_cnt')
+        iktoecnt=mru.Circle(prefix+'ik_toe_cnt')
+        iktoetipcnt=mru.Sphere(prefix+'ik_toetip_cnt')
+        ikheelcnt=mru.Sphere(prefix+'ik_heel_cnt')
+        ikfootcnt=mru.Sphere(prefix+'ik_foot_cnt')
+        
+        cmds.container(asset,e=True,addNode=[ikballcnt,iktoecnt,
+                                             iktoetipcnt,ikheelcnt,
+                                             ikfootcnt])
+        
+        #create right bank
+        ikrbankgrp=cmds.group(empty=True,n=prefix+'ik_r_bank_grp')
+        ikrbankgrpGRP=cmds.group(empty=True,n=ikrbankgrp+'_grp')
+        
+        cmds.container(asset,e=True,addNode=[ikrbankgrp,ikrbankgrpGRP])
+        
+        #setup right bank
+        cmds.parent(ikrbankgrp,ikrbankgrpGRP)
+        
+        rbankParent=cmds.group(empty=True,n=ikrbankgrp+'_parent')
+        
+        cmds.container(asset,e=True,addNode=rbankParent)
+        
+        mru.Snap(plug,rbankParent)
+        
+        cmds.parent(ikrbankgrpGRP,rbankParent)
+        
+        data={'side':'right'}
+        mNode=mum.SetData('meta_'+rbankParent, 'group', 'bank', module, data)
+        mum.SetTransform(rbankParent, mNode)
+        
+        cmds.xform(ikrbankgrpGRP,ws=True,translation=rbankTrans)
+        cmds.xform(ikrbankgrpGRP,ws=True,rotation=rbankRot)
+        
+        cmds.rotate(-90,0,0,ikrbankgrpGRP,r=True,os=True)
+        cmds.rotate(0,0,-90,ikrbankgrpGRP,r=True,os=True)
+        
+        phgrp=cmds.group(empty=True,n=(rbankParent+'_PH'))
+        sngrp=cmds.group(empty=True,n=(rbankParent+'_SN'))
+        
+        cmds.container(asset,e=True,addNode=[phgrp,sngrp])
+        
+        mru.Snap(rbankParent,phgrp)
+        mru.Snap(rbankParent,sngrp)
+        
+        cmds.parent(sngrp,phgrp)
+        cmds.parent(rbankParent,sngrp)
+        
+        #create left bank
+        iklbankgrp=cmds.group(empty=True,n=prefix+'ik_l_bank_grp')
+        
+        cmds.container(asset,e=True,addNode=[iklbankgrp])
+        
+        #setup left bank
+        grp=cmds.group(empty=True,n=iklbankgrp+'_grp')
+        
+        cmds.container(asset,e=True,addNode=grp)
+        
+        cmds.parent(iklbankgrp,grp)
+        
+        cmds.xform(grp,ws=True,translation=lbankTrans)
+        cmds.xform(grp,ws=True,rotation=lbankRot)
+        
+        cmds.rotate(-90,0,0,grp,r=True,os=True)
+        cmds.rotate(0,0,-90,grp,r=True,os=True)
+        
+        cmds.parent(grp,ikrbankgrp)
+        
+        #setup ikheelcnt
+        data={'system':'ik','index':8}
+        mNode=mum.SetData(('meta_'+ikheelcnt),'control','heel',
+                           module,data)
+        mum.SetTransform(ikheelcnt, mNode)
+        
+        ikheelgrp=cmds.group(empty=True,n=(ikheelcnt+'_grp'))
+        grp=cmds.group(empty=True,n=(ikheelgrp+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=[ikheelgrp,grp])
+        
+        cmds.parent(ikheelcnt,ikheelgrp)
+        cmds.parent(ikheelgrp,grp)
+        
+        cmds.xform(grp,ws=True,rotation=heelRot)
+        cmds.xform(grp,ws=True,translation=heelTrans)
+        
+        cmds.rotate(-90,0,0,grp,r=True,os=True)
+        cmds.rotate(0,0,-90,grp,r=True,os=True)
+        
+        cmds.parent(grp,iklbankgrp)
+        
+        #setup iktoetipcnt
+        data={'system':'ik','index':7}
+        mNode=mum.SetData(('meta_'+iktoetipcnt),'control','toetip',
+                           module,data)
+        mum.SetTransform(iktoetipcnt, mNode)
+        
+        iktoetipgrp=cmds.group(empty=True,n=(iktoetipcnt+'_grp'))
+        grp=cmds.group(empty=True,n=(iktoetipgrp+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=[iktoetipgrp,grp])
+        
+        cmds.parent(iktoetipcnt,iktoetipgrp)
+        cmds.parent(iktoetipgrp,grp)
+        
+        cmds.xform(grp,ws=True,rotation=heelRot)
+        cmds.xform(grp,ws=True,translation=toetipTrans)
+        
+        cmds.parent(grp,ikheelcnt)
+        
+        cmds.rotate(-90,0,0,grp,r=True,os=True)
+        cmds.rotate(0,0,-90,grp,r=True,os=True)
+        
+        #setup ikballcnt
+        data={'system':'ik','index':6}
+        mNode=mum.SetData(('meta_'+ikballcnt),'control','ball',
+                           module,data)
+        mum.SetTransform(ikballcnt, mNode)
+        
+        cmds.scale(1.5,1.5,1.5,ikballcnt)
+        cmds.makeIdentity(ikballcnt,apply=True, t=1, r=1, s=1, n=0)
+        
+        ikballgrp=cmds.group(empty=True,n=(ikballcnt+'_grp'))
+        grp=cmds.group(empty=True,n=ikballgrp+'_grp')
+        
+        cmds.container(asset,e=True,addNode=[ikballgrp,grp])
+        
+        cmds.parent(ikballcnt,ikballgrp)
+        cmds.parent(ikballgrp,grp)
+        
+        mru.Snap(toeJNT,grp)
+        
+        cmds.parent(grp,iktoetipcnt)
+        
+        #setup iktoecnt
+        data={'system':'ik','index':5}
+        mNode=mum.SetData(('meta_'+iktoecnt),'control','toe',
+                           module,data)
+        mum.SetTransform(iktoecnt, mNode)
+        
+        iktoegrp=cmds.group(empty=True,n=(iktoecnt+'_grp'))
+        grp=cmds.group(empty=True,n=(iktoegrp+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=[iktoegrp,grp])
+        
+        cmds.parent(iktoecnt,iktoegrp)
+        cmds.parent(iktoegrp,grp)
+        
+        mru.Snap(toeJNT,grp)
+        
+        cmds.parent(grp,iktoetipcnt)
+        
+        #setup ikfootcnt
+        data={'system':'ik','index':4}
+        mNode=mum.SetData(('meta_'+ikfootcnt),'control','foot',
+                           module,data)
+        mum.SetTransform(ikfootcnt, mNode)
+        
+        ikfootgrp=cmds.group(empty=True,n=(ikfootcnt+'_grp'))
+        
+        cmds.container(asset,e=True,addNode=ikfootgrp)
+        
+        cmds.parent(ikfootcnt,ikfootgrp)
+        
+        cmds.parent(ikfootgrp,rbankParent)
+        
+        cmds.xform(ikfootgrp,ws=True,rotation=heelRot)
+        cmds.xform(ikfootgrp,ws=True,translation=heelTrans)
+        cmds.move(0,0,-2,ikfootgrp,r=True,os=True)
+        
+        cmds.rotate(-90,0,0,ikfootgrp,r=True,os=True)
+        cmds.rotate(0,0,-90,ikfootgrp,r=True,os=True)
+        
+        #setup foot controls
+        cmds.transformLimits(ikfootcnt,ry=[-90,90],ery=[1,1],
+                             rx=[-90,90],erx=[1,1])
+        
+        cmds.transformLimits(ikrbankgrp,rx=[-90,0],erx=[1,1])
+        cmds.transformLimits(iklbankgrp,rx=[0,90],erx=[1,1])
+        
+        cmds.transformLimits(ikheelgrp,ry=[0,0],ery=[0,1])
+        cmds.transformLimits(ikballgrp,ry=[0,0],ery=[1,0])
+        
+        cmds.connectAttr(ikfootcnt+'.rx',ikrbankgrp+'.rx')
+        cmds.connectAttr(ikfootcnt+'.rx',iklbankgrp+'.rx')
+        cmds.connectAttr(ikfootcnt+'.ry',ikheelgrp+'.ry')
+        
+        unit01=cmds.shadingNode('unitConversion',asUtility=True)
+        unit02=cmds.shadingNode('unitConversion',asUtility=True)
+        unit03=cmds.shadingNode('unitConversion',asUtility=True)
+        foot01REMAP=cmds.shadingNode('remapValue',asUtility=True,
+                                     n=prefix+'foot01_remap')
+        foot02REMAP=cmds.shadingNode('remapValue',asUtility=True,
+                                     n=prefix+'foot02_remap')
+        footPMS=cmds.shadingNode('plusMinusAverage',asUtility=True,
+                                     n=prefix+'foot_pms')
+        
+        cmds.addAttr(ikfootcnt,ln='footLift',at='float',min=0,max=90,
+                     k=True)
+        
+        cmds.setAttr(ikfootcnt+'.footLift',33)
+        cmds.setAttr(unit01+'.conversionFactor',57.29578)
+        cmds.setAttr(unit02+'.conversionFactor',0.0174533)
+        cmds.setAttr(unit03+'.conversionFactor',0.0174533)
+        cmds.setAttr(foot01REMAP+'.inputMax',90)
+        cmds.setAttr(foot01REMAP+'.outputMin',0)
+        cmds.setAttr(foot01REMAP+'.outputMax',90)
+        cmds.setAttr(foot02REMAP+'.inputMax',90)
+        cmds.setAttr(foot02REMAP+'.outputMin',0)
+        cmds.setAttr(foot02REMAP+'.outputMax',-90)
+        cmds.setAttr(footPMS+'.operation',1)
+        
+        cmds.connectAttr(ikfootcnt+'.ry',unit01+'.input')
+        cmds.connectAttr(ikfootcnt+'.footLift',
+                         foot01REMAP+'.inputMin')
+        cmds.connectAttr(ikfootcnt+'.footLift',
+                         foot02REMAP+'.inputMin')
+        cmds.connectAttr(unit01+'.output',
+                         foot01REMAP+'.inputValue')
+        cmds.connectAttr(unit01+'.output',
+                         foot02REMAP+'.inputValue')
+        cmds.connectAttr(unit01+'.output',footPMS+'.input1D[0]')
+        cmds.connectAttr(foot01REMAP+'.outColorR',unit02+'.input')
+        cmds.connectAttr(unit02+'.output',iktoetipgrp+'.ry')
+        cmds.connectAttr(foot02REMAP+'.outColorR',
+                         footPMS+'.input1D[1]')
+        cmds.connectAttr(footPMS+'.output1D',unit03+'.input')
+        cmds.connectAttr(unit03+'.output',ikballgrp+'.ry')
+        
+        cmds.parent(ikfoot,ikballcnt)
+        cmds.parent(iktoe,iktoecnt)
+        
+        cmds.pointConstraint(plug,ikfoot)
+        
+        #clean channel box
+        cnts=[ikballcnt,iktoecnt,iktoetipcnt,ikheelcnt,ikfootcnt]
+        
+        attrs=['tx','ty','tz','sx','sy','sz']
+        for cnt in cnts:
+            mru.ChannelboxClean(cnt, attrs)
+        
+        attrs=['v']
+        for cnt in cnts:
+            mru.ChannelboxClean(cnt, attrs,lock=False)
+        
+        #publishing controllers
+        for cnt in cnts:
+            
+            cmds.containerPublish(asset,publishNode=(cnt,''))
+            cmds.containerPublish(asset,bindNode=(cnt,cnt))
+    
+    #blending---
+    if fk and ik:
+    
+        #create zero groups
+        ikfootcntzero=cmds.group(empty=True,n=ikfootcnt+'_zero')
+        zerocnt=cmds.createNode('transform',ss=True,
+                                n=prefix+'zero_cnt')
+        
+        cmds.container(asset,e=True,addNode=[zerocnt,ikfootcntzero])
+        
+        #setup zero groups
+        cmds.parent(ikfootcntzero,ikfootgrp)
+        
+        mru.Snap(ikfootcnt,ikfootcntzero)
+        
+        mru.Snap(ikheelcnt, zerocnt)
+        
+        cmds.parent(zerocnt,plug)
+    
+        #blending setup
+        cmds.addAttr(asset,ln='FKIK',at='float',min=0,max=1,
+                     k=True)
+        
+        fkikREV=cmds.shadingNode('reverse',asUtility=True,
+                                 n=prefix+'fkikREV')
+        
+        cmds.connectAttr(asset+'.FKIK',fkikREV+'.inputX')
+        
+        con=cmds.parentConstraint(ikfoot,fkfoot,footJNT)[0]
+        cmds.connectAttr(fkikREV+'.outputX',
+                         con+'.'+fkfoot+'W1')
+        cmds.connectAttr(asset+'.FKIK',
+                         con+'.'+ikfoot+'W0')
+        
+        con=cmds.scaleConstraint(ikfoot,fkfoot,footJNT)[0]
+        cmds.connectAttr(fkikREV+'.outputX',
+                         con+'.'+fkfoot+'W1')
+        cmds.connectAttr(asset+'.FKIK',
+                         con+'.'+ikfoot+'W0')
+        
+        con=cmds.parentConstraint(iktoe,fktoe,toeJNT)[0]
+        cmds.connectAttr(fkikREV+'.outputX',
+                         con+'.'+fktoe+'W1')
+        cmds.connectAttr(asset+'.FKIK',
+                         con+'.'+iktoe+'W0')
+        
+        con=cmds.scaleConstraint(iktoe,fktoe,toeJNT)[0]
+        cmds.connectAttr(fkikREV+'.outputX',
+                         con+'.'+fktoe+'W1')
+        cmds.connectAttr(asset+'.FKIK',
+                         con+'.'+iktoe+'W0')
+        
+        cmds.connectAttr(fkikREV+'.outputX',fktoecnt+'.v')
+        cmds.connectAttr(asset+'.FKIK',ikballcnt+'.v')
+        cmds.connectAttr(asset+'.FKIK',iktoecnt+'.v')
+        cmds.connectAttr(asset+'.FKIK',iktoetipcnt+'.v')
+        cmds.connectAttr(asset+'.FKIK',ikheelcnt+'.v')
+        cmds.connectAttr(asset+'.FKIK',ikfootcnt+'.v')
+        
+        #setup switching
+        data={'switch':zerocnt}
+        mum.ModifyData(ikheelcnt, data)
+        
+        data={'switch':zerocnt}
+        mum.ModifyData(iktoetipcnt, data)
+        
+        data={'switch':zerocnt}
+        mum.ModifyData(ikballcnt, data)
+        
+        data={'switch':fktoe}
+        mum.ModifyData(iktoecnt, data)
+        
+        data={'switch':ikfootcntzero}
+        mum.ModifyData(ikfootcnt, data)
+        
+        data={'switch':iktoe}
+        mum.ModifyData(fktoecnt, data)
 
 #Attach('meta_c_foot1','meta_c_arm1')
-templateModule='foot:meta_foot'
-Rig(templateModule)
+#templateModule='foot:meta_foot'
+#Rig(templateModule)
