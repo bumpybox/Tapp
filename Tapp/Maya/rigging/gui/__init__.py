@@ -92,6 +92,12 @@ class Form(base,form):
     def on_utilities_skeletonParent_pushButton_released(self):
         utilities.SkeletonParent()
     
+    def on_utilities_sphereCreate_pushButton_released(self):
+        utilities.SpherePreview()
+    
+    def on_utilities_sphereRemove_pushButton_released(self):
+        utilities.SpherePreviewDelete()
+    
     def browsePath(self):
         path=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
         self.create_path_lineEdit.setText(path)

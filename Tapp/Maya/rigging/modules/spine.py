@@ -4,7 +4,7 @@ import maya.cmds as cmds
 
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
-import MG_Tools.python.MG_pathSpine as mpps
+import MG_Tools.python.script.MG_pathSpine as mpps
 
 def Create():
     ''' Imports the template module to rig.

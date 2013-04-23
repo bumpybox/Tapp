@@ -65,6 +65,8 @@ def Connect():
 
 def Hide():
     
+    cmds.undoInfo(openChunk=True)
+    
     nodes=[]
     
     for node in cmds.ls(type='network'):
@@ -104,8 +106,12 @@ def Hide():
         if cmds.nodeType(node)=='joint':
             
             cmds.setAttr('%s.drawStyle' % node,2)
+    
+    cmds.undoInfo(closeChunk=True)
 
 def Unhide():
+    
+    cmds.undoInfo(openChunk=True)
     
     nodes=[]
     
@@ -142,6 +148,8 @@ def Unhide():
         if cmds.nodeType(node)=='joint':
             
             cmds.setAttr('%s.drawStyle' % node,0)
+    
+    cmds.undoInfo(closeChunk=True)
 
 def Unblackbox():
     

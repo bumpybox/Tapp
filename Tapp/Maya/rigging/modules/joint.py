@@ -90,7 +90,7 @@ def Rig(module):
     if inheritName=='True':
         moduleName=cmds.container(q=True,fc=jnt)
         
-        moduleName=moduleName.split(':')[-1]
+        moduleName=moduleName.split(':')[-1]+'_'
     
     #delete template
     cmds.delete(cmds.container(q=True,fc=jnt))

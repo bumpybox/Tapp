@@ -11,6 +11,12 @@ if 'tappMenu' in menuList:
 tappMenu=cmds.menu('tappMenu',label='Tapp',parent=gMainWindow,tearOff=True)
 
 #rigging menu
+subMenu=cmds.menuItem(label='modelling',subMenu=True,parent=tappMenu)
+
+cmd='import Tapp.Maya.modelling.GUI.triangulatePivot as mmgt;reload(mmgt);mmgt.show()'
+cmds.menuItem(label='Triangulate Pivot',parent=subMenu,command=cmd)
+
+#rigging menu
 subMenu=cmds.menuItem(label='rigging',subMenu=True,parent=tappMenu)
 
 cmd='import Tapp.Maya.rigging.gui as mrg;reload(mrg);mrg.show()'

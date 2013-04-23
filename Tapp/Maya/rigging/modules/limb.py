@@ -6,7 +6,7 @@ import maya.mel as mel
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
 import Tapp.Maya.utils.ZvParentMaster as muz
-import MG_Tools.python.MG_pathSpine as mpps
+import MG_Tools.python.script.MG_pathSpine as mpps
 
 def Create():
     ''' Imports the template module to rig.
