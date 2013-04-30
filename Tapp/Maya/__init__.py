@@ -13,8 +13,6 @@ import utils.framerate as uf
 
 uf.FrameratePrompt()
 
-#test change
-
 #opening command port for Eclipse
 try:
     if cmds.commandPort(':7720', q=True) !=1:
