@@ -7,8 +7,8 @@ import sip
 
 import Tapp.Maya.modelling.utils as mmu
 
-#uiPath=os.path.dirname(__file__)+'/resources/triangulatePivot.ui'
-uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\modelling\GUI\resources/triangulatePivot.ui'
+uiPath=os.path.dirname(__file__)+'/resources/triangulatePivot.ui'
+#uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\modelling\GUI\resources/triangulatePivot.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
