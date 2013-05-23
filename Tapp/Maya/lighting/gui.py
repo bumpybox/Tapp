@@ -22,6 +22,11 @@ class Form(base,form):
         
         self.setObjectName('tapp_lighting')
     
+    def on_exportAlembic_pushButton_released(self):
+        
+        #exporting alembic
+        alembic.exportAlembic()
+    
     def on_importAlembic_pushButton_released(self):
         
         #importing alembic

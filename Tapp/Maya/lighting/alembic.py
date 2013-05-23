@@ -3,7 +3,37 @@ from compiler.ast import flatten
 import maya.cmds as cmds
 import maya.mel as mel
 
+def loadAlembic():
+    
+    cmds.loadPlugin('AbcExport.mll',quiet=True)
+    cmds.loadPlugin('AbcImport.mll',quiet=True)
+
+def exportAlembic():
+    
+    loadAlembic()
+    
+    #export alembic
+    fileFilter = "Alembic Files (*.abc)"
+    f=cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,fileMode=0)
+    
+    if f:
+        #collecting export objects
+        cmd=''
+        for obj in cmds.ls(selection=True):
+            cmd+=' -root '+obj
+        
+        #get time range
+        start=cmds.playbackOptions(q=True,animationStartTime=True)
+        end=cmds.playbackOptions(q=True,animationEndTime=True)
+        
+        alembic=mel.eval('AbcExport -j \"-frameRange %s %s -stripNamespaces -uvWrite -worldSpace %s -file %s";' % (start,end,cmd,f[0]))
+        
+        return alembic
+
 def importAlembic():
+    
+    loadAlembic()
+    
     #import alembic
     fileFilter = "Alembic Files (*.abc)"
     f=cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,fileMode=1)
