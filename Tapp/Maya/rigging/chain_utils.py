@@ -39,24 +39,91 @@ def traverse(obj):
     
     return result
 
-def breakdown(chain,start=None,end=None):    
+class TreeNode(object):
+    def __init__(self, attr=None,name='',parent=None, children=[]):
+        self.attr=attr
+        self.name=name
+        self.parent=parent
+        self.children = list(children)
+
+    def add(self, child):
+        self.children.append(child)
     
-    root=chain[0]
-    for node in chain:
-        if node['parent']==None:
-            root=node
+    def getParent(self):
+        return self.parent
+
+def buildTree(obj,parent=None):
     
-    def downstream(chain,node,attr):
+    node=TreeNode()
+    
+    node.attr=cmds.listAttr(obj,userDefined=True)
+    node.name=obj
+    node.parent=parent
+    
+    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+    
+    if children:
+        for child in children:
+            node.add(buildTree(child,parent=node))
         
-        print node
+        return node
+    else:
+        return node
+
+tree=buildTree('|foot')
+print tree.children[0].getParent()
+
+def breakdown(chain,start,end,root,resultChains=[]):
+    
+    endofchain=False
+    
+    def downstream(chain,node,attr,endofchain):
         
-        if len(set(node['attr'] & set(attr)))>0:
-            return
+        if node['attr'] and len(set(node['attr']) & set(attr))>0:
+            return node,endofchain
         else:
-            for child in node['children']:
-                downstream(chain,child,attr)
+            if node['children']:
+                for child in node['children']:
+                    for n in chain:
+                        if n['name']==child:
+                            return downstream(chain,n,attr,endofchain)
+            else:
+                endofchain=True
+                
+                return node,endofchain
     
-    downstream(chain,root,start)
+    startNode,endofchain=downstream(chain,root,start,endofchain)
+    
+    if endofchain==True:
+        return resultChains
+    
+    for child in startNode['children']:
+        for n in chain:
+            if n['name']==child:
+                startChild=n
+    
+    endNode,endofchain=downstream(chain,startChild,end,endofchain)
+    
+    def tween(chain,startNode,endNode,result=[]):
+        
+        result.append(startNode)
+        
+        if startNode['name']==endNode['name']:
+            return result
+        else:
+            for child in startNode['children']:
+                for n in chain:
+                    if n['name']==child:
+                        return tween(chain,n,endNode)
+    
+    tweenNodes=tween(chain,startNode,endNode)
+    
+    resultChains.append(tweenNodes)
+    
+    if tweenNodes[-1]['children']==None:
+        return resultChains
+    else:
+        return breakdown(chain,start,end,tweenNodes[-1],resultChains=resultChains)
 
 #storing selection
 sel=cmds.ls(selection=True)
@@ -71,13 +138,12 @@ for p in points:
         
         chains.append(traverse(p))
 
-for c in chains:
+for chain in chains:
     
-    start=['IK_control','IK_solver_start']
-    end=['IK_solver_end']
+    start=['FK_control','FK_solver_start']
+    end=['FK_solver_end']
     
-    print c
-    breakdown(c,start=start,end=end)
+    bChains=breakdown(chain,start,end,chain[0])
 
 #restoring selection
 if sel:
