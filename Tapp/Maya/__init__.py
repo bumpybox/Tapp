@@ -8,9 +8,6 @@ print 'Tapp.Maya imported!'
 #creating menu
 import menu
 
-#creating sidedock
-cmds.evalDeferred('import Tapp.Maya.window as win;win.show()')
-
 #framerate prompting
 import utils.framerate as uf
 
