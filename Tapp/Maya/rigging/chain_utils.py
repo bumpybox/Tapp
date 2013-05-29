@@ -18,11 +18,18 @@ def traverse(obj):
         
         objDict['attr']=cmds.listAttr(obj,userDefined=True)
         objDict['name']=obj
-        objDict['level']=level
+        
+        objDict['children']=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+        
+        parent=cmds.listRelatives(obj,parent=True,fullPath=True)
+        if parent:
+            objDict['parent']=parent[0]
+        else:
+            objDict['parent']=None
         
         result.append(objDict)
         
-        for child in cmds.listRelatives(obj,children=True):
+        for child in cmds.listRelatives(obj,children=True,fullPath=True):
             
             if cmds.nodeType(child)=='transform':
                 
@@ -32,41 +39,24 @@ def traverse(obj):
     
     return result
 
-def attr_occurence(chain,startAttrs,endAttrs,occurence):
+def breakdown(chain,start=None,end=None):    
     
-    levels=[]
+    root=chain[0]
+    for node in chain:
+        if node['parent']==None:
+            root=node
     
-    for obj in chain:
+    def downstream(chain,node,attr):
         
-        if len(set(obj['attr']) & set(startAttrs))>0:
-            levels.append(obj['level'])
-    
-    match=[]
-    
-    objMax={}
-    objMin={}
-    
-    for obj in chain:
-        if obj['level']==min(levels) and len(set(obj['attr']) & set(startAttrs))>0:
-            
-            objMin=obj
-            
-        if obj['level']==max(levels) and len(set(obj['attr']) & set(startAttrs))>0:
-            
-            objMax=obj
-    
-    for obj in chain:
-        if obj['level']>=objMin['level'] and obj['level']<=objMax['level']:
-            
-            match.append(obj)
+        print node
         
-    if occurence=='min':
-        return match[0]
-    if occurence=='max':
-        return match[-1]
-    if occurence=='mid':
-        return match
+        if len(set(node['attr'] & set(attr)))>0:
+            return
+        else:
+            for child in node['children']:
+                downstream(chain,child,attr)
     
+    downstream(chain,root,start)
 
 #storing selection
 sel=cmds.ls(selection=True)
@@ -76,20 +66,21 @@ points=cmds.ls(assemblies=True)
 chains=[]
 for p in points:
     
-    shape=cmds.listRelatives(p,shapes=True)
+    shape=cmds.listRelatives(p,shapes=True,fullPath=True)
     if cmds.nodeType(shape)=='implicitBox':
         
         chains.append(traverse(p))
+
+for c in chains:
+    
+    start=['IK_control','IK_solver_start']
+    end=['IK_solver_end']
+    
+    print c
+    breakdown(c,start=start,end=end)
 
 #restoring selection
 if sel:
     cmds.select(sel)
 else:
     cmds.select(cl=True)
-
-#data analysis
-for c in chains:
-    
-    startAttrs=['IK_control','IK_solver_start']
-    endAttrs=['IK_solver_end']
-    print attr_occurence(c,startAttrs,'mid')
