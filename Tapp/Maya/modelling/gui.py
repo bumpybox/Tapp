@@ -7,8 +7,8 @@ import sip
 
 import Tapp.Maya.modelling.utils as mmu
 
-uiPath=os.path.dirname(__file__)+'/resources/triangulatePivot.ui'
-#uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\modelling\GUI\resources/triangulatePivot.ui'
+uiPath=os.path.dirname(__file__)+'/resources/tapp_modelling.ui'
+#uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\modelling\resources/tapp_modelling.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -21,7 +21,7 @@ class Form(base,form):
         super(base,self).__init__(parent)
         self.setupUi(self)
         
-        self.setObjectName('triangulatePivot')
+        self.setObjectName('tapp_modelling')
         
         self.loadedStyleSheet='QPushButton {color: white;background-color: green}'
         
@@ -109,7 +109,7 @@ class Form(base,form):
 def show():
     #closing previous dialog
     for widget in QtGui.qApp.allWidgets():
-        if widget.objectName()=='triangulatePivot':
+        if widget.objectName()=='tapp_modelling':
             widget.close()
     
     #showing new dialog

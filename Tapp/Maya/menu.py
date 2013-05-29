@@ -11,28 +11,8 @@ if 'tappMenu' in menuList:
 tappMenu=cmds.menu('tappMenu',label='Tapp',parent=gMainWindow,tearOff=True)
 
 #modelling menu
-subMenu=cmds.menuItem(label='modelling',subMenu=True,parent=tappMenu)
-
-cmd='import Tapp.Maya.modelling.GUI.triangulatePivot as mmgt;reload(mmgt);mmgt.show()'
-cmds.menuItem(label='Triangulate Pivot',parent=subMenu,command=cmd)
-
-#rigging menu
-subMenu=cmds.menuItem(label='rigging',subMenu=True,parent=tappMenu)
-
-cmd='import Tapp.Maya.rigging.gui as mrg;reload(mrg);mrg.show()'
-cmds.menuItem(label='Tapp Maya Rigging',parent=subMenu,command=cmd)
-
-#animation menu
-subMenu=cmds.menuItem(label='animation',subMenu=True,parent=tappMenu)
-
-cmd='import Tapp.Maya.animation.gui as mag;reload(mag);mag.show()'
-cmds.menuItem(label='Tapp Maya Animation',parent=subMenu,command=cmd)
-
-#animation menu
-subMenu=cmds.menuItem(label='lighting',subMenu=True,parent=tappMenu)
-
-cmd='import Tapp.Maya.lighting.gui as mlg;reload(mlg);mlg.show()'
-cmds.menuItem(label='Tapp Maya Lighting',parent=subMenu,command=cmd)
+cmd='import Tapp.Maya.window as win;win.show()'
+cmds.menuItem(label='Tapp Tools',parent=tappMenu,command=cmd)
 
 #repository menu
 subMenu=cmds.menuItem(label='repository',subMenu=True,parent=tappMenu)
