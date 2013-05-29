@@ -44,9 +44,12 @@ class Form(base,form):
                         
                         verts.append(vert)
                     
-                    self.posVerts=verts
-                    self.positionVerts_label.setText('Verts loaded!')
-                    self.loadPositionVerts_pushButton.setStyleSheet(self.loadedStyleSheet)
+                    if len(verts)==2:
+                        self.posVerts=verts
+                        self.positionVerts_label.setText('Verts loaded!')
+                        self.loadPositionVerts_pushButton.setStyleSheet(self.loadedStyleSheet)
+                    else:
+                        cmds.warning('More or Less than two verts selected. Please select only 2 verts.')
                 else:
                     cmds.warning('No verts selected!')
             else:

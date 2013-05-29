@@ -45,4 +45,4 @@ def show():
     dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
     dockWidget.setWidget(Window())
 
-show()
+#show()
