@@ -7,6 +7,62 @@
 
 import maya.cmds as cmds
 
+class TreeNode(object):
+    def __init__(self, attr=None,name='',parent=None, children=[]):
+        self.attr=attr
+        self.name=name
+        self.parent=parent
+        self.children = list(children)
+
+    def addChild(self, child):
+        self.children.append(child)
+    
+    def getParent(self):
+        return self.parent
+    
+    def downstream(self,searchAttr):
+        if self.attr and len(set(self.attr) & set(searchAttr))>0:
+            return self
+        else:
+            if self.children:
+                for child in self.children:
+                    return child.downstream(searchAttr)
+            else:
+                return None
+    
+    def getLast(self,root):
+        result=[]
+        
+        if root.children:
+            for child in root.children:
+                result.extend(self.getLast(child))
+        else:
+            result=[root]
+        
+        return result
+
+def buildTree(obj,parent=None):
+    
+    node=TreeNode()
+    
+    node.attr=cmds.listAttr(obj,userDefined=True)
+    node.name=obj
+    node.parent=parent
+    
+    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+    
+    if children:
+        for child in children:
+            node.addChild(buildTree(child,parent=node))
+        
+        return node
+    else:
+        return node
+
+tree=buildTree('|foot')
+attr=['Spline_solver_end']
+for last in tree.getLast(tree):
+    print last.name
 
 def traverse(obj):
     
@@ -38,40 +94,6 @@ def traverse(obj):
     iterer(obj)
     
     return result
-
-class TreeNode(object):
-    def __init__(self, attr=None,name='',parent=None, children=[]):
-        self.attr=attr
-        self.name=name
-        self.parent=parent
-        self.children = list(children)
-
-    def add(self, child):
-        self.children.append(child)
-    
-    def getParent(self):
-        return self.parent
-
-def buildTree(obj,parent=None):
-    
-    node=TreeNode()
-    
-    node.attr=cmds.listAttr(obj,userDefined=True)
-    node.name=obj
-    node.parent=parent
-    
-    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
-    
-    if children:
-        for child in children:
-            node.add(buildTree(child,parent=node))
-        
-        return node
-    else:
-        return node
-
-tree=buildTree('|foot')
-print tree.children[0].getParent()
 
 def breakdown(chain,start,end,root,resultChains=[]):
     
