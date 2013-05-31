@@ -125,7 +125,7 @@ def CrossProduct(posA,posB,posC):
     #return
     return crs
 
-def Square(name,group=False):
+def Square(name,group=False,size=1.0):
     ''' Creates a square shape.
         If group is True, will group control and
         return a list [group,control].
@@ -141,6 +141,10 @@ def Square(name,group=False):
     #naming control
     node=cmds.rename(curve,name)
     
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
     #grouping control
     if group==True:
         grp=cmds.group(node,n=name+'_grp')
@@ -150,7 +154,7 @@ def Square(name,group=False):
     #return
     return node
 
-def FourWay(name,group=False):
+def FourWay(name,group=False,size=1.0):
     ''' Creates a four leg arrow shape.
         If group is True, will group control and
         return a list [group,control].
@@ -179,6 +183,10 @@ def FourWay(name,group=False):
     #naming control
     node=cmds.rename(curve,name)
     
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
     #grouping control
     if group==True:
         grp=cmds.group(node,n=name+'_grp')
@@ -188,7 +196,7 @@ def FourWay(name,group=False):
     #return
     return node
 
-def Circle(name,group=False):
+def Circle(name,group=False,size=1.0):
     ''' Creates a circle shape.
         If group is True, will group control and
         return a list [group,control].
@@ -205,6 +213,10 @@ def Circle(name,group=False):
     #naming control
     node=cmds.rename(curve,name)
     
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
     #grouping control
     if group==True:
         grp=cmds.group(node,n=name+'_grp')
@@ -214,7 +226,7 @@ def Circle(name,group=False):
     #return
     return node
 
-def Box(name,group=False):
+def Box(name,group=False,size=1.0):
     ''' Creates a box shape.
         If group is True, will group control and
         return a list [group,control].
@@ -232,6 +244,10 @@ def Box(name,group=False):
     #naming control
     node=cmds.rename(curve,name)
     
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
     #grouping control
     if group==True:
         grp=cmds.group(node,n=name+'_grp')
@@ -241,7 +257,7 @@ def Box(name,group=False):
     #return
     return node
 
-def Pin(name,group=False):
+def Pin(name,group=False,size=1.0):
     ''' Creates a pin shape.
         If group is True, will group control and
         return a list [group,control].
@@ -265,6 +281,10 @@ def Pin(name,group=False):
     #naming control
     node=cmds.rename(curve,name)
     
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
     #grouping control
     if group==True:
         grp=cmds.group(node,n=name+'_grp')
@@ -274,7 +294,7 @@ def Pin(name,group=False):
     #return
     return node
 
-def Sphere(name,group=False):
+def Sphere(name,group=False,size=1.0):
     ''' Creates a sphere shape.
         If group is True, will group control and
         return a list [group,control].
@@ -323,6 +343,10 @@ def Sphere(name,group=False):
     
     #naming control
     node=cmds.rename(curve,name)
+    
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
     
     #grouping control
     if group==True:

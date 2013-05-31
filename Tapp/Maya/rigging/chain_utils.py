@@ -1,34 +1,83 @@
 '''
 
-- start attrs
-- end attrs
+- pass chainNode between solvers and write their nodes to the class
 
 '''
 
 import maya.cmds as cmds
 
-class TreeNode(object):
+import Tapp.Maya.rigging.utils as mru
+
+class ChainNode(object):
+    
     def __init__(self, attr=None,name='',parent=None, children=[]):
         self.attr=attr
         self.name=name
         self.parent=parent
         self.children = list(children)
+        self.socket={}
+        self.control={}
 
     def addChild(self, child):
         self.children.append(child)
     
-    def getParent(self):
-        return self.parent
-    
     def downstream(self,searchAttr):
-        if self.attr and len(set(self.attr) & set(searchAttr))>0:
-            return self
+        
+        result=[]
+        
+        if self.children:
+            for child in self.children:
+                if child.attr and len(set(child.attr) & set(searchAttr))>0:
+                    result=[child]
+                else:
+                    childData=child.downstream(searchAttr)
+                    if childData:
+                        result.extend(childData)
         else:
-            if self.children:
-                for child in self.children:
-                    return child.downstream(searchAttr)
+            return None,self
+        
+        return result
+    
+    def tween(self,endNode):
+        
+        result=[self]
+        
+        if self==endNode:
+            return result
+        
+        if self.children:
+            for child in self.children:
+                result.extend(child.tween(endNode))
+        
+        return result
+    
+    def breakdown(self,startAttr,endAttr,result=[]):
+        
+        if len(set(self.attr) & set(startAttr))>0:
+            startNode=self
+        else:
+            startData=self.downstream(startAttr)
+            if len(startData)>1:
+                return result
             else:
-                return None
+                startNode=startData[0]
+        
+        endData=startNode.downstream(endAttr)
+        if len(endData)>1:
+            endNode=endData[1]
+            
+            result.append(startNode.tween(endNode))
+            
+            return result
+        else:
+            endNode=endData[0]
+        
+        result.append(startNode.tween(endNode))
+        
+        if endNode.children:
+            return endNode.breakdown(startAttr,endAttr,result=result)
+        
+        return result
     
     def getLast(self,root):
         result=[]
@@ -41,9 +90,9 @@ class TreeNode(object):
         
         return result
 
-def buildTree(obj,parent=None):
+def buildChain(obj,parent=None):
     
-    node=TreeNode()
+    node=ChainNode()
     
     node.attr=cmds.listAttr(obj,userDefined=True)
     node.name=obj
@@ -53,122 +102,145 @@ def buildTree(obj,parent=None):
     
     if children:
         for child in children:
-            node.addChild(buildTree(child,parent=node))
+            node.addChild(buildChain(child,parent=node))
         
         return node
     else:
         return node
 
-tree=buildTree('|foot')
-attr=['Spline_solver_end']
-for last in tree.getLast(tree):
-    print last.name
-
-def traverse(obj):
+def fk_chain(chainList):
     
-    result=[]
-    
-    def iterer(obj,level=1):
-    
-        objDict={}
+    for node in chainList:
         
-        objDict['attr']=cmds.listAttr(obj,userDefined=True)
-        objDict['name']=obj
+        prefix=node.name.split('|')[-1]+'_fk_'
         
-        objDict['children']=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+        #create sockets
+        socket=cmds.spaceLocator(name=prefix+'socket')[0]
         
-        parent=cmds.listRelatives(obj,parent=True,fullPath=True)
-        if parent:
-            objDict['parent']=parent[0]
-        else:
-            objDict['parent']=None
+        #setup socket
+        mru.Snap(node.name, socket)
+        node.socket['fk']=socket
         
-        result.append(objDict)
-        
-        for child in cmds.listRelatives(obj,children=True,fullPath=True):
+        #create control
+        if 'FK_control' in node.attr:
+            cnt=mru.Box(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
             
-            if cmds.nodeType(child)=='transform':
-                
-                iterer(child,level+1)
-    
-    iterer(obj)
-    
-    return result
+            #setup control
+            mru.Snap(node.name,cnt)
+            node.control['fk']=cnt
+            
+            cmds.parent(socket,cnt)
+            
+            if node.parent:
+                cmds.parent(cnt,node.parent.socket['fk'])
 
-def breakdown(chain,start,end,root,resultChains=[]):
+def ik_chain(chainList):
     
-    endofchain=False
+    #building rig---
+    #finding upvector
+    posA=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
+    posB=cmds.xform(chainList[1].name,q=True,ws=True,translation=True)
+    posC=cmds.xform(chainList[2].name,q=True,ws=True,translation=True)
+    crs=mru.CrossProduct(posA,posB,posC)
     
-    def downstream(chain,node,attr,endofchain):
+    #creating joints
+    jnts=[]
+    for node in chainList:
+        count=chainList.index(node)
         
-        if node['attr'] and len(set(node['attr']) & set(attr))>0:
-            return node,endofchain
-        else:
-            if node['children']:
-                for child in node['children']:
-                    for n in chain:
-                        if n['name']==child:
-                            return downstream(chain,n,attr,endofchain)
-            else:
-                endofchain=True
-                
-                return node,endofchain
-    
-    startNode,endofchain=downstream(chain,root,start,endofchain)
-    
-    if endofchain==True:
-        return resultChains
-    
-    for child in startNode['children']:
-        for n in chain:
-            if n['name']==child:
-                startChild=n
-    
-    endNode,endofchain=downstream(chain,startChild,end,endofchain)
-    
-    def tween(chain,startNode,endNode,result=[]):
+        prefix=node.name.split('|')[-1]+'_ik_'
         
-        result.append(startNode)
+        #creating joint
+        cmds.select(cl=True)
+        jnt=cmds.joint(n=prefix+'jnt01')
         
-        if startNode['name']==endNode['name']:
-            return result
-        else:
-            for child in startNode['children']:
-                for n in chain:
-                    if n['name']==child:
-                        return tween(chain,n,endNode)
-    
-    tweenNodes=tween(chain,startNode,endNode)
-    
-    resultChains.append(tweenNodes)
-    
-    if tweenNodes[-1]['children']==None:
-        return resultChains
-    else:
-        return breakdown(chain,start,end,tweenNodes[-1],resultChains=resultChains)
-
-#storing selection
-sel=cmds.ls(selection=True)
-
-points=cmds.ls(assemblies=True)
-
-chains=[]
-for p in points:
-    
-    shape=cmds.listRelatives(p,shapes=True,fullPath=True)
-    if cmds.nodeType(shape)=='implicitBox':
+        #setup joint
+        mru.Snap(node.name, jnt)
         
-        chains.append(traverse(p))
-
-for chain in chains:
+        grp=cmds.group(empty=True)
+        mru.Snap(node.name,grp)
+        
+        if chainList[count]!=chainList[-1]:
+            cmds.aimConstraint(chainList[count+1].name,grp,worldUpType='vector',
+                               worldUpVector=crs)
+        
+        rot=cmds.xform(grp,query=True,rotation=True)
+        cmds.rotate(rot[0],rot[1],rot[2],jnt,
+                    worldSpace=True,pcp=True)
+        
+        cmds.makeIdentity(jnt,apply=True,t=1,r=1,s=1,n=0)
+        
+        cmds.delete(grp)
+        
+        if chainList[count]!=chainList[0]:
+            cmds.parent(jnt,jnts[-1])
+        
+        jnts.append(jnt)
     
-    start=['FK_control','FK_solver_start']
-    end=['FK_solver_end']
-    
-    bChains=breakdown(chain,start,end,chain[0])
+    #create ik handle
+    cmds.ikHandle(sj=jnts[0],ee=jnts[-1],sol='ikRPsolver')
 
-#restoring selection
-if sel:
-    cmds.select(sel)
-else:
-    cmds.select(cl=True)
+class solver():
+    
+    def __init__(self,chain):
+        
+        self.fk_chains=[]
+        self.ik_chains=[]
+        self.spline_chains=[]
+        
+        #finding chains (WORKAROUND! the results from breakdown seems to accumulates by each call)
+        startAttr=['FK_solver_start','FK_control']
+        endAttr=['FK_solver_end']
+        self.fk_chains=chain.breakdown(startAttr,endAttr,result=[])
+        
+        startAttr=['IK_solver_start','IK_control']
+        endAttr=['IK_solver_end']
+        self.ik_chains=chain.breakdown(startAttr,endAttr,result=[])
+        
+        startAttr=['Spline_solver_start','Spline_control']
+        endAttr=['Spline_solver_end']
+        self.spline_chains=chain.breakdown(startAttr,endAttr,result=[])
+    
+    def __repr__(self):
+        
+        result=''
+        
+        for c in self.fk_chains:
+            result+='fk chain from:\n'
+            for node in c:
+                result+=node.name+'\n'
+        
+        for c in self.ik_chains:
+            result+='ik chain from:\n'
+            for node in c:
+                result+=node.name+'\n'
+        
+        for c in self.spline_chains:
+            result+='spline chain from:\n'
+            for node in c:
+                result+=node.name+'\n'
+        
+        return result
+    
+    def build(self,method=['fk','ik','spline','joint','all']):
+        
+        if method=='fk':
+            for c in self.fk_chains:
+                fk_chain(c)
+        
+        if method=='ik':
+            for c in self.ik_chains:
+                ik_chain(c)
+        
+        if method=='all':
+            for c in self.fk_chains:
+                fk_chain(c)
+            
+            for c in self.ik_chains:
+                ik_chain(c)
+        
+        cmds.delete(chain.name)
+
+chain=buildChain('|clavicle')
+print solver(chain).build('all')
+print chain.socket
