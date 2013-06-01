@@ -7,6 +7,7 @@
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.utils as mru
+import MG_Tools.python.rigging.script.MG_softIk as mpsi
 
 class ChainNode(object):
     
@@ -133,10 +134,26 @@ def fk_chain(chainList):
             
             if node.parent:
                 cmds.parent(cnt,node.parent.socket['fk'])
+        else:
+            if node.parent:
+                cmds.parent(socket,node.parent.socket['fk'])
 
 def ik_chain(chainList):
     
     #building rig---
+    #create plug
+    plug=cmds.spaceLocator(name='plug')[0]
+    
+    #setup plug
+    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+    
+    cmds.parent(sngrp,phgrp)
+    cmds.parent(plug,sngrp)
+    
+    startPos=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
+    cmds.xform(phgrp,worldSpace=True,translation=startPos)
+    
     #finding upvector
     posA=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
     posB=cmds.xform(chainList[1].name,q=True,ws=True,translation=True)
@@ -178,7 +195,74 @@ def ik_chain(chainList):
         jnts.append(jnt)
     
     #create ik handle
-    cmds.ikHandle(sj=jnts[0],ee=jnts[-1],sol='ikRPsolver')
+    ikHandle=cmds.ikHandle(sj=jnts[0],ee=jnts[-1],sol='ikRPsolver')
+    
+    #setup ik stretching
+    stretch01=cmds.createNode('transform',ss=True,
+                              n=prefix+'stretch01')
+    stretch02=cmds.createNode('transform',ss=True,
+                              n=prefix+'stretch02')
+    stretch02REF=cmds.createNode('transform',ss=True,
+                              n=prefix+'stretch02REF')
+    
+    stretchDIST=cmds.shadingNode('distanceBetween',
+                                 asUtility=True,
+                                 n=prefix+'stretchDIST')
+    stretch01MD=cmds.shadingNode('multiplyDivide',
+                                 asUtility=True,
+                                 n=prefix+'stretch01MD')
+    stretch02MD=cmds.shadingNode('multiplyDivide',
+                                 asUtility=True,
+                                 n=prefix+'stretch02MD')
+    stretchBLD=cmds.shadingNode('blendColors',
+                                asUtility=True,
+                                n=prefix+'stretchBLD')
+    
+    phgrp=cmds.group(empty=True,n=(stretch02REF+'_PH'))
+    sngrp=cmds.group(empty=True,n=(stretch02REF+'_SN'))
+    
+    cmds.parent(sngrp,phgrp)
+    cmds.parent(stretch02REF,sngrp)
+    
+    mru.Snap(jnts[-1],phgrp)
+    mru.Snap(jnts[-1],stretch02)
+    cmds.parentConstraint(stretch02REF,stretch02)
+    
+    #calc distance
+    dist=0
+    for count in range(0,len(jnts)-1):
+        dist+=mru.Distance(jnts[count], jnts[count+1])
+        
+        cmds.transformLimits(jnts[count],sx=(1,1),esx=(1,0))
+    
+    cmds.setAttr('%s.color2R' % stretchBLD,1)
+    cmds.setAttr('%s.blender' % stretchBLD,1)
+    cmds.setAttr('%s.input2X' % stretch02MD,dist)
+    cmds.setAttr('%s.operation' % stretch01MD,2)
+    
+    cmds.pointConstraint(jnts[0],stretch01)
+    
+    cmds.parent(ikHandle[0],stretch02)
+    
+    cmds.connectAttr('%s.translate' % stretch01,
+                     '%s.point1' % stretchDIST,force=True)
+    cmds.connectAttr('%s.translate' % stretch02,
+                     '%s.point2' % stretchDIST,force=True)
+    
+    cmds.connectAttr('%s.sx' % plug,'%s.input1X' % stretch02MD,
+                     force=True)
+    
+    cmds.connectAttr('%s.distance' % stretchDIST,
+                     '%s.input1X' % stretch01MD,force=True)
+    cmds.connectAttr('%s.outputX' % stretch02MD,
+                     '%s.input2X' % stretch01MD,force=True)
+    
+    cmds.connectAttr('%s.outputX' % stretch01MD,
+                     '%s.color1R' % stretchBLD,force=True)
+    
+    for count in range(0,len(jnts)-1):
+        cmds.connectAttr('%s.outputR' % stretchBLD,
+                         '%s.sx' % jnts[count],force=True)
 
 class solver():
     
@@ -242,5 +326,8 @@ class solver():
         cmds.delete(chain.name)
 
 chain=buildChain('|clavicle')
-print solver(chain).build('all')
-print chain.socket
+solver(chain).build('ik')
+'''
+- ik
+    stretch01 and stretch02 is same place!
+'''
