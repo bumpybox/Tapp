@@ -6,7 +6,7 @@ import maya.OpenMayaUI as omu
 import sip
 
 import Tapp.Maya.lighting.alembic as alembic
-import Tapp.Maya.lighting.vraySubdiv as mlv
+import Tapp.Maya.lighting.vray as mlv
 
 uiPath=os.path.dirname(__file__)+'/resources/lighting_gui.ui'
 form,base=uic.loadUiType(uiPath)

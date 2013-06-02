@@ -15,3 +15,7 @@ def setSubdivision(level):
     nodeList = cmds.ls(selection = True, dag=True, lf=True, type = 'mesh') # find shape nodes of current selection
     for node in nodeList:
         cmds.setAttr(node+'.vrayMaxSubdivs',level)
+
+def addDomeLight():
+    
+    light=cmds.shadingNode('VRayLightDomeShape',asLight=True)
