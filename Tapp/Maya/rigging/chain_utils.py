@@ -5,6 +5,7 @@
 '''
 
 import maya.cmds as cmds
+import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 import MG_Tools.python.rigging.script.MG_softIk as mpsi
@@ -109,7 +110,7 @@ def buildChain(obj,parent=None):
     else:
         return node
 
-def fk_chain(chainList):
+def fk_build(chainList,asset):
     
     #build rig---
     for node in chainList:
@@ -125,6 +126,9 @@ def fk_chain(chainList):
     
     #build controls---
     for node in chainList:
+        
+        prefix=node.name.split('|')[-1]+'_fk_'
+        
         #create control
         if 'FK_control' in node.attr:
             cnt=mru.Box(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
@@ -133,15 +137,24 @@ def fk_chain(chainList):
             mru.Snap(node.name,cnt)
             node.control['fk']=cnt
             
-            cmds.parent(socket,cnt)
+            cmds.parent(node.socket['fk'],cnt)
+            
+            phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
+            sngrp=cmds.group(empty=True,n=(cnt+'_SN'))
+            
+            mru.Snap(cnt,phgrp)
+            mru.Snap(cnt,sngrp)
+            
+            cmds.parent(cnt,sngrp)
+            cmds.parent(sngrp,phgrp)
             
             if node.parent:
-                cmds.parent(cnt,node.parent.socket['fk'])
+                cmds.parent(phgrp,node.parent.socket['fk'])
         else:
             if node.parent:
                 cmds.parent(socket,node.parent.socket['fk'])
 
-def ik_chain(chainList):
+def ik_build(chainList,asset):
     
     #build rig---
     '''
@@ -204,6 +217,7 @@ def ik_chain(chainList):
         
         #setup socket
         mru.Snap(node.name, socket)
+        cmds.parent(socket,jnt)
         node.socket['ik']=socket
     
     #create ik
@@ -213,10 +227,17 @@ def ik_chain(chainList):
     mru.Snap(jnts[0],ikStart)
     mru.Snap(jnts[-1],ikEnd)
     
-    mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd)
+    ikResult=mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd)
+    
+    #setup ik
+    cmds.addAttr(asset,ln='ik_stretch',at='float',min=0,max=1)
+    
+    cmds.connectAttr(asset+'.ik_stretch',ikResult['softIk']+'.stretch')
     
     #build controls---
     for node in chainList:
+        
+        count=chainList.index(node)
         
         prefix=node.name.split('|')[-1]+'_ik_'
         
@@ -227,11 +248,54 @@ def ik_chain(chainList):
             mru.Snap(node.name,cnt)
             node.control['ik']=cnt
             
-            cmds.parent(node.socket['ik'],cnt)
-        
-        #polevector and end control
-        if node.children:
+            phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
+            sngrp=cmds.group(empty=True,n=(cnt+'_SN'))
             
+            mru.Snap(cnt,phgrp)
+            mru.Snap(cnt,sngrp)
+            
+            cmds.parent(cnt,sngrp)
+            cmds.parent(sngrp,phgrp)
+            
+            if node.children:
+                
+                mru.Snap(jnts[count],phgrp)
+                
+                dist=0
+                for jntCount in range(0,len(jnts)-1):
+                    dist+=mru.Distance(jnts[jntCount], jnts[jntCount+1])
+                
+                cmds.move(-dist/len(jnts)/2,0,-dist/len(jnts),phgrp,r=True,os=True,wd=True)
+                
+                mru.Snap(node.name,phgrp,point=False)
+                
+                curve=cmds.curve(d=1,p=[(0,0,0),(0,0,0)])
+                polevectorSHP=cmds.listRelatives(curve,s=True)[0]
+                cmds.setAttr(polevectorSHP+'.overrideEnabled',1)
+                cmds.setAttr(polevectorSHP+'.overrideDisplayType',2)
+                
+                cmds.select(curve+'.cv[0]',r=True)
+                cluster=mel.eval('newCluster " -envelope 1";')
+                
+                mru.Snap(cnt,cluster[1])
+                cmds.parent(cluster[1],cnt)
+                
+                cmds.rename(cluster[0],prefix+'polvector_cls')
+                
+                cmds.select(curve+'.cv[1]',r=True)
+                cluster=mel.eval('newCluster " -envelope 1";')
+                
+                mru.Snap(jnts[count],cluster[1])
+                cmds.parent(cluster[1],jnts[count])
+                
+                cmds.rename(cluster[0],prefix+'polvector_cls')
+                polevectorSHP=cmds.rename(curve,prefix+'polevector_shp')
+                
+                cmds.poleVectorConstraint(cnt,ikResult['ikHandle'])
+            else:
+                
+                cmds.pointConstraint(cnt,ikEnd)
+                cmds.parent(node.socket['ik'],cnt)
 
 class solver():
     
@@ -275,28 +339,82 @@ class solver():
         
         return result
     
-    def build(self,method=['fk','ik','spline','joint','all']):
+    def blend(self,node,control):
+        
+        prefix=node.name.split('|')[-1]+'_bld_'
+        
+        #create socket
+        socket=cmds.spaceLocator(name=prefix+'socket')[0]
+        
+        #setup socket
+        mru.Snap(node.name, socket)
+        
+        cmd='cmds.parentConstraint('
+        for s in node.socket:
+            cmd+='\''+node.socket[s]+'\','
+        cmd+='\''+socket+'\')'
+        con=eval(cmd)[0]
+        
+        for s in node.socket:
+            attr=control+'.'+s
+            if not cmds.objExists(attr):
+                cmds.addAttr(control,ln=s,at='float',keyable=True,
+                             min=0,max=1)
+        
+            for count in range(0,len(node.socket)):
+                target=cmds.listConnections(con+'.target[%s].targetParentMatrix' % count)
+                if target[0]==node.socket[s]:
+                    cmds.connectAttr(control+'.'+s,con+'.'+
+                                     node.socket[s]+'W%s' % count,force=True)
+        
+        node.socket['blend']=socket
+        
+        if node.children:
+            for child in node.children:
+                self.blend(child,control)
+    
+    def build(self,method=['fk','ik','spline','joint','all'],blend=[True,False]):
+        
+        asset=cmds.container(n='rig',type='dagContainer')
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        mru.ChannelboxClean(asset, attrs)
         
         if method=='fk':
             for c in self.fk_chains:
-                fk_chain(c)
+                fk_build(c,asset)
         
         if method=='ik':
             for c in self.ik_chains:
-                ik_chain(c)
+                ik_build(c,asset)
         
         if method=='all':
             for c in self.fk_chains:
-                fk_chain(c)
+                fk_build(c,asset)
             
             for c in self.ik_chains:
-                ik_chain(c)
+                ik_build(c,asset)
+        
+        if blend:
+            
+            #create extra control
+            cnt=mru.Pin('extra_cnt')
+            
+            #create blend sockets
+            self.blend(chain,cnt)
+            
+            #setup extra control
+            mru.Snap(chain.name,cnt)
+            
+            cmds.parent(cnt,chain.getLast(chain)[0].socket['blend'])
+            cmds.rotate(0,90,0,cnt,r=True,os=True)
+            
+            if cmds.objExists(asset+'.ik_stretch'):
+                cmds.addAttr(cnt,ln='ik_stretch',at='float',k=True,
+                             min=0,max=1)
+                
+                cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
         
         cmds.delete(chain.name)
 
 chain=buildChain('|clavicle')
-solver(chain).build('ik')
-'''
-- ik
-    stretch01 and stretch02 is same place!
-'''
+solver(chain).build('all',blend=True)

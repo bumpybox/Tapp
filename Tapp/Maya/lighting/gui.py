@@ -6,6 +6,7 @@ import maya.OpenMayaUI as omu
 import sip
 
 import Tapp.Maya.lighting.alembic as alembic
+import Tapp.Maya.lighting.vraySubdiv as mlv
 
 uiPath=os.path.dirname(__file__)+'/resources/lighting_gui.ui'
 form,base=uic.loadUiType(uiPath)
@@ -67,6 +68,24 @@ class Form(base,form):
         
         #undo end
         cmds.undoInfo(closeChunk=True)
+    
+    def on_addRimLight_pushButton_released(self):
+        
+        import Tapp.Maya.lighting.AddRimLight as mla
+        mla.addRimRamp()
+    
+    def on_addSubdivision_pushButton_released(self):
+        
+        cmds.loadPlugin('vrayformaya.mll',quiet=True)
+        
+        mlv.addSubdivision()
+    
+    def on_setSubdivision_pushButton_released(self):
+        
+        cmds.loadPlugin('vrayformaya.mll',quiet=True)
+        
+        level=self.subdivision_spinBox.value()
+        mlv.setSubdivision(level)
 
 def show():
     #closing previous dialog
