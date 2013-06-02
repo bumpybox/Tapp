@@ -15,3 +15,9 @@ INSTALL
 
 - clone the repository to a local or network drive.
 - run the install python script in the Tapp folder.
+
+
+CREDITS:
+
+- Ian Waters; addRimLight
+- Robert Nederhorst; addSubdivision/setSubdivision,createTechPasses,addObjectID
