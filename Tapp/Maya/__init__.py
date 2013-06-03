@@ -1,4 +1,5 @@
 import os
+import sys
 
 import maya.cmds as cmds
 
@@ -12,6 +13,10 @@ import menu
 import utils.framerate as uf
 
 uf.FrameratePrompt()
+
+#import Red9
+sys.path.append(os.path.dirname(__file__))
+cmds.evalDeferred('import Red9;Red9.start()')
 
 #opening command port for Eclipse
 try:

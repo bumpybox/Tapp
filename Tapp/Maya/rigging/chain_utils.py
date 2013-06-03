@@ -1,9 +1,3 @@
-'''
-
-- pass chainNode between solvers and write their nodes to the class
-
-'''
-
 import maya.cmds as cmds
 import maya.mel as mel
 

@@ -21,3 +21,5 @@ CREDITS:
 
 - Ian Waters; addRimLight
 - Robert Nederhorst; addSubdivision/setSubdivision,createTechPasses,addObjectID
+- Mark Jackson; Red9
+- Marco Giordano; MG_Tools
