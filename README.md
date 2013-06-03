@@ -23,3 +23,5 @@ CREDITS:
 - Robert Nederhorst; addSubdivision/setSubdivision,createTechPasses,addObjectID
 - Mark Jackson; Red9
 - Marco Giordano; MG_Tools
+- Paolo Dominici; ZvParentMaster
+- Morgan Loomis; ml_breakdownDragger,ml_hold,ml_keyValueDragger,ml_stopwatch,ml_utilities
