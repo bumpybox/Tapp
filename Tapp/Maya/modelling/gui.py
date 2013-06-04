@@ -1,14 +1,15 @@
 import os
+import webbrowser
 
 from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
+import maya.mel as mel
 import maya.OpenMayaUI as omu
 import sip
 
 import Tapp.Maya.modelling.utils as mmu
 
-uiPath=os.path.dirname(__file__)+'/resources/tapp_modelling.ui'
-#uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\modelling\resources/tapp_modelling.ui'
+uiPath=os.path.dirname(__file__)+'/resources/modelling.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -108,6 +109,17 @@ class Form(base,form):
             
         else:
             cmds.warning('Position Verts and Upvector Vert not loaded!')
+    
+    def on_scatter_pushButton_released(self):
+        
+        melPath=os.path.dirname(__file__)+'/icPolyScatter.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        mel.eval('icPolyScatter')
+    
+    def on_scatterInfo_pushButton_released(self):
+        
+        webbrowser.open('http://www.braverabbit.de/playground/?p=474')
 
 def show():
     #closing previous dialog

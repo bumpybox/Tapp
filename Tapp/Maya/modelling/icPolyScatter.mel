@@ -1,0 +1,992 @@
+//----------------------------------------------------------------------------------------------
+//
+//	icPolyScatter
+//
+//	SCRIPT:			icPolyScatter.mel
+//
+//	AUTHOR:			Ingo Clemens
+//					www.braverabbit.de
+//	DATE:			Jun 29, 2011
+//					created: Mar 29, 2011
+//
+//----------------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------------
+//
+//	USE AND MODIFY AT YOUR OWN RISK!!
+//
+//----------------------------------------------------------------------------------------------
+
+
+//----------------------------------------------------------------------------------------------
+//
+// main displace procedure
+//
+//----------------------------------------------------------------------------------------------
+
+global proc icPSdisplace ()
+{
+	float $maxFaceArea = `floatFieldGrp -q -v1 maxFaceArea`;
+	float $randomOffset = `floatFieldGrp -q -v1 offset`;
+	string $mesh = `textFieldButtonGrp -q -tx scatterSurface`;
+	string $scatterName = `textFieldGrp -q -tx scatterName`;
+	string $reduceMesh = $scatterName + "_reduceSurface";
+	string $workMesh = $scatterName + "_scatterSurface";
+
+	if (size($mesh) == 0 || $scatterName == "")
+	{
+		return;
+	}
+
+	//make a copy of the mesh object
+	string $copy[] = `duplicate -rr $reduceMesh`;
+	setAttr ($reduceMesh + ".v") 0;
+	$workMesh = `rename $copy[0] $workMesh`;
+
+	//get all vertices of the mesh
+	int $vCount[] = `polyEvaluate -v $workMesh`;
+
+	//create a locator and contrain it to the original surface
+	string $loc = $mesh + "_constrainLoc";
+	spaceLocator -n $loc;
+	geometryConstraint $mesh $loc;
+
+	icPSprogressWindow $vCount[0] "Displacing Vertices ...";
+	//go through every vertex and offset it's position by random
+	for ($i = 0; $i < $vCount[0]; $i ++)
+	{
+		progressBar -e -s 1 icProgress;
+
+		string $vertex = ($workMesh + ".vtx[" + $i + "]");
+		float $rand = rand(($randomOffset * -1),$randomOffset);
+		polyMoveVertex -ltx $rand -lty $rand -ch 0 $vertex;
+
+		//get the new position of the vertex and snap the locator to it
+		float $pos[] = `pointPosition $vertex`;
+		move -a $pos[0] $pos[1] $pos[2] $loc;
+
+		//snap the vertex to the locator
+		float $pos[] = `pointPosition $loc`;
+		move -a $pos[0] $pos[1] $pos[2] $vertex;
+	}
+	deleteUI icProgressWindow;
+
+	//select all faces with the maximum area
+	if (`checkBox -q -v subdivide` == 1)
+	{
+		select -r $workMesh;
+		polySelectConstraint -m 3 -t 8 -ga 1 -gab 0 $maxFaceArea;
+		string $sel[] = `ls -sl`;
+		if (size($sel) > 0)
+		{
+			InvertSelection;
+			string $poke[] = `polyPoke -ch 0`;
+			polySelectConstraint -ga 0;
+
+			//convert the selection to vertices
+			//to be able to conform them to the original surface
+			select (`polyListComponentConversion -ff -tv`);
+			$sel = `ls -sl -fl`;
+
+			icPSprogressWindow (size($sel)) "Conforming New Vertices ...";
+			//go through every vertex and offset it's position by random
+			for ($vertex in $sel)
+			{
+				progressBar -e -s 1 icProgress;
+
+				//get the new position of the vertex and snap the locator to it
+				float $pos[] = `pointPosition $vertex`;
+				move -a $pos[0] $pos[1] $pos[2] $loc;
+
+				//snap the vertex to the locator
+				float $pos[] = `pointPosition $loc`;
+				move -a $pos[0] $pos[1] $pos[2] $vertex;
+			}
+			deleteUI icProgressWindow;
+		}
+	}
+	select -cl;
+
+	delete $loc;
+
+	floatSliderButtonGrp -e -en 0 reducePercent;
+	button -e -en 0 displaceButton;
+	button -e -en 1 undoButton;
+
+	global int $icPSdisplaceButtonState;
+	$icPSdisplaceButtonState = 2;
+}
+
+//----------------------------------------------------------------------------------------------
+//
+// main scatter procedure
+//
+//----------------------------------------------------------------------------------------------
+
+global proc icPSscatter ()
+{
+	global string $icPSparticleName;
+	string $scatterName = `textFieldGrp -q -tx scatterName`;
+	string $instance = `textFieldButtonGrp -q -tx scatterObject`;
+	float $userRot = `floatSliderGrp -q -v randOrient`;
+	float $userTilt = `floatSliderGrp -q -v randTilt`;
+	float $userScale = `floatSliderGrp -q -v randScale`;
+	float $minDistance = `floatFieldGrp -q -v1 minDistance`;
+
+	if (size($scatterName) == 0 || size($instance) == 0)
+	{
+		return;
+	}
+
+	string $workMesh;
+	if (`objExists ($scatterName + "_scatterSurface")`)
+	{
+		$workMesh = $scatterName + "_scatterSurface";
+	}
+	else
+	{
+		$workMesh = $scatterName + "_reduceSurface";
+	}
+
+	//get all vertices of the mesh
+	int $vCount[] = `polyEvaluate -v $workMesh`;
+	int $ignoreList[];
+	//get all faces that are the square size of the user min distance
+	//all vertices that are within this min distance will get ignored
+	select -r $workMesh;
+	polySelectConstraint -m 3 -t 8 -ga 1 -gab 0 ($minDistance * $minDistance);
+	select (`polyListComponentConversion -ff -tv`);
+	string $smallVerts[] = `ls -sl -fl`;
+	polySelectConstraint -ga 0;
+	select -cl;
+
+	icPSprogressWindow (size($smallVerts)) "Calculating Density ...";
+
+	for ($sv = 0; $sv < size($smallVerts); $sv ++)
+	{
+		progressBar -e -s 1 icProgress;
+
+		int $listed = 0;
+		//get the current vertex number
+		string $vertString[];
+		tokenize $smallVerts[$sv] "[" $vertString;
+		int $currentVertex = `substring $vertString[1] 1 (size($vertString[1]) - 1)`;
+
+	    //if the vertex is not in the ignore list check the distance
+	    for ($i = 0; $i < size($ignoreList); $i ++)
+	    {
+	    	if ($currentVertex == $ignoreList[$i])
+	    	{
+	    		$listed = 1;
+	    	}	    
+	    }
+	    if ($listed == 0)
+	    {
+	    	//select the current vertex and grow the selection
+	    	select -r $smallVerts[$sv];
+	    	GrowPolygonSelectionRegion;
+	    	GrowPolygonSelectionRegion;
+	    	string $vertRegion[] = `ls -sl -fl`;
+
+	    	//go through every region vertex and check its distance
+	    	//only if its not the initial vertex the region grew from
+	    	for ($vr in $vertRegion)
+	    	{
+	    		//get the current region vertex number
+	    		tokenize $vr "[" $vertString;
+	    		int $currentRegionVertex = `substring $vertString[1] 1 (size($vertString[1]) - 1)`;
+
+	    		//only meaure the distance if the region vertex is not in the ignore list
+	    		int $rvListed = 0;
+	    		for ($i = 0; $i < size($ignoreList); $i ++)
+	    		{
+	    			if ($currentRegionVertex == $ignoreList[$i])
+	    			{
+	    				$rvListed = 1;
+	    			}	    
+	    		}
+
+	    		//if the region vertex is not the center vertex and should not be ignored
+	    		//calculate the distance
+	    		if ($currentRegionVertex != $currentVertex && $rvListed == 0)
+	    		{
+	    			float $distance;
+	    			float $value[];
+	    			float $centerPos[] = `pointPosition $smallVerts[$sv]`;
+
+	    			float $vertexPos[] = `pointPosition $vr`;
+
+	    			$value[0] = $centerPos[0] - $vertexPos[0];
+	    			$value[1] = $centerPos[1] - $vertexPos[1];
+	    			$value[2] = $centerPos[2] - $vertexPos[2];
+	    			$distance = $value[0]*$value[0] + $value[1]*$value[1] + $value[2]*$value[2];
+	    			$distance = sqrt($distance);
+
+	    			if ($distance <= $minDistance)
+	    			{
+	    				$ignoreList[size($ignoreList)] = $currentRegionVertex;
+	    			}
+	    		}
+	    	}
+	    }
+	}
+	select -cl;
+	deleteUI icProgressWindow;
+
+	int $omitVertCount = 0;
+	if (`checkBox -q -v includeVerts` == 1)
+	{
+		$omitVertCount = size($ignoreList);
+	}
+
+	//create a list of vertices that gets ignored based on the dropout setting
+	int $userDropout = `intSliderGrp -q -v dropout`;
+	int $ignoreVertSize = $vCount[0] / 100 * $userDropout;
+	for ($i = 0; $i < $vCount[0]; $i ++)
+	{
+		if (size($ignoreList) - $omitVertCount < $ignoreVertSize)
+		{
+			//create a new vertex index for ignoring
+			int $newVertID = rand(0,$vCount[0]);
+			//go through the ignore list and check if the id is already listed
+			int $idExists = 0;
+			for ($l in $ignoreList)
+			{
+				if ($l == $newVertID) $idExists = 1;
+			}
+			if ($idExists == 0)
+			{
+				$ignoreList[size($ignoreList)] = $newVertID;
+			}
+		}
+	}
+	int $ignoreListSort[] = `sort $ignoreList`;
+
+	//go through every vertex and create an instance
+	string $pointString = "particle ";
+	float $ppRotX[];
+	float $ppRotY[];
+	float $ppRotZ[];
+
+	icPSprogressWindow $vCount[0] "Scattering ...";
+
+	int $ignore;
+	int $nextInList = 0;
+	for ($i = 0; $i < $vCount[0]; $i ++)
+	{
+		progressBar -e -s 1 icProgress;
+
+		for ($vi = $nextInList; $vi < size($ignoreListSort); $vi ++)
+		{
+			if ($i == $ignoreListSort[$vi])
+			{
+				$ignore = 1;
+				$nextInList = $vi;
+			}
+		}
+		if ($ignore == 0)
+		{
+			//get the point positions and store them in the particle generation string
+			float $pos[] = `xform -q -ws -t ($workMesh + ".vtx[" + $i + "]")`;
+			$pointString = $pointString + " -p " + $pos[0] + " " + $pos[1] + " " + $pos[2];
+
+			if (`checkBox -q -v scatterAlign` == 1)
+			{
+				//create a locator at the vertex positions and align it to the vertex normal
+				string $loc[] = `spaceLocator`;
+				move -a $pos[0] $pos[1] $pos[2] $loc[0];
+				delete (`normalConstraint -aim 0 1 0 -u 0 1 0 -wut "vector" -wu 0 1 0 $workMesh $loc[0]`);
+				//apply the random rotation
+				float $randRot = rand(($userRot * -1),$userRot);
+				float $randTilt = rand(($userTilt * -1),$userTilt);
+				rotate -r -os $randTilt $randRot 0 $loc[0];
+				float $rot[] = `xform -q -ro $loc[0]`;
+				$ppRotX[size($ppRotX)] = $rot[0];
+				$ppRotY[size($ppRotY)] = $rot[1];
+				$ppRotZ[size($ppRotZ)] = $rot[2];
+				delete $loc[0];
+			}
+			else
+			{
+				//apply the random rotation
+				float $randRot = rand(($userRot * -1),$userRot);
+				float $randTilt = rand(($userTilt * -1),$userTilt);
+				$ppRotX[size($ppRotX)] = $randTilt;
+				$ppRotY[size($ppRotY)] = $randRot;
+				$ppRotZ[size($ppRotZ)] = 0;
+			}
+		}
+		$ignore = 0;
+	}
+
+	deleteUI icProgressWindow;
+
+	//create the particle object
+	$pointString = $pointString + " -c 1 -n " + $scatterName + "_particle";
+	string $particle[] = `eval($pointString)`;
+	$icPSparticleName = $particle[0];
+
+	//add the dynamic attributes
+	addAttr -ln "ppRotation0" -dt vectorArray $particle[1];
+	addAttr -ln "ppRotation" -dt vectorArray $particle[1];
+	addAttr -ln "ppScale0" -dt vectorArray $particle[1];
+	addAttr -ln "ppScale" -dt vectorArray $particle[1];
+	addAttr -ln "ppInstID0" -dt doubleArray $particle[1];
+	addAttr -ln "ppInstID" -dt doubleArray $particle[1];
+	float $particleID = 0;
+	for ($i = 0; $i < size($ppRotX); $i ++)
+	{
+		if (`intFieldGrp -q -v1 IDassign` > 0)
+		{
+			int $userIDCount = `intFieldGrp -q -v1 IDassign`;
+			float $intParticleID = rand(0, ($userIDCount - 0.01)); //($userIDCount - 1 + 0.99)
+			$particleID = $intParticleID;
+		}
+
+		particle -e -or $i -at ppRotation -vv $ppRotX[$i] $ppRotY[$i] $ppRotZ[$i] $particle[1];
+		//apply the random scale
+		float $randScale = rand((1 - $userScale),($userScale + 1));
+		particle -e -or $i -at ppScale -vv $randScale $randScale $randScale $particle[1];
+		if ($particleID > 1)
+		{
+			particle -e -or $i -at ppInstID -fv $particleID $particle[1];
+		}
+	}
+
+	string $instName = $scatterName + "_instancer";
+	if ($particleID == 0)
+	{
+		particleInstancer -n $instName -a -object $instance -position worldPosition -rotation ppRotation -scale ppScale -age age $particle[1];
+	}
+	else
+	{
+		particleInstancer -n $instName -a -object $instance -position worldPosition -rotation ppRotation -scale ppScale -objectIndex ppInstID -age age $particle[1];
+	}
+
+	floatSliderButtonGrp -e -en 0 reducePercent;
+	button -e -en 0 displaceButton;
+	button -e -en 0 undoButton;
+	button -e -en 0 scatterButton;
+	button -e -en 1 undoScatterButton;
+	button -e -en 1 addInstanceButton;
+	button -e -en 1 convertButton;
+
+	if(`checkBox -q -v scatterAlign` == 1)
+	{
+		floatSliderGrp -e -en 0 randOrient;
+		floatSliderGrp -e -en 0 randTilt;
+	}
+}
+
+//----------------------------------------------------------------------------------------------
+//
+// instance conversion
+//
+//----------------------------------------------------------------------------------------------
+
+global proc icPSconvertToObjects ()
+{
+	string $scatterName = `textFieldGrp -q -tx scatterName`;
+	string $instName = $scatterName + "_instancer";
+
+	string $instGeo[];
+	string $conn[] = `listConnections -s 1 -d 0 -c 1 $instName`;
+	for ($c = 0; $c < size($conn); $c ++)
+	{
+		if (`gmatch $conn[$c] "*inputHierarchy*"`)
+		{
+			string $connString[];
+			tokenize $conn[$c] "[" $connString;
+			int $instID = `substring $connString[1] 1 (size($connString[1]) - 1)`;
+			$instGeo[size($instGeo)] = $conn[$c + 1];
+		}
+	}
+
+	createNode transform -n ($scatterName + "_geometry_grp");
+	if (`radioButtonGrp -q -sl convertType` != 1)
+	{
+		createNode transform -n ($scatterName + "_sourceGeo_grp");
+		parent ($scatterName + "_sourceGeo_grp") ($scatterName + "_geometry_grp");
+	}
+
+	for ($geo in $instGeo)
+	{
+		if (`radioButtonGrp -q -sl convertType` != 1)
+		{
+			parent $geo ($scatterName + "_sourceGeo_grp");
+			setAttr ($scatterName + "_sourceGeo_grp.v") 0;
+			createNode transform -n ($scatterName + "_" + $geo + "_scatter_grp");
+			parent ($scatterName + "_" + $geo + "_scatter_grp") ($scatterName + "_geometry_grp");
+		}
+		else
+		{
+			parent $geo ($scatterName + "_geometry_grp");
+		}
+	}
+
+	string $shape[] = `listRelatives -c -s ($scatterName + "_particle")`;
+	int $particleCount = `getAttr ($shape[0] + ".count")`;
+
+	delete $instName;
+
+	icPSprogressWindow $particleCount "Converting ...";
+
+	for ($i = 0; $i < $particleCount; $i ++)
+	{
+		progressBar -e -s 1 icProgress;
+
+		float $pos[] = `particle -or $i -at position -q $shape[0]`;
+		float $rot[] = `particle -or $i -at ppRotation -q $shape[0]`;
+		float $scale[] = `particle -or $i -at ppScale -q $shape[0]`;
+		float $ppFloatID[] = `particle -or $i -at ppInstID -q $shape[0]`;
+		int $ppID = $ppFloatID[0];
+
+		string $inst[];
+		if ($ppID < size($instGeo))
+		{
+			if (`radioButtonGrp -q -sl convertType` == 1)
+			{
+				$inst = `instance $instGeo[$ppID]`;
+			}
+			else
+			{
+				$inst = `duplicate -rr -rc $instGeo[$ppID]`;
+			}
+
+			setAttr ($inst[0] + ".rotateOrder") 0;
+			move -a $pos[0] $pos[1] $pos[2] $inst[0];
+			rotate -a $rot[0] $rot[1] $rot[2] $inst[0];
+			scale -a $scale[0] $scale[1] $scale[2] $inst[0];
+
+			if (`radioButtonGrp -q -sl convertType` != 1)
+			{
+				parent $inst[0] ($scatterName + "_" + $instGeo[$ppID] + "_scatter_grp");
+			}
+		}
+	}
+
+	if (`radioButtonGrp -q -sl convertType` == 1)
+	{
+		for ($geo in $instGeo) setAttr ($geo + ".v") 0;
+	}
+
+	deleteUI icProgressWindow;
+
+	delete ($scatterName + "_particle");
+
+	button -e -en 0 undoScatterButton;
+	button -e -en 0 addInstanceButton;
+	button -e -en 0 convertButton;
+
+	select -cl;
+}
+
+//----------------------------------------------------------------------------------------------
+//
+// UI procedures
+//
+//----------------------------------------------------------------------------------------------
+
+global proc icPSgetObject ( string $fieldName )
+{
+	string $selectedObject[];
+
+	$selectedObject = `ls -sl -type transform`;
+	if ($selectedObject[0] != "")
+	{
+		if ($fieldName == "scatterSurface")
+		{
+			floatSliderGrp -e -v 0 reducePercent;
+			textFieldButtonGrp -e -tx $selectedObject[0] $fieldName;
+			icPSapplyReduction;
+			icPSgetFaceArea;
+			icPStoggleShadedWireframe 1;
+			textFieldGrp -e -en 0 scatterName;
+			floatSliderButtonGrp -e -en 1 reducePercent;
+			button -e -en 1 displaceButton;
+			textFieldButtonGrp -e -en 1 scatterObject;
+			button -e -en 1 cleanupButton;
+		}
+		else if ($fieldName == "scatterObject")
+		{
+			textFieldButtonGrp -e -tx $selectedObject[0] $fieldName;
+			button -e -en 1 scatterButton;
+			setAttr ($selectedObject[0] + ".rotateOrder") 1;
+		}
+	}
+	else
+	{
+		error "Please select the transform node of the geometry to displace.";
+	}
+}
+
+global proc icPSgetFaceArea ()
+{
+	string $mesh = `textFieldGrp -q -tx scatterName` + "_reduceSurface";
+	string $shape[] = `listRelatives -c -s $mesh`;
+	if (`nodeType $shape[0]` == "mesh")
+	{
+		int $faceCount[] = `polyEvaluate -f $mesh`;
+		int $vCount[] = `polyEvaluate -v $mesh`;
+		intFieldGrp -e -v1 $vCount[0] vertexCount;
+		float $area[];
+
+		int $faceCountMax = $faceCount[0] / 5;
+		icPSprogressWindow $faceCountMax "Calculating area ...";
+
+		//go through every fifth face and get the area
+		for ($c = 0; $c < $faceCount[0]; $c += 5)
+		{
+			select ($mesh + ".f[" + $c + "]");
+			float $bbox[] = `polyEvaluate -bc`;
+			$area[size($area)] = ($bbox[0] - $bbox[1]) * ($bbox[4] - $bbox[5]);
+
+			progressBar -e -s 1 icProgress;
+		}
+		//calculate the average area and the edge length
+		float $sumArea;
+		for ($a in $area)
+		{
+			$sumArea = $sumArea + $a;
+		}
+		$sumArea = $sumArea / size($area);
+		float $edge = sqrt($sumArea) / 3.0;
+		float $minDist = $sumArea / 3.0;
+		floatFieldGrp -e -v1 $sumArea maxFaceArea;
+		floatFieldGrp -e -v1 $edge offset;
+		floatFieldGrp -e -v1 $minDist minDistance;
+		select -cl;
+
+		deleteUI icProgressWindow;
+	}
+}
+
+global proc icPSapplyReduction ()
+{
+	string $mesh = `textFieldButtonGrp -q -tx scatterSurface`;
+	string $scatterName = `textFieldGrp -q -tx scatterName`;
+
+	//make a copy of the mesh object
+	string $copy[] = `duplicate -rr $mesh`;
+	setAttr ($mesh + ".v") 0;
+	$workMesh = `rename $copy[0] ($scatterName + "_reduceSurface")`;
+
+	//apply a poly reduce
+	string $pReduce[] = `polyReduce -p 0 -com 1 -uwt 0 -cwt 0 -kqw 1 -kb 1 -kmb 1 -kev 1 -khe 1 -t 0 -rpo 1 -cr 1 -ch 1 $workMesh`;
+	rename $pReduce[0] ($workMesh + "_reduce");
+}
+
+global proc icPSsetReductionPercent ()
+{
+	string $pReduce = `textFieldGrp -q -tx scatterName` + "_reduceSurface_reduce";
+	if (`objExists $pReduce`)
+	{
+		float $value = `floatSliderButtonGrp -q -v reducePercent`;
+		setAttr ($pReduce + ".p") $value;
+		if ($value == 0)
+		{
+			checkBox -e -en 0 includeVerts;
+		}
+		else
+		{
+			checkBox -e -en 1 includeVerts;
+		}
+	}
+	icPSgetFaceArea;
+}
+
+global proc icPSaePolyReduce ()
+{
+	string $pReduce = `textFieldGrp -q -tx scatterName` + "_reduceSurface_reduce";
+	select $pReduce;
+	openAEWindow;
+}
+
+global proc icPSundoDisplace ()
+{
+	string $mesh = `textFieldButtonGrp -q -tx scatterSurface`;
+	string $nameString = `textFieldGrp -q -tx scatterName`;
+	string $reduceMesh = ($nameString + "_reduceSurface");
+	string $scatterMesh = ($nameString + "_scatterSurface");
+	if (`objExists $scatterMesh`)
+	{
+		delete $scatterMesh;
+	}
+	if (`objExists $reduceMesh`)
+	{
+		setAttr ($reduceMesh + ".v") 1;
+	}
+
+	floatSliderButtonGrp -e -en 1 reducePercent;
+	button -e -en 1 displaceButton;
+	button -e -en 0 undoButton;
+
+	global int $icPSdisplaceButtonState;
+	$icPSdisplaceButtonState = 1;
+}
+
+global proc icPSundoScatter ()
+{
+	global string $icPSparticleName;
+	string $instance = `textFieldGrp -q -tx scatterName` + "_instancer";
+	delete $icPSparticleName;
+	delete $instance;
+
+	floatSliderButtonGrp -e -en 1 reducePercent;
+	button -e -en 1 scatterButton;
+	button -e -en 0 undoScatterButton;
+	button -e -en 0 addInstanceButton;
+	button -e -en 0 convertButton;
+
+	global int $icPSdisplaceButtonState;
+	if ($icPSdisplaceButtonState == 1)
+	{
+		button -e -en 1 displaceButton;
+	}
+	else
+	{
+		button -e -en 1 undoButton;
+	}
+
+	floatSliderGrp -e -en 1 randOrient;
+	floatSliderGrp -e -en 1 randTilt;
+}
+
+global proc icPScleanup ()
+{
+	string $mesh = `textFieldButtonGrp -q -tx scatterSurface`;
+	string $nameString = `textFieldGrp -q -tx scatterName`;
+	string $scatterMesh = ($nameString + "_scatterSurface");
+	string $reduceMesh = ($nameString + "_reduceSurface");
+	//cleanup
+	if (`objExists $scatterMesh`) delete $scatterMesh;
+	if (`objExists $reduceMesh`) delete $reduceMesh;
+	setAttr ($mesh + ".v") 1;
+	icPStoggleShadedWireframe 0;
+	textFieldButtonGrp -e -tx "" scatterSurface;
+	floatSliderGrp -e -v 0 reducePercent;
+
+	textFieldGrp -e -en 1 -tx "" scatterName;
+	textFieldGrp -e -en 1 -tx "" scatterObject;
+	textFieldButtonGrp -e -en 0 scatterSurface;
+	intFieldGrp -e -v1 0 vertexCount;
+	floatSliderButtonGrp -e -en 0 reducePercent;
+	button -e -en 0 displaceButton;
+	button -e -en 0 scatterButton;
+	textFieldButtonGrp -e -en 0 scatterObject;
+	button -e -en 0 cleanupButton;
+	button -e -en 0 convertButton;
+	button -e -en 0 undoScatterButton;
+	button -e -en 0 addInstanceButton;
+	checkBox -e -en 0 -v 0 includeVerts;
+	floatSliderGrp -e -en 1 randOrient;
+	floatSliderGrp -e -en 1 randTilt;
+}
+
+global proc icPSchangeScale ()
+{
+	global string $icPSparticleName;
+	if (!`objExists $icPSparticleName`) return;
+
+	string $instance = `textFieldGrp -q -tx scatterName` + "_instancer";
+	float $userScale = `floatSliderGrp -q -v randScale`;
+
+	string $shape[] = `listRelatives -c -s $icPSparticleName`;
+	int $particleCount = `getAttr ($shape[0] + ".count")`;
+	for ($i = 0; $i < $particleCount; $i ++)
+	{
+		//apply the random scale
+		float $randScale = rand((1 - $userScale),($userScale + 1));
+		particle -e -or $i -at ppScale -vv $randScale $randScale $randScale $shape[0];
+	}
+	particleInstancer -e -n $instance -scale "" $shape[0];
+	particleInstancer -e -n $instance -scale ppScale $shape[0];
+}
+
+global proc icPSchangeIDs ()
+{
+	global string $icPSparticleName;
+	if (!`objExists $icPSparticleName`) return;
+
+	string $instance = `textFieldGrp -q -tx scatterName` + "_instancer";
+	float $userScale = `floatSliderGrp -q -v randScale`;
+
+	string $shape[] = `listRelatives -c -s $icPSparticleName`;
+	int $particleCount = `getAttr ($shape[0] + ".count")`;
+	for ($i = 0; $i < $particleCount; $i ++)
+	{
+		float $particleID = 0;
+		if (`intFieldGrp -q -v1 IDassign` > 0)
+		{
+			int $userIDCount = `intFieldGrp -q -v1 IDassign`;
+			$particleID = rand(0, ($userIDCount - 0.01)); //($userIDCount - 1 + 0.99)
+		}
+
+		particle -e -or $i -at ppInstID -fv $particleID $shape[0];
+	}
+
+	particleInstancer -e -n $instance -objectIndex "" $shape[0];
+	particleInstancer -e -n $instance -objectIndex ppInstID $shape[0];
+}
+
+global proc icPSchangeRotation ( string $mode )
+{
+	global string $icPSparticleName;
+	if (!`objExists $icPSparticleName`) return;
+
+	string $instance = `textFieldGrp -q -tx scatterName` + "_instancer";
+	float $userRot = `floatSliderGrp -q -v randOrient`;
+	float $userTilt = `floatSliderGrp -q -v randTilt`;
+
+	string $shape[] = `listRelatives -c -s $icPSparticleName`;
+	int $particleCount = `getAttr ($shape[0] + ".count")`;
+	for ($i = 0; $i < $particleCount; $i ++)
+	{
+		float $randRot;
+		float $randTilt;
+		float $randBank;
+		//apply the random rotation
+		if ($mode == 1)
+		{
+			float $rot[] = `particle -or $i -at ppRotation -q $shape[0]`;
+			$randRot = rand(($userRot * -1),$userRot);
+			$randTilt = $rot[0];
+			$randBank = $rot[2];
+		}
+		else
+		{
+			float $rot[] = `particle -or $i -at ppRotation -q $shape[0]`;
+			$randRot = $rot[1];
+			$randTilt = rand(($userTilt * -1),$userTilt);
+			$randBank = rand(($userTilt * -1),$userTilt);
+		}
+		particle -e -or $i -at ppRotation -vv $randTilt $randRot $randBank $shape[0];
+	}
+	particleInstancer -e -n $instance -rotation "" $shape[0];
+	particleInstancer -e -n $instance -rotation ppRotation $shape[0];
+}
+
+global proc icPSchangePosition ()
+{
+	global string $icPSparticleName;
+	if (!`objExists $icPSparticleName`) return;
+
+	string $instance = `textFieldGrp -q -tx scatterName` + "_instancer";
+	float $userPos = `floatFieldGrp -q -v1 posOffset`;
+
+	string $shape[] = `listRelatives -c -s $icPSparticleName`;
+	int $particleCount = `getAttr ($shape[0] + ".count")`;
+	for ($i = 0; $i < $particleCount; $i ++)
+	{
+		//apply the random rotation
+		float $pos[] = `particle -or $i -at position -q $shape[0]`;
+		particle -e -or $i -at position -vv $pos[0] ($pos[1] + $userPos) $pos[2] $shape[0];
+	}
+	particleInstancer -e -n $instance -position "" $shape[0];
+	particleInstancer -e -n $instance -position worldPosition $shape[0];
+
+	floatFieldGrp -e -v1 0 posOffset;
+}
+
+global proc icPSaddToInstance ()
+{
+	global string $icPSparticleName;
+	if (!`objExists $icPSparticleName`) return;
+
+	string $nameString = `textFieldGrp -q -tx scatterName`;
+
+	string $shape[] = `listRelatives -c -s $icPSparticleName`;
+
+	string $selectedObject[] = `ls -sl -type transform`;
+	if ($selectedObject[0] != "")
+	{
+		for ($new in $selectedObject)
+		{
+			string $instancer = $nameString + "_instancer";
+			particleInstancer -e -n $instancer -object $new -a $shape[0];
+		}
+	}
+}
+
+global proc icPSprogressWindow ( int $max, string $label )
+{
+    string $progressWin = "icProgressWindow";
+    if (`window -exists $progressWin`)
+	{
+		deleteUI $progressWin;
+	}
+
+	if ($max == 0) $max = 1;
+
+    window -t "Processing" -s 0 -tb 0 $progressWin;
+
+    columnLayout;
+        rowColumnLayout -nc 3 -cw 1 10 -cw 2 300 -cw 3 10;
+            text -l "";
+            text -l $label icProgressLabel;
+            text -l "" -h 30;
+            text -l "";
+            string $progressBar = `progressBar -max $max -width 200 icProgress`;
+            text -l "";
+            text -l "";
+
+    showWindow $progressWin;
+}
+
+global proc icPStoggleShadedWireframe ( int $mode )
+{
+	global int $icPSuserWireframe;
+	string $modelPanel;
+	//get the panel with the current focus
+	string $panelList[] = `getPanel -all`;
+	for ($panel in $panelList)
+	{
+		if (`getPanel -to $panel` == "modelPanel")
+		{
+			if ($mode == 1)
+			{
+				$icPSuserWireframe = `modelEditor -q -wos $panel`;
+				setWireframeOnShadedOption $mode $panel;
+			}
+			else
+			{
+				setWireframeOnShadedOption $icPSuserWireframe $panel;
+			}
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+
+global proc icPSactivateSelection ()
+{
+	textFieldButtonGrp -e -en 1 scatterSurface;
+}
+
+//----------------------------------------------------------------------------------------------
+//
+// window procedure
+//
+//----------------------------------------------------------------------------------------------
+
+global proc icPolyScatter ()
+{
+	//declare a new window name
+	string $win = "icPolyScatter";
+
+	//is the window already open?
+	if (`window -exists $win`)
+	{
+		deleteUI $win;
+	}
+
+	window -t "Poly Scatter" -w 400 -h 145 $win;
+	if (`windowPref -exists $win`)
+	{
+		windowPref -e -wh 400 145 $win;
+	}
+
+	//annotations
+	string $ann1 = "Displays the maximum face area that will not be subdivided. This value is based on the average area of every 5th face. Higher values lead to less faces being subdivided.";
+	string $ann2 = "Defines the maximum offset for a vertex when displaced. The calculated value is a 3rd of the average edge length.";
+	string $ann3 = "Subdivides any face which area is above the given \"Max Face Area\" value.";
+	string $ann4 = "The maximum amount in both directions that each instance gets rotated along the y axis.";
+	string $ann5 = "The maximum uniform scale amount that modifies the original scale of the scatter object.";
+	string $ann6 = "Generates holes in the scatter. The higher the value the higher the chance that a vertex is skipped.";
+	string $ann7 = "Set to the amount of different objects to instance. Automatically assigns IDs to the instancer to randomly assign different scatter objects.";
+	string $ann8 = "Rotates each instance to make it perpendicular to the surface.";
+	string $ann9 = "The maximum amount in both directions that each instance gets tilted along the x axis.";
+	string $ann10 = "The minimum distance the instances should be apart from another.";
+	string $ann11 = "On: The dropout percentage is calculated from all vertices, including the vertices from small faces. This results in a little sparser scattering. Works only with the reduction feature.";
+	string $ann12 = "Offsets the instances to above or below the surface.";
+
+	columnLayout -co "both" 10;
+		text -h 10 -l "";
+		textFieldGrp -l "Scatter Name" -cl2 "left" "left"
+					-cw2 80 260 -ct2 "left" "both" -co2 0 10 -cc icPSactivateSelection scatterName;
+		text -h 10 -l "";
+		separator;
+		textFieldButtonGrp -l "Scatter Surface" -bl "Select" -cl3 "left" "left" "left"
+					-cw3 80 260 40 -ct3 "left" "both" "left" -co3 0 10 0
+					-bc ("icPSgetObject scatterSurface") -en 0 scatterSurface;
+		text -h 5 -l "";
+		intFieldGrp -l "Vertices" -cw2 90 100 -nf 1
+					-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" -v1 0 -en 0 vertexCount;
+		text -h 5 -l "";
+		floatSliderButtonGrp -l "Reduce %" -bl "Edit" -en 0 -f 1 -cw4 80 50 167 80 -ct4 "left" "both" "both" "left" -co4 0 10 0 10
+					-min 0 -max 100 -cc icPSsetReductionPercent -bc icPSaePolyReduce reducePercent;
+		text -h 5 -l "";
+
+		floatFieldGrp -l "Max Face Area" -cw2 90 100 -nf 1 -pre 2
+					-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" -v1 1 -ann $ann1 maxFaceArea;
+		text -h 5 -l "";
+		floatFieldGrp -l "Random Offset" -cw2 90 100 -nf 1 -pre 2
+					-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" -v1 1 -ann $ann2 offset;
+
+		text -h 5 -l "";
+		checkBox -l "Subdivide Large Faces" -v 0 -ann $ann3 subdivide;
+		text -h 10 -l "";
+
+		rowColumnLayout -nc 2 -cw 1 190 -cw 2 186 -cs 2 10;
+			button -l "Displace And Subdivide" -w 190 -c "icPSdisplace" -en 0 displaceButton;
+			button -l "Undo Displace" -w 186 -c "icPSundoDisplace" -en 0 undoButton;
+		setParent ..;
+
+		text -h 10 -l "";
+		textFieldButtonGrp -l "Scatter Object" -bl "Select" -cl3 "left" "left" "left"
+					-cw3 80 260 40 -ct3 "left" "both" "left" -co3 0 10 0
+					-bc ("icPSgetObject scatterObject") -en 0 scatterObject;
+		text -h 5 -l "";
+		floatFieldGrp -l "Position Offset" -cw2 90 100 -nf 1 -pre 2
+						-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" -v1 0 -cc "icPSchangePosition" -ann $ann12 posOffset;
+		text -h 5 -l "";
+		floatSliderGrp -l "Rotation Offset" -f 1 -cw3 80 50 183 -ct3 "left" "left" "both" -co3 0 10 5 
+						-min 0 -max 180 -v 90 -pre 2 -cc ("icPSchangeRotation 1") -ann $ann4 randOrient;
+		text -h 5 -l "";
+		floatSliderGrp -l "Tilt Offset" -f 1 -cw3 80 50 183 -ct3 "left" "left" "both" -co3 0 10 5 
+						-min 0 -max 45 -v 5 -pre 2 -cc ("icPSchangeRotation 2") -ann $ann9 randTilt;
+		text -h 5 -l "";
+		floatSliderGrp -l "Scale Offset" -f 1 -cw3 80 50 183 -ct3 "left" "left" "both" -co3 0 10 5 
+						-min 0 -max 1 -v 0.2 -pre 2 -cc "icPSchangeScale" -ann $ann5 randScale;
+		text -h 5 -l "";
+		floatFieldGrp -l "Min Distance" -cw2 90 100 -nf 1 -pre 2
+						-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" -v1 1 -ann $ann10 minDistance;
+		text -h 5 -l "";
+		intSliderGrp -l "Dropout %" -f 1 -cw3 80 50 183 -ct3 "left" "left" "both" -co3 0 10 5 
+						-min 0 -max 100 -v 25 -ann $ann6 dropout;
+		text -h 5 -l "";
+		checkBox -l "Include Small Area Vertices In Dropout (less density)" -en 0 -v 0 -ann $ann11 includeVerts;
+		text -h 5 -l "";
+		intFieldGrp -l "Assign IDs" -cw2 90 100 -nf 1
+					-ct2 "left" "left" -co2 0 0 -cl2 "left" "left" 
+					-v1 0 -cc "icPSchangeIDs" -ann $ann7 IDassign;
+		text -h 5 -l "";
+		checkBox -l "Align To Surface" -v 0 -ann $ann8 scatterAlign;
+		text -h 10 -l "";
+
+		rowColumnLayout -nc 2 -cw 1 190 -cw 2 186 -cs 2 10;
+			button -l "Scatter" -w 190 -en 0 -c "icPSscatter" scatterButton;
+			button -l "Undo Scatter" -w 186 -en 0 -c "icPSundoScatter" undoScatterButton;
+		setParent ..;
+
+		text -h 15 -l "";
+		button -l "Add Selection To Instancer" -w 387 -en 0 -c "icPSaddToInstance" addInstanceButton;
+		text -h 15 -l "";
+		button -l "Convert Particle Instances To Objects" -w 387 -en 0 -c "icPSconvertToObjects" convertButton;
+		text -h 5 -l "";
+		radioButtonGrp -nrb 2 -l "Convert Type" -h 20 -cl3 "left" "left" "left"
+				-cw3 90 150 100 -ct3 "left" "both" "both" 
+				-la2 "Instance" "Copy" -sl 1 convertType;
+		text -h 15 -l "";
+		button -l "Cleanup" -w 387 -en 0 -c "icPScleanup" cleanupButton;
+		text -h 10 -l "";
+	setParent ..;
+
+	//make the window visible
+	showWindow $win;
+
+	global int $icPSdisplaceButtonState;
+	$icPSdisplaceButtonState = 1;
+}

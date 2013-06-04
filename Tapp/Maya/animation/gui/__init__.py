@@ -15,7 +15,7 @@ import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
 import Tapp.Maya.animation.utils.ml_hold as maumlh
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 
-uiPath=os.path.dirname(__file__)+'/resources/gui.ui'
+uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up

@@ -415,7 +415,6 @@ class solver():
 #chain=buildChain('|clavicle')
 #solver(chain).build('all',blend=True)
 mRig=r9Meta.MetaRig()
+mRig.addChildMetaNode('something', 'else')
 mRig.CTRL_Prefix='cnt'
-print mRig.CTRL_Prefix
-spine=mRig.addMetaSubSystem('spine', 'Centre')
-spine.addRigCtrl('locator1','Root')
+spine=mRig.addMetaSubSystem('spine', 'Centre', attr='c_spine')
