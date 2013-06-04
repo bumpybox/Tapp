@@ -1,6 +1,4 @@
-import os
-
-from PyQt4 import QtCore, QtGui,uic
+from PyQt4 import QtCore, QtGui
 import maya.cmds as cmds
 import maya.OpenMayaUI as omu
 import sip

@@ -3,6 +3,7 @@ import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 import MG_Tools.python.rigging.script.MG_softIk as mpsi
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 
 class ChainNode(object):
     
@@ -295,6 +296,7 @@ class solver():
     
     def __init__(self,chain):
         
+        self.chain=chain
         self.fk_chains=[]
         self.ik_chains=[]
         self.spline_chains=[]
@@ -394,12 +396,12 @@ class solver():
             cnt=mru.Pin('extra_cnt')
             
             #create blend sockets
-            self.blend(chain,cnt)
+            self.blend(self.chain,cnt)
             
             #setup extra control
-            mru.Snap(chain.name,cnt)
+            mru.Snap(self.chain.name,cnt)
             
-            cmds.parent(cnt,chain.getLast(chain)[0].socket['blend'])
+            cmds.parent(cnt,self.chain.getLast(self.chain)[0].socket['blend'])
             cmds.rotate(0,90,0,cnt,r=True,os=True)
             
             if cmds.objExists(asset+'.ik_stretch'):
@@ -408,7 +410,12 @@ class solver():
                 
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
         
-        cmds.delete(chain.name)
+        cmds.delete(self.chain.name)
 
-chain=buildChain('|clavicle')
-solver(chain).build('all',blend=True)
+#chain=buildChain('|clavicle')
+#solver(chain).build('all',blend=True)
+mRig=r9Meta.MetaRig()
+mRig.CTRL_Prefix='cnt'
+print mRig.CTRL_Prefix
+spine=mRig.addMetaSubSystem('spine', 'Centre')
+spine.addRigCtrl('locator1','Root')
