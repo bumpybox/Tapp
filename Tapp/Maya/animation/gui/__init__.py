@@ -145,7 +145,10 @@ class Form(base,form):
     
     def on_tools_keycleanuphelp_pushButton_released(self):
         
-        pass
+        msg='This cleans any static channels and redundant keys.\n'
+        msg+='If nothing is selected, everything in the scene gets cleaned.'
+        
+        cmds.confirmDialog( title='Key Clean Up Info', message=msg,defaultButton='OK')
     
     def on_tools_exportanimation_pushButton_released(self):
         
@@ -162,6 +165,27 @@ class Form(base,form):
     def on_tools_importanimationhelp_pushButton_released(self):
         
         pass
+    
+    def on_tools_changeRotationOrder_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing zoo utils
+        melPath=parentDir+'/utils/zooUtils.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #sourcing zoo change
+        melPath=parentDir+'/utils/zooChangeRoo.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        mel.eval('zooChangeRoo %s' % self.tools_changeRotationOrder_comboBox.currentText())
+    
+    def on_tools_changeRotationOrderHelp_pushButton_released(self):
+        
+        webbrowser.open('http://www.creativecrash.com/maya/downloads/scripts-plugins/animation/c/zoochangeroo')
 
 def show():
     #delete previous ui

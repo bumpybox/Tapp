@@ -1,3 +1,5 @@
+import os
+
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -415,6 +417,6 @@ class solver():
 #chain=buildChain('|clavicle')
 #solver(chain).build('all',blend=True)
 mRig=r9Meta.MetaRig()
-mRig.addChildMetaNode('something', 'else')
-mRig.CTRL_Prefix='cnt'
-spine=mRig.addMetaSubSystem('spine', 'Centre', attr='c_spine')
+mRig.addChildMetaNode('MetaClass', 'something')
+#mRig.CTRL_Prefix='cnt'
+#spine=mRig.addMetaSubSystem('spine', 'Centre', attr='c_spine')

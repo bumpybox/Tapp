@@ -1,0 +1,275 @@
+//this script is a collection of commonly used functions
+
+
+/*
+super simple, returns the first entry in an array.
+
+this is useful for commands that only return a single string, but return an array
+example: string $constraint = zooUtilsReturnElement( 0,`parentConstraint -mo $obj2 $obj1` );
+example: string $parent = zooUtilsReturnElement( 0,`listRelatives -p $obj2` );
+*/
+global proc string zooUtilsReturnElement( int $entry, string $array[] ) {
+	if( $entry<0 ) $entry = `size $array` + $entry;
+	return $array[$entry];
+	}
+
+
+//removes duplicate entries from a string array
+global proc string[] zooUtilsRemoveDupeArrayItems_string( string $array[] ) {
+	string $returnArray[];
+	string $prevVal = $array[0];
+
+	$returnArray[0] = $array[0];
+	for( $n = 1; $n < `size $array`; $n++ ) {
+		if( $prevVal != $array[$n] ) $returnArray[( `size $returnArray` )] = $array[$n];
+		$prevVal = $array[$n];
+		}
+
+	return $returnArray;
+	}
+
+
+//removes duplicate entries from a float array
+global proc float[] zooUtilsRemoveDupeArrayItems_float( float $array[] ) {
+	float $returnArray[];
+	float $prevVal = $array[0];
+
+	$returnArray[0] = $array[0];
+	for( $n = 1; $n < `size $array`; $n++ ) {
+		if( $prevVal != $array[$n] ) $returnArray[( `size $returnArray` )] = $array[$n];
+		$prevVal = $array[$n];
+		}
+
+	return $returnArray;
+	}
+
+
+//adds array2 to the end of array1
+global proc string[] zooUtilsAddArray( string $array1[], string $array2[] ) {
+	for( $entry in $array2 ) $array1[( `size $array1` )] = $entry;
+	return $array1;
+	}
+
+
+//subtracts array 2 from array 1
+global proc string[] zooUtilsSubtractArray( string $array1[], string $array2[] ) {
+	string $returnArray[];
+	for( $entry1 in $array1 ){
+		int $isInArray = 0;
+		for( $entry2 in $array2 ){
+			if( $entry1 == $entry2 ) $isInArray = 1;
+			}
+		if( !$isInArray ) $returnArray[( `size $returnArray` )] = $entry1;
+		}
+	return $returnArray;
+	}
+
+
+//reverses the order of an array
+global proc string[] zooUtilsReverseArray( string $array[] ){
+	string $reversedArray[];
+	int $arraySize = `size $array`;
+
+	for( $n = 0; $n < $arraySize; $n++ ) $reversedArray[( $arraySize - 1 - $n )] = $array[$n];
+	return $reversedArray;
+	}
+
+
+//takes an array, and a max and min value and returns a cropped array - ie all values in the returned array lie inclusively between the max and min values
+global proc float[] zooUtilsCropArray( float $array[], float $min, float $max ) {
+	float $cropped[];
+	for( $entry in $array ) if( $entry >= $min && $entry <= $max ) $cropped[( `size $cropped` )] = $entry;
+	return $cropped;
+	}
+
+
+/*
+takes an array of entries (as in array indicies), and shifts them in the direction specified.
+------------
+
+example: zooUtilsReorderArray { "a,"b","c","d","e" } {3,4} up
+produces the resulting array:  { a,c,d,b,e }
+
+example: zooUtilsReorderArray { "a,"b","c","d","e" } {1,2,5} up
+produces the resulting array:  { b,c,e,d,a }
+*/
+global proc string[] zooUtilsArrayReorder( string $array[], int $entries[], string $dir ) {
+	string $newArray[] = $array;
+	int $gaps[];
+	int $be;
+
+	$entries = `sort $entries`;
+	$gaps[0] = $entries[0];
+	for( $n = 0; $n < `size $entries`-1; $n++ ) if( $entries[$n]+1 != $entries[( $n+1 )] ) {
+		$gaps[( `size $gaps` )] = $entries[$n];
+		$gaps[( `size $gaps` )] = $entries[( $n+1 )];
+		}
+	$gaps[( `size $gaps` )] = $entries[( `size $entries`-1 )];
+
+	for( $n = 0; $n < `size $gaps`; $n+=2 ) if( $dir == "up" ) $newArray = `zooUtilsArrayShiftUp $newArray $gaps[$n] $gaps[( $n+1 )]`;
+	for( $n = 0; $n < `size $gaps`; $n+=2 ) if( $dir == "down" ) $newArray = `zooUtilsArrayShiftDown $newArray $gaps[$n] $gaps[( $n+1 )]`;
+
+	return $newArray;
+	}
+
+
+//shifts entries inclusive from the start index, to the end index up (ie towards zero) in an array
+global proc string[] zooUtilsArrayShiftUp( string $array[], int $startIndex, int $endIndex ) {
+	string $newArray[];
+	int $displaced = $startIndex-1;
+	int $num = ( $endIndex-$startIndex )+1;
+
+	if( $startIndex == 0 ) return $array;
+
+	//copy the original array to the newArray variable
+	for( $n = 0; $n < `size $array`; $n++ ) $newArray[$n] = $array[$n];
+
+	int $i = $startIndex-1;
+	for( $n = 0; $n < $num; $n++, $i++) $newArray[$i] = $array[( $i+1 )];
+
+	$newArray[$endIndex] = $array[$displaced];
+	return $newArray;
+	}
+
+
+//shifts entries inclusive from the start index, to the end index down (ie away from zero) in an array
+global proc string[] zooUtilsArrayShiftDown( string $array[], int $startIndex, int $endIndex ) {
+	string $newArray[];
+	int $displaced = $endIndex+1;
+	int $num = ( $endIndex-$startIndex )+1;
+
+	if( $endIndex >= `size $array` ) return $array;
+
+	//copy the original array to the newArray variable
+	for( $n = 0; $n < `size $array`; $n++ ) $newArray[$n] = $array[$n];
+
+	int $i = $startIndex+$num;
+	for( $n = 0; $n < $num; $i--, $n++ ) $newArray[$i] = $array[( $i-1 )];
+
+	$newArray[$startIndex] = $array[$displaced];
+	return $newArray;
+	}
+
+
+//takes a full path name for an object, and returns an array containing the path, and then the object name
+global proc string[] zooUtilsObjFromPath( string $objPath ) {
+	string $path = "";
+	string $obj = "";
+	string $buffer[];
+	int $numToks = `tokenize $objPath "|" $buffer`;
+
+	for( $n = 0; $n < $numToks-1; $n++ ) $path = $path + $buffer[$n] + "|";
+	$obj = $buffer[( $numToks-1 )];
+
+	return { $path, $obj };
+	}
+
+
+//simply returns the object name of an attribute path.  ie, `zooBodgeKReturnObjName "pSphere1.translateX"`;  returns pSphere1
+global proc string zooUtilsReturnObjName( string $attributePath ) {
+	string $buffer[];
+	tokenize $attributePath "." $buffer;
+	return $buffer[0];
+	}
+
+
+//returns a list of immediate children directories under the given directory
+global proc string[] zooUtilsGetSubDirs( string $path ){
+	string $files[] = `getFileList -folder $path`;
+	string $dirs[];
+
+	for( $file in $files ) if( `filetest -d ( $path + $file )` ) $dirs[( `size $dirs` )] = $file;
+
+	return $dirs;
+	}
+
+
+//returns ALL sub directories under a given directory
+global proc string[] zooUtilsGetRecursedSubDirs( string $path ) {
+	string $pathsFound[];
+
+	$pathsFound[0] = $path;
+	for( $n=0; $n<`size $pathsFound`; $n++ ) {
+		string $temp[];
+
+		$searchPath = $pathsFound[$n];
+		$temp = `zooUtilsGetSubDirs $searchPath`;
+
+		for( $i=0; $i<`size $temp`; $i++ ) $temp[$i] = $searchPath + $temp[$i] + "/";
+		if( `size $temp` ) $pathsFound = `zooUtilsAddArray $pathsFound $temp`;
+
+		//just a safeguard
+		if( $n >10000 ) {
+			warning "has searched 10000 directories, aborting...";
+			break;
+			}
+		}
+
+	return $pathsFound;
+	}
+
+
+/*given a string, and a character to remove from that string, this proc returns the string with the characters removed
+------------
+
+example: zooUtilsReplaceString "10/02/04" "/" "";
+returns the string "100204"
+example: zooUtilsReplaceString "10Feb04" "[A-Za-z]+" "!";
+returns the string "10!04"
+*/
+global proc string zooUtilsReplaceString( string $string, string $searchStr, string $replaceStr ){
+	string $messageString = $string;
+	string $temp = $messageString;
+	int $stillChanging = 1;
+
+	while( $stillChanging ) {
+		$temp = `substitute $searchStr $messageString $replaceStr`;
+		if( $messageString == $temp ) $stillChanging = 0;
+		$messageString = $temp;
+		}
+
+	return $messageString;
+	}
+
+
+/*returns a path and a filename from a filepath
+------------
+
+example: zooUtilsSplitFilename "c:/temp/wowzers.txt"
+returns "c:/temp/" "wowzers.txt"
+*/
+global proc string[] zooUtilsSplitFilename( string $filepath ) {
+	string $path = "";
+	string $filename = "";
+	string $buffer[];
+
+	tokenize $filepath "/" $buffer;
+	for( $n=0; $n<`size $buffer`-1; $n++ ) $path += $buffer[$n] + "/";
+	$filename = $buffer[( `size $buffer`-1 )];
+
+	return { $path, $filename };
+	}
+
+
+global proc zooUNoUpdate( string $cmd ){
+	string $activePanel = `getPanel -wf`;
+	string $outlinerPanel = zooUtilsReturnElement(0,`getPanel -type outlinerPanel`);
+	string $pbOption = `playbackOptions -q -v`;
+
+	if( `getPanel -to $activePanel` != "modelPanel" ) return;
+	string $camera = `modelPanel -q -cam $activePanel`;
+
+	//switch update to single viewport only, and change current viewport to an outliner
+	playbackOptions -v "active";print("now active!\n");
+	outlinerPanel -e -rp $activePanel $outlinerPanel;
+
+	//now run the command
+	eval $cmd;
+
+	//return the state
+	modelPanel -e -cam $camera $activePanel;
+	playbackOptions -v $pbOption;
+	}
+
+
+//zoo.end

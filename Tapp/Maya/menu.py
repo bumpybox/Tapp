@@ -10,8 +10,8 @@ if 'tappMenu' in menuList:
 
 tappMenu=cmds.menu('tappMenu',label='Tapp',parent=gMainWindow,tearOff=True)
 
-#modelling menu
-cmd='import Tapp.Maya.window as win;win.show()'
+#tapp menu
+cmd='import Tapp.Maya.window as win;reload(win);win.show()'
 cmds.menuItem(label='Tapp Tools',parent=tappMenu,command=cmd)
 
 #repository menu

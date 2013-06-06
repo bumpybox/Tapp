@@ -2,6 +2,7 @@ import os
 
 from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
+import maya.mel as mel
 import maya.OpenMayaUI as omu
 import sip
 
@@ -111,6 +112,13 @@ class Form(base,form):
         
         import Tapp.Maya.lighting.vray as mlv
         mlv.addObjectID()
+    
+    def on_fileTextureManager_pushButton_released(self):
+        
+        melPath=os.path.dirname(__file__)+'/FileTextureManager.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        mel.eval('FileTextureManager')
         
 def show():
     #closing previous dialog

@@ -26,3 +26,5 @@ CREDITS:
 - Paolo Dominici; ZvParentMaster
 - Morgan Loomis; ml_breakdownDragger,ml_hold,ml_keyValueDragger,ml_stopwatch,ml_utilities
 - Ingo Clemens; icPolyScatter
+- Crow Yeh; FileTextureManager
+- Hamish McKenzie; zooChangeRoo
