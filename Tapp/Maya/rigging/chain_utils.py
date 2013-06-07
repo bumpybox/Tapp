@@ -1,11 +1,9 @@
-import os
-
 import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 import MG_Tools.python.rigging.script.MG_softIk as mpsi
-import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.rigging.meta as meta
 
 class ChainNode(object):
     
@@ -416,7 +414,9 @@ class solver():
 
 #chain=buildChain('|clavicle')
 #solver(chain).build('all',blend=True)
-mRig=r9Meta.MetaRig()
-mRig.addChildMetaNode('MetaClass', 'something')
-#mRig.CTRL_Prefix='cnt'
-#spine=mRig.addMetaSubSystem('spine', 'Centre', attr='c_spine')
+mRig=meta.MetaRig()
+mRig.CTRL_Prefix='cnt'
+spine=mRig.addMetaSubSystem('spine', 'Centre',nodeName='meta_c_spine')
+spine=mRig.addMetaSubSystem('arm', 'Left',nodeName='meta_l_arm')
+#print mRig.systems
+#spine.addPlug('locator1')
