@@ -4,6 +4,7 @@ import maya.mel as mel
 import Tapp.Maya.rigging.utils as mru
 import MG_Tools.python.rigging.script.MG_softIk as mpsi
 import Tapp.Maya.rigging.meta as meta
+reload(meta)
 
 class ChainNode(object):
     
@@ -414,9 +415,12 @@ class solver():
 
 #chain=buildChain('|clavicle')
 #solver(chain).build('all',blend=True)
-mRig=meta.MetaRig()
+
+mRig=meta.MetaRig(name='meta_root')
 mRig.CTRL_Prefix='cnt'
-spine=mRig.addMetaSubSystem('spine', 'Centre',nodeName='meta_c_spine')
-spine=mRig.addMetaSubSystem('arm', 'Left',nodeName='meta_l_arm')
-#print mRig.systems
-#spine.addPlug('locator1')
+spine=mRig.addMetaSubSystem('spine', 'Centre')
+arm=spine.addMetaSubSystem('arm', 'Left')
+#print mRig.getChildren(cAttrs='systems')
+spine.addPlug('locator1')
+arm.addControl('locator1')
+spine.addSocket('locator1')
