@@ -120,6 +120,20 @@ class Form(base,form):
     def on_scatterInfo_pushButton_released(self):
         
         webbrowser.open('http://www.braverabbit.de/playground/?p=474')
+    
+    def on_symmetry_pushButton_released(self):
+        
+        melPath=os.path.dirname(__file__)+'/kk_symmetry.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        mel.eval('kk_symmetry')
+    
+    def on_detachSeparate_pushButton_released(self):
+        
+        melPath=os.path.dirname(__file__)+'/detachSeparate.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        mel.eval('detachSeparate')
 
 def show():
     #closing previous dialog

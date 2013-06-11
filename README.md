@@ -28,3 +28,5 @@ CREDITS:
 - Ingo Clemens; icPolyScatter
 - Crow Yeh; FileTextureManager
 - Hamish McKenzie; zooChangeRoo
+- Jeff Dobson; detachSeparate
+- Karim Kashefy; kk_symmetry
