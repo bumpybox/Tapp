@@ -1,13 +1,14 @@
 import maya.cmds as cmds
 
-from Tapp.Maya.Red9.core.Red9_Meta import *
+import Tapp.Maya.Red9.core.Red9_Meta as TappMeta
+import Red9.core.Red9_Meta as r9Meta
 
-class MetaRig(MetaRig):
+class TappRig(r9Meta.MetaRig):
     '''
     Initial test for a MetaRig labelling system
     '''
     def __init__(self,*args,**kws):
-        super(MetaRig, self).__init__(*args,**kws)
+        super(TappRig, self).__init__(*args,**kws)
         self.lockState=True
 
     def addMetaSubSystem(self, systemType, side, nodeName=None): 
@@ -24,7 +25,7 @@ class MetaRig(MetaRig):
         import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim
         r9Anim.MirrorHierarchy()._validateMirrorEnum(side) #??? do we just let the enum __setattr__ handle this?
         
-        subSystem=MetaRigSubSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
+        subSystem=TappSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
         self.connectChildren([subSystem],'systems', srcAttr='metaParent')
         
         #set the attrs on the newly created subSystem MetaNode
@@ -32,10 +33,10 @@ class MetaRig(MetaRig):
         subSystem.mirrorSide=side
         return subSystem
 
-class MetaRigSubSystem(MetaRig):
+class TappSystem(TappRig):
     
     def __init__(self,*args,**kws):
-        super(MetaRigSubSystem, self).__init__(*args,**kws)
+        super(TappSystem, self).__init__(*args,**kws)
         self.lockState=True
     
     def __bindData__(self):
@@ -47,49 +48,55 @@ class MetaRigSubSystem(MetaRig):
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=MetaPlug(name='meta_%s' % node)
+        metaNode=TappPlug(name='meta_%s' % node)
         self.connectChildren(metaNode, 'plugs', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
             if issubclass(type(boundData),dict): 
                 for key, value in boundData.iteritems():
-                    log.debug('Adding boundData to node : %s:%s' %(key,value))
-                    MetaClass(node).addAttr(key, value=value)
+                    r9Meta.log.debug('Adding boundData to node : %s:%s' %(key,value))
+                    r9Meta.MetaClass(metaNode).addAttr(key, value=value)
+        
+        return metaNode
     
     def addSocket(self, node, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=MetaSocket(name='meta_%s' % node)
+        metaNode=TappSocket(name='meta_%s' % node)
         self.connectChildren(metaNode, 'sockets', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
             if issubclass(type(boundData),dict): 
                 for key, value in boundData.iteritems():
-                    log.debug('Adding boundData to node : %s:%s' %(key,value))
-                    MetaClass(node).addAttr(key, value=value)
+                    r9Meta.log.debug('Adding boundData to node : %s:%s' %(key,value))
+                    metaNode.addAttr(key, value=value)
+        
+        return metaNode
     
     def addControl(self, node, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=MetaControl(name='meta_%s' % node)
+        metaNode=TappControl(name='meta_%s' % node)
         self.connectChildren(metaNode, 'controls', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
             if issubclass(type(boundData),dict): 
                 for key, value in boundData.iteritems():
-                    log.debug('Adding boundData to node : %s:%s' %(key,value))
-                    MetaClass(node).addAttr(key, value=value)
+                    r9Meta.log.debug('Adding boundData to node : %s:%s' %(key,value))
+                    r9Meta.MetaClass(metaNode).addAttr(key, value=value)
+        
+        return metaNode
 
-class MetaSocket(MetaRig):
+class TappSocket(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(MetaSocket, self).__init__(*args,**kws) 
+        super(TappSocket, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):
@@ -98,12 +105,12 @@ class MetaSocket(MetaRig):
         '''
         pass
 
-class MetaControl(MetaRig):
+class TappControl(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(MetaControl, self).__init__(*args,**kws) 
+        super(TappControl, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):
@@ -112,12 +119,12 @@ class MetaControl(MetaRig):
         '''
         pass
 
-class MetaPlug(MetaRig):
+class TappPlug(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(MetaPlug, self).__init__(*args,**kws) 
+        super(TappPlug, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):
@@ -130,5 +137,5 @@ class MetaPlug(MetaRig):
 # This HAS to be at the END of this module so that the RED9_META_REGISTRY
 # picks up all inherited subclasses when Red9.core is imported
 #========================================================================   
-registerMClassInheritanceMapping()
-registerMClassNodeMapping()
+r9Meta.registerMClassInheritanceMapping()
+r9Meta.registerMClassNodeMapping()

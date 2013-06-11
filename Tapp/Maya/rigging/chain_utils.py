@@ -8,13 +8,14 @@ reload(meta)
 
 class ChainNode(object):
     
-    def __init__(self, attr=None,name='',parent=None, children=[]):
-        self.attr=attr
+    def __init__(self, data=None,name='',parent=None, children=[]):
+        self.data=data
         self.name=name
         self.parent=parent
         self.children = list(children)
         self.socket={}
         self.control={}
+        self.guide=''
 
     def addChild(self, child):
         self.children.append(child)
@@ -25,7 +26,7 @@ class ChainNode(object):
         
         if self.children:
             for child in self.children:
-                if child.attr and len(set(child.attr) & set(searchAttr))>0:
+                if child.data and len(set(child.data) & set(searchAttr))>0:
                     result=[child]
                 else:
                     childData=child.downstream(searchAttr)
@@ -51,7 +52,7 @@ class ChainNode(object):
     
     def breakdown(self,startAttr,endAttr,result=[]):
         
-        if len(set(self.attr) & set(startAttr))>0:
+        if len(set(self.data) & set(startAttr))>0:
             startNode=self
         else:
             startData=self.downstream(startAttr)
@@ -92,7 +93,11 @@ def buildChain(obj,parent=None):
     
     node=ChainNode()
     
-    node.attr=cmds.listAttr(obj,userDefined=True)
+    data={}
+    for attr in cmds.listAttr(obj,userDefined=True):
+        data[attr]=cmds.getAttr(obj+'.'+attr)
+    node.data=data
+    
     node.name=obj
     node.parent=parent
     
@@ -106,7 +111,7 @@ def buildChain(obj,parent=None):
     else:
         return node
 
-def fk_build(chainList,asset):
+def fk_build(chainList,asset,system):
     
     #build rig---
     for node in chainList:
@@ -126,7 +131,7 @@ def fk_build(chainList,asset):
         prefix=node.name.split('|')[-1]+'_fk_'
         
         #create control
-        if 'FK_control' in node.attr:
+        if 'FK_control' in node.data:
             cnt=mru.Box(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
             
             #setup control
@@ -146,27 +151,15 @@ def fk_build(chainList,asset):
             
             if node.parent:
                 cmds.parent(phgrp,node.parent.socket['fk'])
+            
+            system.addControl(cnt)
         else:
             if node.parent:
                 cmds.parent(socket,node.parent.socket['fk'])
 
-def ik_build(chainList,asset):
+def ik_build(chainList,asset,system):
     
     #build rig---
-    '''
-    #create plug
-    plug=cmds.spaceLocator(name='plug')[0]
-    
-    #setup plug
-    phgrp=cmds.group(empty=True,n=(plug+'_PH'))
-    sngrp=cmds.group(empty=True,n=(plug+'_SN'))
-    
-    cmds.parent(sngrp,phgrp)
-    cmds.parent(plug,sngrp)
-    
-    startPos=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
-    cmds.xform(phgrp,worldSpace=True,translation=startPos)
-    '''
     
     #finding upvector
     posA=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
@@ -237,7 +230,7 @@ def ik_build(chainList,asset):
         
         prefix=node.name.split('|')[-1]+'_ik_'
         
-        if 'IK_control' in node.attr:
+        if 'IK_control' in node.data:
             cnt=mru.Sphere(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
         
             #setup control
@@ -252,6 +245,8 @@ def ik_build(chainList,asset):
             
             cmds.parent(cnt,sngrp)
             cmds.parent(sngrp,phgrp)
+            
+            system.addControl(cnt)
             
             if node.children:
                 
@@ -302,7 +297,7 @@ class solver():
         self.ik_chains=[]
         self.spline_chains=[]
         
-        #finding chains (WORKAROUND! the results from breakdown seems to accumulates by each call)
+        #finding chains (WORKAROUND! the results from breakdown seems to accumulate by each call)
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
         self.fk_chains=chain.breakdown(startAttr,endAttr,result=[])
@@ -336,7 +331,7 @@ class solver():
         
         return result
     
-    def blend(self,node,control):
+    def blend(self,node,control,system):
         
         prefix=node.name.split('|')[-1]+'_bld_'
         
@@ -345,6 +340,8 @@ class solver():
         
         #setup socket
         mru.Snap(node.name, socket)
+        
+        system.addSocket(socket,boundData={'data':node.data})
         
         cmd='cmds.parentConstraint('
         for s in node.socket:
@@ -368,28 +365,33 @@ class solver():
         
         if node.children:
             for child in node.children:
-                self.blend(child,control)
+                self.blend(child,control,system)
     
     def build(self,method=['fk','ik','spline','joint','all'],blend=[True,False]):
         
-        asset=cmds.container(n='rig',type='dagContainer')
-        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
-        mru.ChannelboxClean(asset, attrs)
+        if method:
+            #rig asset
+            asset=cmds.container(n='rig',type='dagContainer')
+            attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+            mru.ChannelboxClean(asset, attrs)
+            
+            #meta rig
+            system=meta.TappSystem()
         
         if method=='fk':
             for c in self.fk_chains:
-                fk_build(c,asset)
+                fk_build(c,asset,system)
         
         if method=='ik':
             for c in self.ik_chains:
-                ik_build(c,asset)
+                ik_build(c,asset,system)
         
         if method=='all':
             for c in self.fk_chains:
-                fk_build(c,asset)
+                fk_build(c,asset,system)
             
             for c in self.ik_chains:
-                ik_build(c,asset)
+                ik_build(c,asset,system)
         
         if blend:
             
@@ -397,12 +399,12 @@ class solver():
             cnt=mru.Pin('extra_cnt')
             
             #create blend sockets
-            self.blend(self.chain,cnt)
+            self.blend(self.chain,cnt,system)
             
             #setup extra control
             mru.Snap(self.chain.name,cnt)
             
-            cmds.parent(cnt,self.chain.getLast(self.chain)[0].socket['blend'])
+            cmds.parent(cnt,self.chain.socket['blend'])
             cmds.rotate(0,90,0,cnt,r=True,os=True)
             
             if cmds.objExists(asset+'.ik_stretch'):
@@ -413,14 +415,21 @@ class solver():
         
         cmds.delete(self.chain.name)
 
-#chain=buildChain('|clavicle')
-#solver(chain).build('all',blend=True)
+chain=buildChain('|clavicle')
+solver(chain).build('all',blend=True)
 
+'''
+need to build a chain from a system (solved chain)
+use the chain to build the guide
+'''
+
+'''
 mRig=meta.MetaRig(name='meta_root')
 mRig.CTRL_Prefix='cnt'
 spine=mRig.addMetaSubSystem('spine', 'Centre')
 arm=spine.addMetaSubSystem('arm', 'Left')
 #print mRig.getChildren(cAttrs='systems')
 spine.addPlug('locator1')
-arm.addControl('locator1')
-spine.addSocket('locator1')
+arm.addControl('locator2')
+spine.addSocket('locator3')
+'''
