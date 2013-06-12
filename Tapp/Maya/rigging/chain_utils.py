@@ -341,7 +341,13 @@ class solver():
         #setup socket
         mru.Snap(node.name, socket)
         
-        system.addSocket(socket,boundData={'data':node.data})
+        metaNode=system.addSocket(socket,boundData={'data':node.data})
+        if node.parent:
+            metaParent=meta.r9Meta.MetaClass(node.parent.socket['blend'])
+            metaParent=metaParent.getParentMetaNode()
+            #metaNode.addAttr('guideParent',metaParent,attrType='messageSimple')
+            
+            metaParent.connectChildren([metaNode],'guideChildren', srcAttr='guideParent')
         
         cmd='cmds.parentConstraint('
         for s in node.socket:
@@ -414,9 +420,47 @@ class solver():
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
         
         cmds.delete(self.chain.name)
+        
+        #returning system
+        return system
 
-chain=buildChain('|clavicle')
-solver(chain).build('all',blend=True)
+chain=chainFromGuide('|clavicle')
+system=solver(chain).build('all',blend=True)
+
+'''
+def chainFromSocket(socket,parent=None):
+    
+    print 'start'
+    
+    node=ChainNode()
+    
+    data={}
+    for attr in socket.data:
+        data[attr]=socket.data[attr]
+    
+    node.data=data
+    
+    node.name=socket.mNode
+    node.parent=parent
+    
+    
+    children=socket.getChildMetaNodes()
+    
+    print socket
+    print node
+    
+    if children:
+        for child in children:
+            node.addChild(chainFromGuide(child,parent=node))
+        
+        return node
+    else:
+        return node
+
+for socket in system.getChildMetaNodes(mAttrs='mClass=TappSocket'):
+    if not socket.hasAttr('guideParent'):
+        chainFromSocket(socket)
+        '''
 
 '''
 need to build a chain from a system (solved chain)

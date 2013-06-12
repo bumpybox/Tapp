@@ -1,6 +1,3 @@
-import maya.cmds as cmds
-
-import Tapp.Maya.Red9.core.Red9_Meta as TappMeta
 import Red9.core.Red9_Meta as r9Meta
 
 class TappRig(r9Meta.MetaRig):
@@ -22,7 +19,7 @@ class TappRig(r9Meta.MetaRig):
         @param mirrorSide: Side to designate the system. This is an enum: Centre,Left,Right
         @param nodeName: Name of the MetaClass network node created
         '''
-        import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim
+        import Red9.core.Red9_AnimationUtils as r9Anim
         r9Anim.MirrorHierarchy()._validateMirrorEnum(side) #??? do we just let the enum __setattr__ handle this?
         
         subSystem=TappSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
