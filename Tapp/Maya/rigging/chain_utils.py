@@ -6,111 +6,6 @@ import MG_Tools.python.rigging.script.MG_softIk as mpsi
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
-class ChainNode(object):
-    
-    def __init__(self, data=None,name='',parent=None, children=[]):
-        self.data=data
-        self.name=name
-        self.parent=parent
-        self.children = list(children)
-        self.socket={}
-        self.control={}
-        self.guide=''
-
-    def addChild(self, child):
-        self.children.append(child)
-    
-    def downstream(self,searchAttr):
-        
-        result=[]
-        
-        if self.children:
-            for child in self.children:
-                if child.data and len(set(child.data) & set(searchAttr))>0:
-                    result=[child]
-                else:
-                    childData=child.downstream(searchAttr)
-                    if childData:
-                        result.extend(childData)
-        else:
-            return None,self
-        
-        return result
-    
-    def tween(self,endNode):
-        
-        result=[self]
-        
-        if self==endNode:
-            return result
-        
-        if self.children:
-            for child in self.children:
-                result.extend(child.tween(endNode))
-        
-        return result
-    
-    def breakdown(self,startAttr,endAttr,result=[]):
-        
-        if len(set(self.data) & set(startAttr))>0:
-            startNode=self
-        else:
-            startData=self.downstream(startAttr)
-            if len(startData)>1:
-                return result
-            else:
-                startNode=startData[0]
-        
-        endData=startNode.downstream(endAttr)
-        if len(endData)>1:
-            endNode=endData[1]
-            
-            result.append(startNode.tween(endNode))
-            
-            return result
-        else:
-            endNode=endData[0]
-        
-        result.append(startNode.tween(endNode))
-        
-        if endNode.children:
-            return endNode.breakdown(startAttr,endAttr,result=result)
-        
-        return result
-    
-    def getLast(self,root):
-        result=[]
-        
-        if root.children:
-            for child in root.children:
-                result.extend(self.getLast(child))
-        else:
-            result=[root]
-        
-        return result
-
-def buildChain(obj,parent=None):
-    
-    node=ChainNode()
-    
-    data={}
-    for attr in cmds.listAttr(obj,userDefined=True):
-        data[attr]=cmds.getAttr(obj+'.'+attr)
-    node.data=data
-    
-    node.name=obj
-    node.parent=parent
-    
-    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
-    
-    if children:
-        for child in children:
-            node.addChild(buildChain(child,parent=node))
-        
-        return node
-    else:
-        return node
-
 def fk_build(chainList,asset,system):
     
     #build rig---
@@ -292,7 +187,7 @@ class solver():
     
     def __init__(self,chain):
         
-        self.chain=chain
+        self.chain=meta.TappChain(chain)
         self.fk_chains=[]
         self.ik_chains=[]
         self.spline_chains=[]
@@ -300,15 +195,15 @@ class solver():
         #finding chains (WORKAROUND! the results from breakdown seems to accumulate by each call)
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
-        self.fk_chains=chain.breakdown(startAttr,endAttr,result=[])
+        self.fk_chains=self.chain.breakdown(startAttr,endAttr,result=[])
         
         startAttr=['IK_solver_start','IK_control']
         endAttr=['IK_solver_end']
-        self.ik_chains=chain.breakdown(startAttr,endAttr,result=[])
+        self.ik_chains=self.chain.breakdown(startAttr,endAttr,result=[])
         
         startAttr=['Spline_solver_start','Spline_control']
         endAttr=['Spline_solver_end']
-        self.spline_chains=chain.breakdown(startAttr,endAttr,result=[])
+        self.spline_chains=self.chain.breakdown(startAttr,endAttr,result=[])
     
     def __repr__(self):
         
@@ -317,17 +212,17 @@ class solver():
         for c in self.fk_chains:
             result+='fk chain from:\n'
             for node in c:
-                result+=node.name+'\n'
+                result+=node.mNode+'\n'
         
         for c in self.ik_chains:
             result+='ik chain from:\n'
             for node in c:
-                result+=node.name+'\n'
+                result+=node.mNode+'\n'
         
         for c in self.spline_chains:
             result+='spline chain from:\n'
             for node in c:
-                result+=node.name+'\n'
+                result+=node.mNode+'\n'
         
         return result
     
@@ -424,47 +319,12 @@ class solver():
         #returning system
         return system
 
-chain=chainFromGuide('|clavicle')
-system=solver(chain).build('all',blend=True)
+print solver('|clavicle')
 
 '''
-def chainFromSocket(socket,parent=None):
-    
-    print 'start'
-    
-    node=ChainNode()
-    
-    data={}
-    for attr in socket.data:
-        data[attr]=socket.data[attr]
-    
-    node.data=data
-    
-    node.name=socket.mNode
-    node.parent=parent
-    
-    
-    children=socket.getChildMetaNodes()
-    
-    print socket
-    print node
-    
-    if children:
-        for child in children:
-            node.addChild(chainFromGuide(child,parent=node))
-        
-        return node
-    else:
-        return node
-
-for socket in system.getChildMetaNodes(mAttrs='mClass=TappSocket'):
-    if not socket.hasAttr('guideParent'):
-        chainFromSocket(socket)
-        '''
-
-'''
-need to build a chain from a system (solved chain)
-use the chain to build the guide
+troubleshoot fk build with new chain nodes
+troubleshoot ik build with new chain nodes
+build guide directly from solver class
 '''
 
 '''

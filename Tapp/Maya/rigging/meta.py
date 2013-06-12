@@ -1,5 +1,91 @@
+import maya.cmds as cmds
+
 import Red9.core.Red9_Meta as r9Meta
 
+class TappChain(r9Meta.MetaClass):
+    
+    def __init__(self,*args,**kws):
+        super(TappChain, self).__init__(*args,**kws)
+        self.lockState=True
+    
+    def getTappChildren(self):
+        
+        result=[]
+        children=cmds.listRelatives(self.mNode,children=True,fullPath=True,type='transform')
+        
+        if children:
+            for child in children:
+                result.append(TappChain(child))
+        
+        return result
+    
+    def getData(self):
+        '''
+        Working around Red9 to get all userdefined attributes
+        '''
+        data={}
+        for attr in cmds.listAttr(self.mNode,userDefined=True):
+            data[attr]=cmds.getAttr(self.mNode+'.'+attr)
+        
+        return data
+    
+    def downstream(self,searchAttr):
+        
+        result=[]
+        
+        if self.getTappChildren():
+            for child in self.getTappChildren():
+                if child.getData() and len(set(child.getData()) & set(searchAttr))>0:
+                    result=[child]
+                else:
+                    childData=child.downstream(searchAttr)
+                    if childData:
+                        result.extend(childData)
+        else:
+            return None,self
+        
+        return result
+    
+    def tween(self,endNode):
+        
+        result=[self]
+        
+        if self==endNode:
+            return result
+        
+        if self.getTappChildren():
+            for child in self.getTappChildren():
+                result.extend(child.tween(endNode))
+        
+        return result
+    
+    def breakdown(self,startAttr,endAttr,result=[]):
+        
+        if len(set(self.getData()) & set(startAttr))>0:
+            startNode=self
+        else:
+            startData=self.downstream(startAttr)
+            if len(startData)>1:
+                return result
+            else:
+                startNode=startData[0]
+        
+        endData=startNode.downstream(endAttr)
+        if len(endData)>1:
+            endNode=endData[1]
+            
+            result.append(startNode.tween(endNode))
+            return result
+        else:
+            endNode=endData[0]
+        
+        result.append(startNode.tween(endNode))
+        
+        if endNode.getTappChildren():
+            return endNode.breakdown(startAttr,endAttr,result=result)
+        
+        return result
+        
 class TappRig(r9Meta.MetaRig):
     '''
     Initial test for a MetaRig labelling system
