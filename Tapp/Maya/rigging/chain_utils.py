@@ -325,6 +325,8 @@ print solver('|clavicle')
 troubleshoot fk build with new chain nodes
 troubleshoot ik build with new chain nodes
 build guide directly from solver class
+
+ability to choose control icon for control tags
 '''
 
 '''
