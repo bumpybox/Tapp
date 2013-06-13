@@ -2,39 +2,48 @@ import maya.cmds as cmds
 
 import Red9.core.Red9_Meta as r9Meta
 
-class TappChain(r9Meta.MetaClass):
+class TappChain():
     
-    def __init__(self,*args,**kws):
-        super(TappChain, self).__init__(*args,**kws)
-        self.lockState=True
+    def __init__(self,obj):
+        self.source=obj
         
         self.name=''
         self.socket={}
-        self.controls={}
+        self.control={}
         self.data=None
         self.children=[]
         self.parent=None
-        self.something=None
+        self.translation=[]
+        self.rotation=[]
+        self.scale=[]
         
     def addTappChild(self,child):
         self.children.append(child)
     
     def buildFromGuide(self,parent=None):
         
-        self.name=self.mNode
+        #getting name
+        self.name=self.source.split('|')[-1]
         
+        #getting attr data
         data={}
         for attr in cmds.listAttr(self.name,userDefined=True):
             data[attr]=cmds.getAttr(self.name+'.'+attr)
         self.data=data
         
+        #transforms
+        self.translation=cmds.xform(self.source,q=True,ws=True,translation=True)
+        self.rotation=cmds.xform(self.source,q=True,ws=True,rotation=True)
+        self.scale=cmds.xform(self.source,q=True,relative=True,scale=True)
+        
+        #parent and children
         self.parent=parent
         
-        children=cmds.listRelatives(self.mNode,children=True,fullPath=True,type='transform')
+        children=cmds.listRelatives(self.source,children=True,fullPath=True,type='transform')
         
         if children:
             for child in children:
-                self.addTappChild(self.buildFromGuide(child,parent=self.mNode))
+                self.addTappChild(TappChain(child).buildFromGuide(parent=self))
             
             return self
         else:
@@ -46,7 +55,7 @@ class TappChain(r9Meta.MetaClass):
         
         if self.children:
             for child in self.children:
-                if child.getData() and len(set(child.getData()) & set(searchAttr))>0:
+                if child.data and len(set(child.data) & set(searchAttr))>0:
                     result=[child]
                 else:
                     childData=child.downstream(searchAttr)

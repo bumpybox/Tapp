@@ -18,7 +18,7 @@ def fk_build(chainList,asset,system):
         
         #setup socket
         mru.Snap(node.name, socket)
-        node.sockets['fk']=socket
+        node.socket['fk']=socket
     
     #build controls---
     for node in chainList:
@@ -33,7 +33,7 @@ def fk_build(chainList,asset,system):
             mru.Snap(node.name,cnt)
             node.control['fk']=cnt
             
-            cmds.parent(node.sockets['fk'],cnt)
+            cmds.parent(node.socket['fk'],cnt)
             
             phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
             sngrp=cmds.group(empty=True,n=(cnt+'_SN'))
@@ -212,17 +212,17 @@ class solver():
         for c in self.fk_chains:
             result+='fk chain from:\n'
             for node in c:
-                result+=node.mNode+'\n'
+                result+=node.name+'\n'
         
         for c in self.ik_chains:
             result+='ik chain from:\n'
             for node in c:
-                result+=node.mNode+'\n'
+                result+=node.name+'\n'
         
         for c in self.spline_chains:
             result+='spline chain from:\n'
             for node in c:
-                result+=node.mNode+'\n'
+                result+=node.name+'\n'
         
         return result
     
@@ -320,7 +320,7 @@ class solver():
         return system
 
 chain=meta.TappChain('|clavicle').buildFromGuide()
-#print solver('|clavicle')
+solver(chain).build('fk')
 
 '''
 troubleshoot fk build with new chain nodes
