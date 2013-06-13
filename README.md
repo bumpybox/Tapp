@@ -30,3 +30,4 @@ CREDITS:
 - Hamish McKenzie; zooChangeRoo
 - Jeff Dobson; detachSeparate
 - Karim Kashefy; kk_symmetry
+- Francis O'Brien; RoadKill

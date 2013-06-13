@@ -7,34 +7,45 @@ class TappChain(r9Meta.MetaClass):
     def __init__(self,*args,**kws):
         super(TappChain, self).__init__(*args,**kws)
         self.lockState=True
-    
-    def getTappChildren(self):
         
-        result=[]
+        self.name=''
+        self.socket={}
+        self.controls={}
+        self.data=None
+        self.children=[]
+        self.parent=None
+        self.something=None
+        
+    def addTappChild(self,child):
+        self.children.append(child)
+    
+    def buildFromGuide(self,parent=None):
+        
+        self.name=self.mNode
+        
+        data={}
+        for attr in cmds.listAttr(self.name,userDefined=True):
+            data[attr]=cmds.getAttr(self.name+'.'+attr)
+        self.data=data
+        
+        self.parent=parent
+        
         children=cmds.listRelatives(self.mNode,children=True,fullPath=True,type='transform')
         
         if children:
             for child in children:
-                result.append(TappChain(child))
-        
-        return result
-    
-    def getData(self):
-        '''
-        Working around Red9 to get all userdefined attributes
-        '''
-        data={}
-        for attr in cmds.listAttr(self.mNode,userDefined=True):
-            data[attr]=cmds.getAttr(self.mNode+'.'+attr)
-        
-        return data
+                self.addTappChild(self.buildFromGuide(child,parent=self.mNode))
+            
+            return self
+        else:
+            return self
     
     def downstream(self,searchAttr):
         
         result=[]
         
-        if self.getTappChildren():
-            for child in self.getTappChildren():
+        if self.children:
+            for child in self.children:
                 if child.getData() and len(set(child.getData()) & set(searchAttr))>0:
                     result=[child]
                 else:
@@ -53,15 +64,15 @@ class TappChain(r9Meta.MetaClass):
         if self==endNode:
             return result
         
-        if self.getTappChildren():
-            for child in self.getTappChildren():
+        if self.children:
+            for child in self.children:
                 result.extend(child.tween(endNode))
         
         return result
     
     def breakdown(self,startAttr,endAttr,result=[]):
         
-        if len(set(self.getData()) & set(startAttr))>0:
+        if len(set(self.data) & set(startAttr))>0:
             startNode=self
         else:
             startData=self.downstream(startAttr)
@@ -81,7 +92,7 @@ class TappChain(r9Meta.MetaClass):
         
         result.append(startNode.tween(endNode))
         
-        if endNode.getTappChildren():
+        if endNode.children:
             return endNode.breakdown(startAttr,endAttr,result=result)
         
         return result

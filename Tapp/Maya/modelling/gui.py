@@ -134,6 +134,41 @@ class Form(base,form):
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         mel.eval('detachSeparate')
+    
+    def on_roadKill_pushButton_released(self):
+        
+        melPath=os.path.dirname(__file__)+'/RoadKill.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #get useLSCM
+        state=self.roadkill_useLSCM_checkBox.checkState()
+        
+        if state==0:
+            LSCMText='",-abf"'
+        if state==2:
+            LSCMText='",-lscm"'
+        
+        #get holesText
+        state=self.roadkill_dontFillHoles_checkBox.checkState()
+        
+        if state==0:
+            holesText='",-nofillholes"'
+        if state==2:
+            holesText='",-fillholes"'
+        
+        #get liveText
+        state=self.roadkill_liveUnwrap_checkBox.checkState()
+        
+        if state==0:
+            liveText='",-notlive"'
+        if state==2:
+            liveText='",-live"'
+        
+        exeDir='"'+os.path.dirname(__file__)+'"'
+        exeDir=exeDir.replace('\\','/')
+        
+        mel.eval('DoUnwrap(%s,%s,%s,%s)' % (LSCMText,holesText,liveText,exeDir))
 
 def show():
     #closing previous dialog
