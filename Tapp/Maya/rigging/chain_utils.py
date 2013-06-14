@@ -2,13 +2,50 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
+reload(mru)
 import MG_Tools.python.rigging.script.MG_softIk as mpsi
+reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
-def fk_build(chainList,asset,system):
+def buildChain(obj,parent=None):
+    
+    node=meta.chain(obj)
+    
+    #getting name
+    node.name=obj.split('|')[-1]
+    
+    #getting attr data
+    data={}
+    for attr in cmds.listAttr(node.name,userDefined=True):
+        data[attr]=cmds.getAttr(node.name+'.'+attr)
+    node.data=data
+    
+    #transforms
+    node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
+    node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
+    node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
+    
+    #parent and children
+    node.parent=parent
+    
+    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+    
+    if children:
+        for child in children:
+            node.addChild(buildChain(child,parent=node))
+        
+        return node
+    else:
+        return node
+
+def fk_build(chainList):
     
     #build rig---
+    root=cmds.group(empty=True,name='fk_grp')
+    
+    cmds.parent(root,chainList[0].root)
+    
     for node in chainList:
         
         prefix=node.name.split('|')[-1]+'_fk_'
@@ -17,8 +54,13 @@ def fk_build(chainList,asset,system):
         socket=cmds.spaceLocator(name=prefix+'socket')[0]
         
         #setup socket
-        mru.Snap(node.name, socket)
+        mru.Snap(None,socket, translation=node.translation, rotation=node.rotation)
         node.socket['fk']=socket
+        
+        if node.parent:
+            cmds.parent(socket,node.parent.socket['fk'])
+        else:
+            cmds.parent(socket,root)
     
     #build controls---
     for node in chainList:
@@ -27,10 +69,10 @@ def fk_build(chainList,asset,system):
         
         #create control
         if 'FK_control' in node.data:
-            cnt=mru.Box(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
+            cnt=mru.Box(prefix+'cnt',size=node.scale[0])
             
             #setup control
-            mru.Snap(node.name,cnt)
+            mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
             node.control['fk']=cnt
             
             cmds.parent(node.socket['fk'],cnt)
@@ -46,15 +88,17 @@ def fk_build(chainList,asset,system):
             
             if node.parent:
                 cmds.parent(phgrp,node.parent.socket['fk'])
+            else:
+                cmds.parent(phgrp,root)
             
-            system.addControl(cnt)
-        else:
-            if node.parent:
-                cmds.parent(socket,node.parent.socket['fk'])
+            node.system.addControl(cnt)
 
-def ik_build(chainList,asset,system):
+def ik_build(chainList):
     
     #build rig---
+    root=cmds.group(empty=True,name='ik_grp')
+    
+    cmds.parent(root,chainList[0].root)
     
     #finding upvector
     posA=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
@@ -74,11 +118,12 @@ def ik_build(chainList,asset,system):
         jnt=cmds.joint(n=prefix+'jnt01')
         
         #setup joint
-        mru.Snap(node.name, jnt)
+        mru.Snap(None,jnt, translation=node.translation, rotation=node.rotation)
         
         grp=cmds.group(empty=True)
-        mru.Snap(node.name,grp)
+        cmds.xform(grp,ws=True,translation=node.translation)
         
+        #need to do this, but without using the string name---
         if chainList[count]!=chainList[-1]:
             cmds.aimConstraint(chainList[count+1].name,grp,worldUpType='vector',
                                worldUpVector=crs)
@@ -94,13 +139,16 @@ def ik_build(chainList,asset,system):
         if chainList[count]!=chainList[0]:
             cmds.parent(jnt,jnts[-1])
         
+        if len(jnts)==0:
+            cmds.parent(jnt,root)
+        
         jnts.append(jnt)
         
         #create sockets
         socket=cmds.spaceLocator(name=prefix+'socket')[0]
         
         #setup socket
-        mru.Snap(node.name, socket)
+        mru.Snap(None,socket, translation=node.translation, rotation=node.rotation)
         cmds.parent(socket,jnt)
         node.socket['ik']=socket
     
@@ -111,12 +159,12 @@ def ik_build(chainList,asset,system):
     mru.Snap(jnts[0],ikStart)
     mru.Snap(jnts[-1],ikEnd)
     
-    ikResult=mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd)
+    ikResult=mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd,root=root)
     
     #setup ik
-    cmds.addAttr(asset,ln='ik_stretch',at='float',min=0,max=1)
+    cmds.addAttr(node.root,ln='ik_stretch',at='float',min=0,max=1)
     
-    cmds.connectAttr(asset+'.ik_stretch',ikResult['softIk']+'.stretch')
+    cmds.connectAttr(node.root+'.ik_stretch',ikResult['softIk']+'.stretch')
     
     #build controls---
     for node in chainList:
@@ -126,10 +174,10 @@ def ik_build(chainList,asset,system):
         prefix=node.name.split('|')[-1]+'_ik_'
         
         if 'IK_control' in node.data:
-            cnt=mru.Sphere(prefix+'cnt',size=cmds.getAttr(node.name+'.sx'))
+            cnt=mru.Sphere(prefix+'cnt',size=node.scale[0])
         
             #setup control
-            mru.Snap(node.name,cnt)
+            mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
             node.control['ik']=cnt
             
             phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
@@ -141,7 +189,7 @@ def ik_build(chainList,asset,system):
             cmds.parent(cnt,sngrp)
             cmds.parent(sngrp,phgrp)
             
-            system.addControl(cnt)
+            node.system.addControl(cnt)
             
             if node.children:
                 
@@ -153,7 +201,7 @@ def ik_build(chainList,asset,system):
                 
                 cmds.move(-dist/len(jnts)/2,0,-dist/len(jnts),phgrp,r=True,os=True,wd=True)
                 
-                mru.Snap(node.name,phgrp,point=False)
+                mru.Snap(None,phgrp, rotation=node.rotation)
                 
                 curve=cmds.curve(d=1,p=[(0,0,0),(0,0,0)])
                 polevectorSHP=cmds.listRelatives(curve,s=True)[0]
@@ -178,10 +226,15 @@ def ik_build(chainList,asset,system):
                 polevectorSHP=cmds.rename(curve,prefix+'polevector_shp')
                 
                 cmds.poleVectorConstraint(cnt,ikResult['ikHandle'])
+                
+                cmds.parent(polevectorSHP,root)
+                cmds.parent(phgrp,root)
             else:
                 
                 cmds.pointConstraint(cnt,ikEnd)
                 cmds.parent(node.socket['ik'],cnt)
+                
+                cmds.parent(phgrp,root)
 
 class solver():
     
@@ -276,23 +329,26 @@ class solver():
             attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
             mru.ChannelboxClean(asset, attrs)
             
+            self.chain.addRoot(asset)
+            
             #meta rig
             system=meta.TappSystem()
+            self.chain.addSystem(system)
         
         if method=='fk':
             for c in self.fk_chains:
-                fk_build(c,asset,system)
+                fk_build(c)
         
         if method=='ik':
             for c in self.ik_chains:
-                ik_build(c,asset,system)
+                ik_build(c)
         
         if method=='all':
             for c in self.fk_chains:
-                fk_build(c,asset,system)
+                fk_build(c)
             
             for c in self.ik_chains:
-                ik_build(c,asset,system)
+                ik_build(c)
         
         if blend:
             
@@ -315,16 +371,12 @@ class solver():
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
         
         cmds.delete(self.chain.name)
-        
-        #returning system
-        return system
 
-chain=meta.TappChain('|clavicle').buildFromGuide()
-solver(chain).build('fk')
+chain=buildChain('|clavicle')
+solver(chain).build('ik',blend=False)
 
 '''
-troubleshoot fk build with new chain nodes
-troubleshoot ik build with new chain nodes
+troubleshoot blend
 build guide directly from solver class
 
 ability to choose control icon for control tags

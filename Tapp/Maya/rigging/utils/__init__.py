@@ -357,19 +357,31 @@ def Sphere(name,group=False,size=1.0):
     #return
     return node
 
-def Snap(source,target,point=True,orient=True,scale=False):
+def Snap(source,target,translation=True,rotation=True,scale=False):
     ''' Snaps target object to source object.
     If point is True, translation will snap.
     If orient is True, orientation will snap.
+    If source is None, then it looks for lists for translation,rotation and scale
     '''
     
+    #if source doesnt exists and passing in transform lists
+    if not source:
+        if isinstance(translation, list):
+            cmds.xform(target,ws=True,translation=translation)
+        if isinstance(rotation, list):
+            cmds.xform(target,ws=True,rotation=rotation)
+        if isinstance(scale, list):
+            cmds.xform(target,scale=scale)
+        
+        return
+    
     #translation
-    if point:
+    if translation:
         trans=cmds.xform(source,q=True,ws=True,translation=True)
         cmds.xform(target,ws=True,translation=trans)
     
     #orientation
-    if orient:
+    if rotation:
         rot=cmds.xform(source,q=True,ws=True,rotation=True)
         cmds.xform(target,ws=True,rotation=rot)
     

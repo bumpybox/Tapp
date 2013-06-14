@@ -1,8 +1,6 @@
-import maya.cmds as cmds
-
 import Red9.core.Red9_Meta as r9Meta
 
-class TappChain():
+class chain():
     
     def __init__(self,obj):
         self.source=obj
@@ -16,38 +14,25 @@ class TappChain():
         self.translation=[]
         self.rotation=[]
         self.scale=[]
-        
-    def addTappChild(self,child):
-        self.children.append(child)
+        self.system=None
+        self.root=None
     
-    def buildFromGuide(self,parent=None):
+    def addSystem(self,system):
+        self.system=system
         
-        #getting name
-        self.name=self.source.split('|')[-1]
+        if self.children:
+            for child in self.children:
+                child.addSystem(system)
+    
+    def addRoot(self,root):
+        self.root=root
         
-        #getting attr data
-        data={}
-        for attr in cmds.listAttr(self.name,userDefined=True):
-            data[attr]=cmds.getAttr(self.name+'.'+attr)
-        self.data=data
-        
-        #transforms
-        self.translation=cmds.xform(self.source,q=True,ws=True,translation=True)
-        self.rotation=cmds.xform(self.source,q=True,ws=True,rotation=True)
-        self.scale=cmds.xform(self.source,q=True,relative=True,scale=True)
-        
-        #parent and children
-        self.parent=parent
-        
-        children=cmds.listRelatives(self.source,children=True,fullPath=True,type='transform')
-        
-        if children:
-            for child in children:
-                self.addTappChild(TappChain(child).buildFromGuide(parent=self))
-            
-            return self
-        else:
-            return self
+        if self.children:
+            for child in self.children:
+                child.addRoot(root)
+    
+    def addChild(self,child):
+        self.children.append(child)
     
     def downstream(self,searchAttr):
         
@@ -116,6 +101,8 @@ class TappRig(r9Meta.MetaRig):
 
     def addMetaSubSystem(self, systemType, side, nodeName=None): 
         '''
+        Overload of default addMetaSubSystem method
+        
         Basic design of a MetaRig is that you have sub-systems hanging off an mRig
         node, managing all controllers and data for a particular system, such as an
         Arm system. 
