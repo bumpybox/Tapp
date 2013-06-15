@@ -1,3 +1,5 @@
+import inspect
+
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -10,34 +12,68 @@ reload(meta)
 
 def buildChain(obj,parent=None):
     
-    node=meta.chain(obj)
-    
-    #getting name
-    node.name=obj.split('|')[-1]
-    
-    #getting attr data
-    data={}
-    for attr in cmds.listAttr(node.name,userDefined=True):
-        data[attr]=cmds.getAttr(node.name+'.'+attr)
-    node.data=data
-    
-    #transforms
-    node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
-    node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
-    node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
-    
-    #parent and children
-    node.parent=parent
-    
-    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
-    
-    if children:
-        for child in children:
-            node.addChild(buildChain(child,parent=node))
+    #build from guide---
+    if isinstance(obj,str) or isinstance(obj, unicode):
         
-        return node
+        node=meta.chain(obj)
+        
+        #getting name
+        node.name=obj.split('|')[-1]
+        
+        #getting attr data
+        data={}
+        for attr in cmds.listAttr(node.name,userDefined=True):
+            data[attr]=cmds.getAttr(node.name+'.'+attr)
+        node.data=data
+        
+        #transforms
+        node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
+        node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
+        node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
+        
+        #parent and children
+        node.parent=parent
+        
+        children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+        
+        if children:
+            for child in children:
+                node.addChild(buildChain(child,parent=node))
+            
+            return node
+        else:
+            return node
+    
+    #build from system
+    #should really check the type of incoming object---
     else:
-        return node
+        sockets=obj.getChildMetaNodes(mAttrs='mClass=TappSocket')
+        
+        for socket in sockets:
+            
+            node=meta.chain(socket)
+            
+            node.name=socket.data['name']
+            
+            data=socket.data
+            del(data['name'])
+            node.data=data
+            
+            #transforms
+            node.translation=cmds.xform(socket.node,q=True,ws=True,translation=True)
+            node.rotation=cmds.xform(socket.node,q=True,ws=True,rotation=True)
+            node.scale=cmds.xform(socket.node,q=True,relative=True,scale=True)
+            
+            #parent and children
+            node.parent=parent
+            
+            if socket.hasAttr('guideChildren'):
+                for child in socket.guideChildren:
+                    node.addChild(buildChain(child,parent=node))
+                
+                return node
+            else:
+                return node
 
 def fk_build(chainList):
     
@@ -123,10 +159,14 @@ def ik_build(chainList):
         grp=cmds.group(empty=True)
         cmds.xform(grp,ws=True,translation=node.translation)
         
-        #need to do this, but without using the string name---
         if chainList[count]!=chainList[-1]:
-            cmds.aimConstraint(chainList[count+1].name,grp,worldUpType='vector',
-                               worldUpVector=crs)
+            temp=cmds.group(empty=True)
+            mru.Snap(None,temp,translation=chainList[count+1].translation)
+            
+            cmds.delete(cmds.aimConstraint(temp,grp,worldUpType='vector',
+                                           worldUpVector=crs))
+        
+            cmds.delete(temp)
         
         rot=cmds.xform(grp,query=True,rotation=True)
         cmds.rotate(rot[0],rot[1],rot[2],jnt,
@@ -279,7 +319,7 @@ class solver():
         
         return result
     
-    def blend(self,node,control,system):
+    def blend(self,node,control):
         
         prefix=node.name.split('|')[-1]+'_bld_'
         
@@ -287,13 +327,14 @@ class solver():
         socket=cmds.spaceLocator(name=prefix+'socket')[0]
         
         #setup socket
-        mru.Snap(node.name, socket)
+        mru.Snap(None, socket,translation=node.translation,rotation=node.rotation)
         
-        metaNode=system.addSocket(socket,boundData={'data':node.data})
+        data=node.data
+        data['name']=node.name
+        metaNode=node.system.addSocket(socket,boundData={'data':data})
         if node.parent:
             metaParent=meta.r9Meta.MetaClass(node.parent.socket['blend'])
             metaParent=metaParent.getParentMetaNode()
-            #metaNode.addAttr('guideParent',metaParent,attrType='messageSimple')
             
             metaParent.connectChildren([metaNode],'guideChildren', srcAttr='guideParent')
         
@@ -317,13 +358,15 @@ class solver():
         
         node.socket['blend']=socket
         
+        cmds.parent(socket,node.root)
+        
         if node.children:
             for child in node.children:
-                self.blend(child,control,system)
+                self.blend(child,control)
     
-    def build(self,method=['fk','ik','spline','joint','all'],blend=[True,False]):
+    def build(self,method=['fk','ik','spline','joint','all','guide'],blend=[True,False]):
         
-        if method:
+        if method and method!='guide':
             #rig asset
             asset=cmds.container(n='rig',type='dagContainer')
             attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
@@ -350,16 +393,19 @@ class solver():
             for c in self.ik_chains:
                 ik_build(c)
         
-        if blend:
+        if method=='guide':
+            print 'building a guide'
+        
+        if blend and method!='guide':
             
             #create extra control
             cnt=mru.Pin('extra_cnt')
             
             #create blend sockets
-            self.blend(self.chain,cnt,system)
+            self.blend(self.chain,cnt)
             
             #setup extra control
-            mru.Snap(self.chain.name,cnt)
+            mru.Snap(None,cnt,translation=self.chain.translation,rotation=self.chain.rotation)
             
             cmds.parent(cnt,self.chain.socket['blend'])
             cmds.rotate(0,90,0,cnt,r=True,os=True)
@@ -370,14 +416,16 @@ class solver():
                 
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
         
-        cmds.delete(self.chain.name)
+        cmds.delete(self.chain.source)
 
 chain=buildChain('|clavicle')
-solver(chain).build('ik',blend=False)
+solver(chain).build('all',blend=True)
+
+newChain=buildChain(chain.system)
+print solver(newChain)
 
 '''
-troubleshoot blend
-build guide directly from solver class
+build guide from rig
 
 ability to choose control icon for control tags
 '''
