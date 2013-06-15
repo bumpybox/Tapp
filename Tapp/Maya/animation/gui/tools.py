@@ -5,7 +5,7 @@ import maya.cmds as cmds
 
 import Tapp.Maya.utils.paie as mup
 import Tapp.Maya.utils.meta as mum
-import Tapp.Maya.utils.yaml as muy
+import Tapp.utils.yaml as uy
 import Tapp.Maya.animation.utils.playblast as maup
 
 def __exportAnim__(filePath,objs,cam):
@@ -42,7 +42,7 @@ def __exportAnim__(filePath,objs,cam):
     
     #exporting controls data    
     f=open(dirPath+'/'+fileName+'.yml','w')
-    muy.dump(data, f)
+    uy.dump(data, f)
     f.close()
     
     #exporting movie
@@ -168,7 +168,7 @@ def __importAnim__(filePath,selection=False,trax=False):
     dirPath=os.path.dirname(filePath)
     
     f=open(dirPath+'/'+fileName+'.yml','r')
-    metaData=muy.load(f)
+    metaData=uy.load(f)
     
     #getting controls
     sel=cmds.ls(selection=True)
