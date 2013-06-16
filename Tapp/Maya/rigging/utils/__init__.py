@@ -125,6 +125,35 @@ def CrossProduct(posA,posB,posC):
     #return
     return crs
 
+def implicitSphere(name,group=False,size=1.0):
+    ''' Creates a square shape.
+        If group is True, will group control and
+        return a list [group,control].
+    '''
+    
+    #creating the curve
+    curve=cmds.createNode('implicitSphere')
+    curve=cmds.listRelatives(curve,parent=True)[0]
+    
+    #setup curve
+    cmds.makeIdentity(curve,apply=True, t=1, r=1, s=1, n=0)
+    
+    #naming control
+    node=cmds.rename(curve,name)
+    
+    #sizing
+    cmds.scale(size,size,size,node)
+    cmds.FreezeTransformations(node)
+    
+    #grouping control
+    if group==True:
+        grp=cmds.group(node,n=name+'_grp')
+        
+        return [grp,node]
+    
+    #return
+    return node
+
 def Square(name,group=False,size=1.0):
     ''' Creates a square shape.
         If group is True, will group control and

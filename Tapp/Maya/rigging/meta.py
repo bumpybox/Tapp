@@ -16,6 +16,7 @@ class chain():
         self.scale=[]
         self.system=None
         self.root=None
+        self.guide=None
     
     def addSystem(self,system):
         self.system=system
@@ -130,8 +131,8 @@ class TappSystem(TappRig):
         self.lockState=True
     
     def __bindData__(self):
-        self.addAttr('systemType', attrType='string')
-        self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')  
+        self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
+        self.addAttr('root',attrType='messageSimple')
     
     def addPlug(self, node, boundData=None):
               
@@ -165,12 +166,14 @@ class TappSystem(TappRig):
         
         return metaNode
     
-    def addControl(self, node, boundData=None):
+    def addControl(self, node,system, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
         metaNode=TappControl(name='meta_%s' % node)
+        metaNode.system=system
+        
         self.connectChildren(metaNode, 'controls', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
@@ -207,7 +210,7 @@ class TappControl(r9Meta.MetaRig):
         '''
         Overload call to wipe MetaRig bind data
         '''
-        pass
+        self.addAttr('system','')
 
 class TappPlug(r9Meta.MetaRig):
     '''

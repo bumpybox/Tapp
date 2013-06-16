@@ -1,5 +1,3 @@
-import inspect
-
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -10,10 +8,36 @@ reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
-def buildChain(obj,parent=None):
+def buildChain(obj):
     
-    #build from guide---
-    if isinstance(obj,str) or isinstance(obj, unicode):
+    def chainFromSystem(obj,parent=None):
+        
+        node=meta.chain(obj)
+        
+        node.name=obj.data['name']
+        
+        data=obj.data
+        del(data['name'])
+        node.data=data
+        
+        #transforms
+        node.translation=cmds.xform(obj.node,q=True,ws=True,translation=True)
+        node.rotation=cmds.xform(obj.node,q=True,ws=True,rotation=True)
+        node.scale=cmds.xform(obj.node,q=True,relative=True,scale=True)
+        
+        
+        #parent and children
+        node.parent=parent
+        
+        if obj.hasAttr('guideChildren'):
+            for child in obj.guideChildren:
+                node.addChild(chainFromSystem(child,parent=node))
+            
+            return node
+        else:
+            return node
+    
+    def chainFromGuide(obj,parent=None):
         
         node=meta.chain(obj)
         
@@ -38,42 +62,34 @@ def buildChain(obj,parent=None):
         
         if children:
             for child in children:
-                node.addChild(buildChain(child,parent=node))
+                node.addChild(chainFromGuide(child,parent=node))
             
             return node
         else:
             return node
     
-    #build from system
-    #should really check the type of incoming object---
-    else:
-        sockets=obj.getChildMetaNodes(mAttrs='mClass=TappSocket')
+    
+    #build from guide---
+    if cmds.nodeType(obj)=='transform':
         
-        for socket in sockets:
-            
-            node=meta.chain(socket)
-            
-            node.name=socket.data['name']
-            
-            data=socket.data
-            del(data['name'])
-            node.data=data
-            
-            #transforms
-            node.translation=cmds.xform(socket.node,q=True,ws=True,translation=True)
-            node.rotation=cmds.xform(socket.node,q=True,ws=True,rotation=True)
-            node.scale=cmds.xform(socket.node,q=True,relative=True,scale=True)
-            
-            #parent and children
-            node.parent=parent
-            
-            if socket.hasAttr('guideChildren'):
-                for child in socket.guideChildren:
-                    node.addChild(buildChain(child,parent=node))
+        chain=chainFromGuide(obj)
+        chain.addRoot(obj)
+        
+        return chain
+        
+    #build from system---
+    if cmds.nodeType(obj)=='network':
+        
+        obj=meta.r9Meta.MetaClass(obj)
+        
+        for socket in obj.getChildMetaNodes(mAttrs='mClass=TappSocket'):
+            if not socket.hasAttr('guideParent'):
                 
-                return node
-            else:
-                return node
+                chain=chainFromSystem(socket)
+                chain.addRoot(obj.root)
+                chain.addSystem(obj)
+                
+                return chain
 
 def fk_build(chainList):
     
@@ -127,7 +143,7 @@ def fk_build(chainList):
             else:
                 cmds.parent(phgrp,root)
             
-            node.system.addControl(cnt)
+            node.system.addControl(cnt,'fk')
 
 def ik_build(chainList):
     
@@ -137,10 +153,9 @@ def ik_build(chainList):
     cmds.parent(root,chainList[0].root)
     
     #finding upvector
-    posA=cmds.xform(chainList[0].name,q=True,ws=True,translation=True)
-    posB=cmds.xform(chainList[1].name,q=True,ws=True,translation=True)
-    posC=cmds.xform(chainList[2].name,q=True,ws=True,translation=True)
-    crs=mru.CrossProduct(posA,posB,posC)
+    crs=mru.CrossProduct(chainList[0].translation,
+                         chainList[1].translation,
+                         chainList[2].translation)
     
     #creating joints and sockets
     jnts=[]
@@ -229,7 +244,8 @@ def ik_build(chainList):
             cmds.parent(cnt,sngrp)
             cmds.parent(sngrp,phgrp)
             
-            node.system.addControl(cnt)
+            
+            node.system.addControl(cnt,'ik')
             
             if node.children:
                 
@@ -275,6 +291,30 @@ def ik_build(chainList):
                 cmds.parent(node.socket['ik'],cnt)
                 
                 cmds.parent(phgrp,root)
+
+def guide_build(node):
+    
+    #build controls---
+    cnt=mru.implicitSphere(node.name)
+        
+    node.guide=cnt
+    
+    mru.Snap(None, cnt, translation=node.translation, rotation=node.rotation)
+    
+    #adding data
+    for data in node.data:
+        
+        mNode=meta.r9Meta.MetaClass(cnt)
+        mNode.addAttr(data,node.data[data])
+    
+    #parenting
+    if node.parent:
+        cmds.parent(cnt,node.parent.guide)
+    
+    #traversing down the node tree
+    if node.children:
+        for child in node.children:
+            guide_build(child)
 
 class solver():
     
@@ -364,11 +404,50 @@ class solver():
             for child in node.children:
                 self.blend(child,control)
     
-    def build(self,method=['fk','ik','spline','joint','all','guide'],blend=[True,False]):
+    def switch(self,node):
         
+        if len(node.control)>1:
+            for control in node.control:
+                
+                mNode=meta.r9Meta.MetaClass(node.control[control])
+                mNode=mNode.getParentMetaNode()
+                
+                otherControls=[]
+                for c in node.control:
+                    if c!=control:
+                        
+                        otherControl=meta.r9Meta.MetaClass(node.control[c])
+                        otherControl=otherControl.getParentMetaNode()
+                        otherControls.append(otherControl)
+                
+                mNode.connectChildren(otherControls,'switch')
+        
+        if node.children:
+            for child in node.children:
+                self.switch(child)
+    
+    def build(self,method=None,blend=False,deleteSource=True):
+        
+        #delete source
+        if deleteSource:
+            
+            if self.chain.root:
+                cmds.delete(self.chain.root)
+            
+            if self.chain.system:
+                for control in self.chain.system.getChildren(cAttrs='controls'):
+                    meta.r9Meta.MetaClass(control).delete()
+                    
+                for socket in self.chain.system.getChildren(cAttrs='sockets'):
+                    meta.r9Meta.MetaClass(socket).delete()
+                
+                self.chain.system.delete()
+        
+        #adding root and system
         if method and method!='guide':
             #rig asset
             asset=cmds.container(n='rig',type='dagContainer')
+            #asset=cmds.group(empty=True,n='rig')
             attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
             mru.ChannelboxClean(asset, attrs)
             
@@ -376,8 +455,12 @@ class solver():
             
             #meta rig
             system=meta.TappSystem()
+            
+            system.root=asset
+            
             self.chain.addSystem(system)
         
+        #build methods
         if method=='fk':
             for c in self.fk_chains:
                 fk_build(c)
@@ -394,8 +477,9 @@ class solver():
                 ik_build(c)
         
         if method=='guide':
-            print 'building a guide'
+            guide_build(self.chain)
         
+        #blending
         if blend and method!='guide':
             
             #create extra control
@@ -415,28 +499,81 @@ class solver():
                              min=0,max=1)
                 
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
+            
+            system.addControl(cnt,'extra')
         
-        cmds.delete(self.chain.source)
+        #switching
+        self.switch(self.chain)
 
-chain=buildChain('|clavicle')
-solver(chain).build('all',blend=True)
+#build system
+#chain=buildChain('|clavicle')
+#solver(chain).build('all',blend=True)
 
-newChain=buildChain(chain.system)
-print solver(newChain)
-
-'''
-build guide from rig
-
-ability to choose control icon for control tags
-'''
+#rebuild system
+#chain=buildChain('TappSystem')
+#solver(chain).build(method='all',blend=True)
 
 '''
-mRig=meta.MetaRig(name='meta_root')
-mRig.CTRL_Prefix='cnt'
-spine=mRig.addMetaSubSystem('spine', 'Centre')
-arm=spine.addMetaSubSystem('arm', 'Left')
-#print mRig.getChildren(cAttrs='systems')
-spine.addPlug('locator1')
-arm.addControl('locator2')
-spine.addSocket('locator3')
+get switching working
+    root of ik chain needs to be parented to fk chain somehow
+hook up controls visibility to blend control
 '''
+
+def switch(objs,switchSystem):
+    
+    systems=[]
+    for obj in objs:
+        metaNode=meta.r9Meta.MetaClass(obj).getParentMetaNode()
+        if metaNode:
+            systems.append(metaNode.getParentMetaNode().mNode)
+    
+    systems=set(systems)
+    for system in systems:
+        system=meta.r9Meta.MetaClass(system)
+        
+        controls=system.getChildren(cAttrs='controls')
+        
+        #transforming controls to switch system
+        currentSystem=None
+        for control in controls:
+            
+            control=meta.r9Meta.MetaClass(control)
+            
+            if control.system=='extra':
+                for attr in cmds.listAttr(control.node,userDefined=True):
+                    
+                    if attr=='fk':
+                        if cmds.getAttr(control.node[0]+'.fk'):
+                            currentSystem='fk'
+                    
+                    if attr=='ik':
+                        if cmds.getAttr(control.node[0]+'.ik'):
+                            currentSystem='ik'
+        
+        if currentSystem:
+            
+            for control in controls:
+                
+                control=meta.r9Meta.MetaClass(control)
+                
+                if control.system!=currentSystem:
+                    if control.hasAttr('switch'):
+                        for switch in control.switch:
+                            if switch.system==currentSystem:
+                                mru.Snap(switch.node[0], control.node[0])
+        
+        '''
+        #blending to switch system
+        for control in controls:
+            
+            control=meta.r9Meta.MetaClass(control)
+            
+            if control.system=='extra':
+                if switchSystem in cmds.listAttr(control.node,userDefined=True):
+                    
+                    cmds.setAttr(control.node[0]+'.'+switchSystem,1)
+                else:
+                    cmds.warning('System "%s" was not found!' % switchSystem)
+                    '''
+
+switch(cmds.ls(selection=True),'ik')
