@@ -15,8 +15,9 @@ class chain():
         self.rotation=[]
         self.scale=[]
         self.system=None
-        self.root=None
+        self.root={}
         self.guide=None
+        self.joint={}
     
     def addSystem(self,system):
         self.system=system
@@ -25,12 +26,12 @@ class chain():
             for child in self.children:
                 child.addSystem(system)
     
-    def addRoot(self,root):
-        self.root=root
+    def addRoot(self,root,rootType):
+        self.root[rootType]=root
         
         if self.children:
             for child in self.children:
-                child.addRoot(root)
+                child.addRoot(root,rootType)
     
     def addChild(self,child):
         self.children.append(child)

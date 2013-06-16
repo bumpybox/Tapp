@@ -1,3 +1,6 @@
+import logging
+import inspect
+
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -46,8 +49,8 @@ def buildChain(obj):
         
         #getting attr data
         data={}
-        for attr in cmds.listAttr(node.name,userDefined=True):
-            data[attr]=cmds.getAttr(node.name+'.'+attr)
+        for attr in cmds.listAttr(obj,userDefined=True):
+            data[attr]=cmds.getAttr(obj+'.'+attr)
         node.data=data
         
         #transforms
@@ -68,17 +71,18 @@ def buildChain(obj):
         else:
             return node
     
+    check=meta.r9Meta.MetaClass(obj)
     
     #build from guide---
-    if cmds.nodeType(obj)=='transform':
+    if check.__class__.__name__=='MetaClass':
         
         chain=chainFromGuide(obj)
-        chain.addRoot(obj)
+        chain.addRoot(obj,'master')
         
         return chain
         
     #build from system---
-    if cmds.nodeType(obj)=='network':
+    if check.__class__.__name__=='TappSystem':
         
         obj=meta.r9Meta.MetaClass(obj)
         
@@ -86,7 +90,7 @@ def buildChain(obj):
             if not socket.hasAttr('guideParent'):
                 
                 chain=chainFromSystem(socket)
-                chain.addRoot(obj.root)
+                chain.addRoot(obj.root,'master')
                 chain.addSystem(obj)
                 
                 return chain
@@ -94,9 +98,20 @@ def buildChain(obj):
 def fk_build(chainList):
     
     #build rig---
-    root=cmds.group(empty=True,name='fk_grp')
+    #create root grp
+    rootgrp=cmds.group(empty=True,name='fk_grp')
     
-    cmds.parent(root,chainList[0].root)
+    cmds.parent(rootgrp,chainList[0].root['master'])
+    
+    #create root object
+    root=cmds.spaceLocator(name='fk_root')[0]
+    
+    mru.Snap(None,root,
+             translation=chainList[0].translation,
+             rotation=chainList[0].rotation)
+    cmds.parent(root,rootgrp)
+    
+    chainList[0].root['fk']=root
     
     for node in chainList:
         
@@ -148,9 +163,20 @@ def fk_build(chainList):
 def ik_build(chainList):
     
     #build rig---
-    root=cmds.group(empty=True,name='ik_grp')
+    #create root grp
+    rootgrp=cmds.group(empty=True,name='ik_grp')
     
-    cmds.parent(root,chainList[0].root)
+    cmds.parent(rootgrp,chainList[0].root['master'])
+    
+    #create root object
+    root=cmds.spaceLocator(name='ik_root')[0]
+    
+    mru.Snap(None,root,
+             translation=chainList[0].translation,
+             rotation=chainList[0].rotation)
+    cmds.parent(root,rootgrp)
+    
+    chainList[0].root['ik']=root
     
     #finding upvector
     crs=mru.CrossProduct(chainList[0].translation,
@@ -195,7 +221,7 @@ def ik_build(chainList):
             cmds.parent(jnt,jnts[-1])
         
         if len(jnts)==0:
-            cmds.parent(jnt,root)
+            cmds.parent(jnt,rootgrp)
         
         jnts.append(jnt)
         
@@ -207,27 +233,37 @@ def ik_build(chainList):
         cmds.parent(socket,jnt)
         node.socket['ik']=socket
     
+    #root parent
+    cmds.parent(jnts[0],root)
+    
     #create ik
-    ikStart=cmds.group(empty=True)
-    ikEnd=cmds.group(empty=True)
+    ikStart=cmds.group(empty=True,n='startStretch')
+    ikEnd=cmds.group(empty=True,n='endStretch')
     
     mru.Snap(jnts[0],ikStart)
     mru.Snap(jnts[-1],ikEnd)
     
-    ikResult=mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd,root=root)
+    ikResult=mpsi.MG_softIk(jnts,startMatrix=ikStart,endMatrix=ikEnd,root=rootgrp)
+    
+    ikResult['ikHandle']=cmds.rename(ikResult['ikHandle'],'ikHandle')
+    
+    cmds.parent(ikStart,root)
     
     #setup ik
-    cmds.addAttr(node.root,ln='ik_stretch',at='float',min=0,max=1)
+    cmds.addAttr(node.root['master'],ln='ik_stretch',at='float',min=0,max=1)
     
-    cmds.connectAttr(node.root+'.ik_stretch',ikResult['softIk']+'.stretch')
+    cmds.connectAttr(node.root['master']+'.ik_stretch',ikResult['softIk']+'.stretch')
     
     #build controls---
+    
+    
     for node in chainList:
         
         count=chainList.index(node)
         
         prefix=node.name.split('|')[-1]+'_ik_'
         
+        #building polevector and end control
         if 'IK_control' in node.data:
             cnt=mru.Sphere(prefix+'cnt',size=node.scale[0])
         
@@ -283,14 +319,14 @@ def ik_build(chainList):
                 
                 cmds.poleVectorConstraint(cnt,ikResult['ikHandle'])
                 
-                cmds.parent(polevectorSHP,root)
-                cmds.parent(phgrp,root)
+                cmds.parent(polevectorSHP,rootgrp)
+                cmds.parent(phgrp,rootgrp)
             else:
                 
                 cmds.pointConstraint(cnt,ikEnd)
                 cmds.parent(node.socket['ik'],cnt)
                 
-                cmds.parent(phgrp,root)
+                cmds.parent(phgrp,rootgrp)
 
 def guide_build(node):
     
@@ -316,9 +352,39 @@ def guide_build(node):
         for child in node.children:
             guide_build(child)
 
+def joints_build(node):
+    
+    #build rig---
+    
+    #creating joint
+    cmds.select(cl=True)
+    jnt=cmds.joint(n=node.name)
+    
+    node.joint['blend']=jnt
+    
+    #setup joint
+    mru.Snap(None,jnt, translation=node.translation, rotation=node.rotation)
+    
+    #parent and children
+    if node.parent:
+        cmds.parent(jnt,node.parent.joint['blend'])
+    else:
+        #create root grp
+        rootgrp=cmds.group(empty=True,name='joints_grp')
+        
+        cmds.parent(rootgrp,node.root['master'])
+        
+        cmds.parent(jnt,rootgrp)
+    
+    if node.children:
+        for child in node.children:
+            joints_build(child)
+
 class solver():
     
     def __init__(self,chain):
+        
+        self.log= logging.getLogger( "%s.%s" % ( self.__module__, self.__class__.__name__))
         
         self.chain=chain
         self.fk_chains=[]
@@ -398,7 +464,7 @@ class solver():
         
         node.socket['blend']=socket
         
-        cmds.parent(socket,node.root)
+        cmds.parent(socket,node.root['master'])
         
         if node.children:
             for child in node.children:
@@ -426,13 +492,29 @@ class solver():
             for child in node.children:
                 self.switch(child)
     
-    def build(self,method=None,blend=False,deleteSource=True):
+    def rootParent(self,node):
+        
+        for key in node.root:
+            if key!='master':
+                if node.parent:
+                    cmds.parentConstraint(node.parent.socket['blend'],node.root[key],maintainOffset=True)
+        
+        if node.children:
+            for child in node.children:
+                self.rootParent(child)
+    
+    def build(self,methods=['fk','ik','joints','spline'],blend=False,deleteSource=True):
+        
+        #checking input type
+        if not isinstance(methods,list):
+            self.log.error('build: methods is a not a list!')
+            return
         
         #delete source
         if deleteSource:
             
             if self.chain.root:
-                cmds.delete(self.chain.root)
+                cmds.delete(self.chain.root['master'])
             
             if self.chain.system:
                 for control in self.chain.system.getChildren(cAttrs='controls'):
@@ -444,14 +526,14 @@ class solver():
                 self.chain.system.delete()
         
         #adding root and system
-        if method and method!='guide':
+        if len(methods)>1:
             #rig asset
-            asset=cmds.container(n='rig',type='dagContainer')
-            #asset=cmds.group(empty=True,n='rig')
+            #asset=cmds.container(n='rig',type='dagContainer')
+            asset=cmds.group(empty=True,n='rig')
             attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
             mru.ChannelboxClean(asset, attrs)
             
-            self.chain.addRoot(asset)
+            self.chain.addRoot(asset,'master')
             
             #meta rig
             system=meta.TappSystem()
@@ -461,26 +543,23 @@ class solver():
             self.chain.addSystem(system)
         
         #build methods
-        if method=='fk':
-            for c in self.fk_chains:
-                fk_build(c)
-        
-        if method=='ik':
-            for c in self.ik_chains:
-                ik_build(c)
-        
-        if method=='all':
-            for c in self.fk_chains:
-                fk_build(c)
+        for method in methods:
+            if method=='fk':
+                for c in self.fk_chains:
+                    fk_build(c)
             
-            for c in self.ik_chains:
-                ik_build(c)
-        
-        if method=='guide':
-            guide_build(self.chain)
+            if method=='ik':
+                for c in self.ik_chains:
+                    ik_build(c)
+            
+            if method=='joints':
+                joints_build(self.chain)
+            
+            if method=='guide':
+                guide_build(self.chain)
         
         #blending
-        if blend and method!='guide':
+        if blend and len(methods)>1:
             
             #create extra control
             cnt=mru.Pin('extra_cnt')
@@ -501,79 +580,87 @@ class solver():
                 cmds.connectAttr(cnt+'.ik_stretch',asset+'.ik_stretch')
             
             system.addControl(cnt,'extra')
+            
+            #parenting roots
+            self.rootParent(self.chain)
         
         #switching
         self.switch(self.chain)
 
 #build system
-#chain=buildChain('|clavicle')
-#solver(chain).build('all',blend=True)
+chain=buildChain('|clavicle')
+solver(chain).build()
 
 #rebuild system
 #chain=buildChain('TappSystem')
 #solver(chain).build(method='all',blend=True)
 
 '''
-get switching working
-    root of ik chain needs to be parented to fk chain somehow
+build joints
+build spline
+possibly need to not have one attr for activting systems, and go to each socket and active the system if its present
+need to find/build a better logging system, 
 hook up controls visibility to blend control
 '''
 
 def switch(objs,switchSystem):
     
-    systems=[]
-    for obj in objs:
-        metaNode=meta.r9Meta.MetaClass(obj).getParentMetaNode()
-        if metaNode:
-            systems.append(metaNode.getParentMetaNode().mNode)
-    
-    systems=set(systems)
-    for system in systems:
-        system=meta.r9Meta.MetaClass(system)
+    if objs:
+        systems=[]
+        for obj in objs:
+            metaNode=meta.r9Meta.MetaClass(obj).getParentMetaNode()
+            if metaNode:
+                systems.append(metaNode.getParentMetaNode().mNode)
         
-        controls=system.getChildren(cAttrs='controls')
-        
-        #transforming controls to switch system
-        currentSystem=None
-        for control in controls:
+        systems=set(systems)
+        for system in systems:
+            system=meta.r9Meta.MetaClass(system)
             
-            control=meta.r9Meta.MetaClass(control)
+            controls=system.getChildren(cAttrs='controls')
             
-            if control.system=='extra':
-                for attr in cmds.listAttr(control.node,userDefined=True):
-                    
-                    if attr=='fk':
-                        if cmds.getAttr(control.node[0]+'.fk'):
-                            currentSystem='fk'
-                    
-                    if attr=='ik':
-                        if cmds.getAttr(control.node[0]+'.ik'):
-                            currentSystem='ik'
-        
-        if currentSystem:
-            
+            #transforming controls to switch system
+            currentSystem=None
             for control in controls:
                 
                 control=meta.r9Meta.MetaClass(control)
                 
-                if control.system!=currentSystem:
-                    if control.hasAttr('switch'):
-                        for switch in control.switch:
-                            if switch.system==currentSystem:
-                                mru.Snap(switch.node[0], control.node[0])
-        
-        '''
-        #blending to switch system
-        for control in controls:
+                if control.system=='extra':
+                    for attr in cmds.listAttr(control.node,userDefined=True):
+                        
+                        if attr=='fk':
+                            if cmds.getAttr(control.node[0]+'.fk'):
+                                currentSystem='fk'
+                        
+                        if attr=='ik':
+                            if cmds.getAttr(control.node[0]+'.ik'):
+                                currentSystem='ik'
             
-            control=meta.r9Meta.MetaClass(control)
-            
-            if control.system=='extra':
-                if switchSystem in cmds.listAttr(control.node,userDefined=True):
+            if currentSystem:
+                
+                for control in controls:
                     
-                    cmds.setAttr(control.node[0]+'.'+switchSystem,1)
-                else:
-                    cmds.warning('System "%s" was not found!' % switchSystem)
-                    '''
+                    control=meta.r9Meta.MetaClass(control)
+                    
+                    if control.system!=currentSystem:
+                        if control.hasAttr('switch'):
+                            for switch in control.switch:
+                                if switch.system==currentSystem:
+                                    mru.Snap(switch.node[0], control.node[0])
+            else:
+                cmds.warning('No current system is active! Setting %s as active system.' % switchSystem)
+            
+            #blending to switch system
+            for control in controls:
+                
+                control=meta.r9Meta.MetaClass(control)
+                
+                if control.system=='extra':
+                    if switchSystem in cmds.listAttr(control.node,userDefined=True):
+                        
+                        cmds.setAttr(control.node[0]+'.'+switchSystem,1)
+                    else:
+                        cmds.warning('System "%s" was not found!' % switchSystem)
+    else:
+        cmds.warning('No objects found to switch!')
 
-switch(cmds.ls(selection=True),'ik')
+#switch(cmds.ls(selection=True),'fk')
