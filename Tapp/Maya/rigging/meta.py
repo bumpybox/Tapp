@@ -1,104 +1,11 @@
 import Red9.core.Red9_Meta as r9Meta
-
-class chain():
-    
-    def __init__(self,obj):
-        self.source=obj
         
-        self.name=''
-        self.socket={}
-        self.control={}
-        self.data=None
-        self.children=[]
-        self.parent=None
-        self.translation=[]
-        self.rotation=[]
-        self.scale=[]
-        self.system=None
-        self.root={}
-        self.guide=None
-        self.joint={}
-    
-    def addSystem(self,system):
-        self.system=system
-        
-        if self.children:
-            for child in self.children:
-                child.addSystem(system)
-    
-    def addRoot(self,root,rootType):
-        self.root[rootType]=root
-        
-        if self.children:
-            for child in self.children:
-                child.addRoot(root,rootType)
-    
-    def addChild(self,child):
-        self.children.append(child)
-    
-    def downstream(self,searchAttr):
-        
-        result=[]
-        
-        if self.children:
-            for child in self.children:
-                if child.data and len(set(child.data) & set(searchAttr))>0:
-                    result=[child]
-                else:
-                    childData=child.downstream(searchAttr)
-                    if childData:
-                        result.extend(childData)
-        else:
-            return None,self
-        
-        return result
-    
-    def tween(self,endNode):
-        
-        result=[self]
-        
-        if self==endNode:
-            return result
-        
-        if self.children:
-            for child in self.children:
-                result.extend(child.tween(endNode))
-        
-        return result
-    
-    def breakdown(self,startAttr,endAttr,result=[]):
-        
-        if len(set(self.data) & set(startAttr))>0:
-            startNode=self
-        else:
-            startData=self.downstream(startAttr)
-            if len(startData)>1:
-                return result
-            else:
-                startNode=startData[0]
-        
-        endData=startNode.downstream(endAttr)
-        if len(endData)>1:
-            endNode=endData[1]
-            
-            result.append(startNode.tween(endNode))
-            return result
-        else:
-            endNode=endData[0]
-        
-        result.append(startNode.tween(endNode))
-        
-        if endNode.children:
-            return endNode.breakdown(startAttr,endAttr,result=result)
-        
-        return result
-        
-class TappRig(r9Meta.MetaRig):
+class Meta(r9Meta.MetaRig):
     '''
     Initial test for a MetaRig labelling system
     '''
     def __init__(self,*args,**kws):
-        super(TappRig, self).__init__(*args,**kws)
+        super(Meta, self).__init__(*args,**kws)
         self.lockState=True
 
     def addMetaSubSystem(self, systemType, side, nodeName=None): 
@@ -117,7 +24,7 @@ class TappRig(r9Meta.MetaRig):
         import Red9.core.Red9_AnimationUtils as r9Anim
         r9Anim.MirrorHierarchy()._validateMirrorEnum(side) #??? do we just let the enum __setattr__ handle this?
         
-        subSystem=TappSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
+        subSystem=MetaSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
         self.connectChildren([subSystem],'systems', srcAttr='metaParent')
         
         #set the attrs on the newly created subSystem MetaNode
@@ -125,10 +32,10 @@ class TappRig(r9Meta.MetaRig):
         subSystem.mirrorSide=side
         return subSystem
 
-class TappSystem(TappRig):
+class MetaSystem(Meta):
     
     def __init__(self,*args,**kws):
-        super(TappSystem, self).__init__(*args,**kws)
+        super(MetaSystem, self).__init__(*args,**kws)
         self.lockState=True
     
     def __bindData__(self):
@@ -140,7 +47,7 @@ class TappSystem(TappRig):
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=TappPlug(name='meta_%s' % node)
+        metaNode=MetaPlug(name='meta_%s' % node)
         self.connectChildren(metaNode, 'plugs', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
@@ -156,7 +63,7 @@ class TappSystem(TappRig):
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=TappSocket(name='meta_%s' % node)
+        metaNode=MetaSocket(name='meta_%s' % node)
         self.connectChildren(metaNode, 'sockets', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
@@ -172,7 +79,7 @@ class TappSystem(TappRig):
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
-        metaNode=TappControl(name='meta_%s' % node)
+        metaNode=MetaControl(name='meta_%s' % node)
         metaNode.system=system
         
         self.connectChildren(metaNode, 'controls', srcAttr='metaParent')
@@ -185,12 +92,12 @@ class TappSystem(TappRig):
         
         return metaNode
 
-class TappSocket(r9Meta.MetaRig):
+class MetaSocket(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(TappSocket, self).__init__(*args,**kws) 
+        super(MetaSocket, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):
@@ -199,12 +106,12 @@ class TappSocket(r9Meta.MetaRig):
         '''
         pass
 
-class TappControl(r9Meta.MetaRig):
+class MetaControl(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(TappControl, self).__init__(*args,**kws) 
+        super(MetaControl, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):
@@ -213,12 +120,12 @@ class TappControl(r9Meta.MetaRig):
         '''
         self.addAttr('system','')
 
-class TappPlug(r9Meta.MetaRig):
+class MetaPlug(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
     '''
     def __init__(self,*args,**kws):
-        super(TappPlug, self).__init__(*args,**kws) 
+        super(MetaPlug, self).__init__(*args,**kws) 
         self.lockState=True
     
     def __bindData__(self):

@@ -20,7 +20,7 @@ def buildChain(obj):
     
     def chainFromSystem(obj,parent=None):
         
-        node=meta.chain(obj)
+        node=chain(obj)
         
         node.name=obj.data['name']
         
@@ -32,7 +32,6 @@ def buildChain(obj):
         node.translation=cmds.xform(obj.node,q=True,ws=True,translation=True)
         node.rotation=cmds.xform(obj.node,q=True,ws=True,rotation=True)
         node.scale=cmds.xform(obj.node,q=True,relative=True,scale=True)
-        
         
         #parent and children
         node.parent=parent
@@ -47,7 +46,7 @@ def buildChain(obj):
     
     def chainFromGuide(obj,parent=None):
         
-        node=meta.chain(obj)
+        node=chain(obj)
         
         #getting name
         node.name=obj.split('|')[-1]
@@ -89,7 +88,7 @@ def buildChain(obj):
         return chain
         
     #build from system---
-    if check.__class__.__name__=='TappSystem':
+    if check.__class__.__name__=='MetaSystem':
         
         log.debug('building a chain node from system')
         
@@ -104,12 +103,114 @@ def buildChain(obj):
                 
                 return chain
 
+class chain(object):
+    '''
+    Generic data handler. This is the basis from which everything is build.
+    '''
+    
+    def __init__(self,node):
+        
+        if node:
+            self.source=node
+        
+        #tree data
+        self.children=[]
+        self.parent=None
+        
+        #transforms data
+        self.translation=[]
+        self.rotation=[]
+        self.scale=[]
+        
+        self.name=''
+        self.socket={}
+        self.control={}
+        self.data=None
+        self.system=None
+        self.root={}
+        self.guide=None
+        self.joint={}
+    
+    def addSystem(self,system):
+        self.system=system
+        
+        if self.children:
+            for child in self.children:
+                child.addSystem(system)
+    
+    def addRoot(self,root,rootType):
+        self.root[rootType]=root
+        
+        if self.children:
+            for child in self.children:
+                child.addRoot(root,rootType)
+    
+    def addChild(self,node):
+        '''
+        Will add the passed in node to the children list.
+        '''
+        self.children.append(node)
+    
+    def downstream(self,searchAttr):
+        
+        result=[]
+        
+        if self.children:
+            for child in self.children:
+                if child.data and len(set(child.data) & set(searchAttr))>0:
+                    result=[child]
+                else:
+                    childData=child.downstream(searchAttr)
+                    if childData:
+                        result.extend(childData)
+        else:
+            return None,self
+        
+        return result
+    
+    def tween(self,endNode):
+        
+        result=[self]
+        
+        if self==endNode:
+            return result
+        
+        if self.children:
+            for child in self.children:
+                result.extend(child.tween(endNode))
+        
+        return result
+    
+    def breakdown(self,startAttr,endAttr,result=[]):
+        
+        if len(set(self.data) & set(startAttr))>0:
+            startNode=self
+        else:
+            startData=self.downstream(startAttr)
+            if len(startData)>1:
+                return result
+            else:
+                startNode=startData[0]
+        
+        endData=startNode.downstream(endAttr)
+        if len(endData)>1:
+            endNode=endData[1]
+            
+            result.append(startNode.tween(endNode))
+            return result
+        else:
+            endNode=endData[0]
+        
+        result.append(startNode.tween(endNode))
+        
+        if endNode.children:
+            return endNode.breakdown(startAttr,endAttr,result=result)
+        
+        return result
 
-class solver():
+class system():
     
     def __init__(self,chain):
-        
-        self.log= log
         
         self.chain=chain
         self.fk_chains=[]
@@ -277,7 +378,7 @@ class solver():
             self.chain.addRoot(asset,'master')
             
             #meta rig
-            system=meta.TappSystem()
+            system=meta.MetaSystem()
             
             system.root=asset
             
@@ -329,8 +430,7 @@ class solver():
         self.switch(self.chain)
 
 #build system
-chain=buildChain('|clavicle')
-solver(chain).build('ik')
+system()
 
 #rebuild system
 #chain=buildChain('TappSystem')
