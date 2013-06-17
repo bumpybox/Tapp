@@ -372,7 +372,8 @@ def joints_build(node):
         #create root grp
         rootgrp=cmds.group(empty=True,name='joints_grp')
         
-        cmds.parent(rootgrp,node.root['master'])
+        if node.root['master']:
+            cmds.parent(rootgrp,node.root['master'])
         
         cmds.parent(jnt,rootgrp)
     
@@ -505,6 +506,15 @@ class solver():
     
     def build(self,methods=['fk','ik','joints','spline'],blend=False,deleteSource=True):
         
+        #if methods is a string
+        if isinstance(methods,str):
+            checkList=['fk','ik','joints','spline']
+            if not methods in checkList:
+                self.log.error('build: methods input string invalid!')
+                return
+            else:
+                methods=[methods]
+        
         #checking input type
         if not isinstance(methods,list):
             self.log.error('build: methods is a not a list!')
@@ -515,6 +525,7 @@ class solver():
             
             if self.chain.root:
                 cmds.delete(self.chain.root['master'])
+                self.chain.root['master']=None
             
             if self.chain.system:
                 for control in self.chain.system.getChildren(cAttrs='controls'):
@@ -524,6 +535,7 @@ class solver():
                     meta.r9Meta.MetaClass(socket).delete()
                 
                 self.chain.system.delete()
+                self.chain.system=None
         
         #adding root and system
         if len(methods)>1:
@@ -596,10 +608,9 @@ solver(chain).build()
 #solver(chain).build(method='all',blend=True)
 
 '''
-build joints
 build spline
-possibly need to not have one attr for activting systems, and go to each socket and active the system if its present
-need to find/build a better logging system, 
+possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
+need to find/build a better logging system,
 hook up controls visibility to blend control
 '''
 
