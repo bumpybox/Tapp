@@ -5,7 +5,7 @@ import sip
 
 import Tapp.Maya.lighting.gui as lighting
 import Tapp.Maya.animation.gui as animation
-import Tapp.Maya.rigging.gui as rigging
+#import Tapp.Maya.rigging.gui as rigging
 import Tapp.Maya.modelling.gui as modelling
 
 # MQtUtil class exists in Maya 2011 and up
@@ -26,7 +26,7 @@ class Window(QtGui.QDialog):
         main_layout.addWidget(main_tabs)
         
         main_tabs.addTab(modelling.Form(), 'Modelling')
-        main_tabs.addTab(rigging.Form(), 'Rigging')
+        #main_tabs.addTab(rigging.Form(), 'Rigging')
         main_tabs.addTab(animation.Form(), 'Animation')
         main_tabs.addTab(lighting.Form(), 'Lighting')
         

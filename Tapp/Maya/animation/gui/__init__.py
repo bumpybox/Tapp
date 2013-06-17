@@ -7,8 +7,8 @@ import maya.mel as mel
 import maya.OpenMayaUI as omu
 import sip
 
-import character
-import tools
+import Tapp.Maya.animation.character as character
+import Tapp.Maya.animation.tools as tools
 import Tapp.Maya.utils.ZvParentMaster as muz
 import Tapp.Maya.animation.utils as mau
 import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
@@ -16,6 +16,7 @@ import Tapp.Maya.animation.utils.ml_hold as maumlh
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 
 uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
+uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\gui'+'/resources/animation.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -199,4 +200,4 @@ def show():
     dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
     dockWidget.setWidget(Form())
 
-#show()
+show()

@@ -7,7 +7,7 @@ import maya.cmds as cmds
 import Tapp.Maya.rigging.modules as mrm
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.config as mrc
-import Tapp.Maya.utils.yaml as muy
+import Tapp.utils.yaml as muy
 
 def __importModule__(module,dirPath):
     f = module+'.py'

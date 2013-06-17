@@ -6,11 +6,11 @@ import maya.OpenMayaUI as omu
 import sip
 
 import Tapp.Maya.rigging.modules as mrm
-import create
-import setup
-import utilities
+import Tapp.Maya.rigging.gui.create as create
+import Tapp.Maya.rigging.gui.setup as setup
+import Tapp.Maya.rigging.gui.utilities as utilities
 
-uiPath=os.path.dirname(__file__)+'/resources/gui.ui'
+uiPath=os.path.dirname(__file__)+'/resources/rigging.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -133,3 +133,5 @@ def show():
     #showing new dialog
     win=Form()
     win.show()
+
+#show()

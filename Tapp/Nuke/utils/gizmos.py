@@ -52,7 +52,7 @@ def loadGizmos():
         else:
             nuke.message('Gizmos Path in config file is not valid!')
     else:
-        nuke.message('No config file were found!')
+        nuke.message('No config file were found for Tapp Gizmos!')
 
 #adding menu items
 menubar = nuke.menu("Nuke")
