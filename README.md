@@ -31,3 +31,4 @@ CREDITS:
 - Jeff Dobson; detachSeparate
 - Karim Kashefy; kk_symmetry
 - Francis O'Brien; RoadKill
+- Brian Horgan; bhGhost

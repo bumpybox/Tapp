@@ -442,6 +442,8 @@ build spline
 possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
 hook up controls visibility to blend control
 better inheritance model
+place guides like clusters tool
+    if multiple verts, use one of them to align the guide towards
 '''
 
 def switch(objs,switchSystem):

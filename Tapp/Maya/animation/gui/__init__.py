@@ -16,7 +16,6 @@ import Tapp.Maya.animation.utils.ml_hold as maumlh
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 
 uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
-uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\gui'+'/resources/animation.ui'
 form,base=uic.loadUiType(uiPath)
 
 # MQtUtil class exists in Maya 2011 and up
@@ -29,7 +28,7 @@ class Form(base,form):
         super(base,self).__init__(parent)
         self.setupUi(self)
         
-        self.setObjectName('tatDock')
+        self.setObjectName('tatDialog')
     
     def create_connections(self):
         #///character connections///
@@ -98,7 +97,7 @@ class Form(base,form):
     
     def on_tools_zvparentmasterhelp_pushButton_released(self):
         
-        webbrowser.open('http://www.creativecrash.com/maya/downloads/scripts-plugins/animation/c/zv-parent-master')
+        webbrowser.open('http://www.creativecrash.com/maya/script/zv-parent-master')
     
     def on_tools_breakdowndragger_pushButton_released(self):
         
@@ -186,18 +185,32 @@ class Form(base,form):
     
     def on_tools_changeRotationOrderHelp_pushButton_released(self):
         
-        webbrowser.open('http://www.creativecrash.com/maya/downloads/scripts-plugins/animation/c/zoochangeroo')
+        webbrowser.open('http://www.creativecrash.com/maya/script/zoochangeroo')
+    
+    def on_tools_ghosting_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing ghost util
+        melPath=parentDir+'/utils/bhGhost.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        mel.eval('bhGhost')
+    
+    def on_tools_ghostingHelp_pushButton_released(self):
+        
+        webbrowser.open('https://vimeo.com/50029607')
 
 def show():
-    #delete previous ui
-    if cmds.dockControl('tatDock',exists=True):
-        cmds.deleteUI('tatDock')
+    #closing previous dialog
+    for widget in QtGui.qApp.allWidgets():
+        if widget.objectName()=='tatDialog':
+            widget.close()
     
-    #workaround to create dock control with dialog
-    slider = cmds.floatSlider()
-    dock = cmds.dockControl('tatDock',label='Tapp Animation Tools',content=slider, area='right')
-    dockPt = omu.MQtUtil.findControl(dock)
-    dockWidget = sip.wrapinstance(long(dockPt), QtCore.QObject)
-    dockWidget.setWidget(Form())
+    #showing new dialog
+    win=Form()
+    win.show()
 
-show()
+#show()
