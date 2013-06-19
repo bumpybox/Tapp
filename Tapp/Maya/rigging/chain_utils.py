@@ -16,93 +16,6 @@ handler=logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s - %(funcName)s - LINE: %(lineno)d - %(message)s'))
 log.addHandler(handler)
 
-def buildChain(obj):
-    
-    def chainFromSystem(obj,parent=None):
-        
-        node=chain(obj)
-        
-        node.name=obj.data['name']
-        
-        data=obj.data
-        del(data['name'])
-        node.data=data
-        
-        #transforms
-        node.translation=cmds.xform(obj.node,q=True,ws=True,translation=True)
-        node.rotation=cmds.xform(obj.node,q=True,ws=True,rotation=True)
-        node.scale=cmds.xform(obj.node,q=True,relative=True,scale=True)
-        
-        #parent and children
-        node.parent=parent
-        
-        if obj.hasAttr('guideChildren'):
-            for child in obj.guideChildren:
-                node.addChild(chainFromSystem(child,parent=node))
-            
-            return node
-        else:
-            return node
-    
-    def chainFromGuide(obj,parent=None):
-        
-        node=chain(obj)
-        
-        #getting name
-        node.name=obj.split('|')[-1]
-        
-        #getting attr data
-        data={}
-        for attr in cmds.listAttr(obj,userDefined=True):
-            data[attr]=cmds.getAttr(obj+'.'+attr)
-        node.data=data
-        
-        #transforms
-        node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
-        node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
-        node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
-        
-        #parent and children
-        node.parent=parent
-        
-        children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
-        
-        if children:
-            for child in children:
-                node.addChild(chainFromGuide(child,parent=node))
-            
-            return node
-        else:
-            return node
-    
-    check=meta.r9Meta.MetaClass(obj)
-    
-    #build from guide---
-    if check.__class__.__name__=='MetaClass':
-        
-        log.debug('building a chain node from guide')
-        
-        chain=chainFromGuide(obj)
-        chain.addRoot(obj,'master')
-        
-        return chain
-        
-    #build from system---
-    if check.__class__.__name__=='MetaSystem':
-        
-        log.debug('building a chain node from system')
-        
-        obj=meta.r9Meta.MetaClass(obj)
-        
-        for socket in obj.getChildMetaNodes(mAttrs='mClass=TappSocket'):
-            if not socket.hasAttr('guideParent'):
-                
-                chain=chainFromSystem(socket)
-                chain.addRoot(obj.root,'master')
-                chain.addSystem(obj)
-                
-                return chain
-
 class chain(object):
     '''
     Generic data handler. This is the basis from which everything is build.
@@ -113,6 +26,8 @@ class chain(object):
         if node:
             self.source=node
         
+        self.name=''
+        
         #tree data
         self.children=[]
         self.parent=None
@@ -122,28 +37,8 @@ class chain(object):
         self.rotation=[]
         self.scale=[]
         
-        self.name=''
-        self.socket={}
-        self.control={}
+        #attribute data
         self.data=None
-        self.system=None
-        self.root={}
-        self.guide=None
-        self.joint={}
-    
-    def addSystem(self,system):
-        self.system=system
-        
-        if self.children:
-            for child in self.children:
-                child.addSystem(system)
-    
-    def addRoot(self,root,rootType):
-        self.root[rootType]=root
-        
-        if self.children:
-            for child in self.children:
-                child.addRoot(root,rootType)
     
     def addChild(self,node):
         '''
@@ -208,11 +103,21 @@ class chain(object):
         
         return result
 
-class system():
+class system(chain):
     
-    def __init__(self,chain):
+    def __init__(self,obj):
+        super(system, self).__init__(obj)
         
-        self.chain=chain
+        self.chain=self.buildChain(obj)
+        
+        self.socket={}
+        self.control={}
+        self.system=None
+        self.root={}
+        self.guide=None
+        self.joint={}
+        
+        
         self.fk_chains=[]
         self.ik_chains=[]
         self.spline_chains=[]
@@ -250,6 +155,105 @@ class system():
                 result+=node.name+'\n'
         
         return result
+    
+    def addSystem(self,system):
+        self.system=system
+        
+        if self.children:
+            for child in self.children:
+                child.addSystem(system)
+    
+    def addRoot(self,root,rootType):
+        self.root[rootType]=root
+        
+        if self.children:
+            for child in self.children:
+                child.addRoot(root,rootType)
+    
+    def buildChain(self,obj):
+        
+        check=meta.r9Meta.MetaClass(obj)
+        
+        #build from guide---
+        if isinstance(check,meta.r9Meta.MetaClass):
+            
+            log.debug('building a chain node from guide')
+            
+            chain=self.chainFromGuide(obj)
+            #chain.addRoot(obj,'master')
+            
+            return chain
+            
+        #build from system---
+        if isinstance(check,meta.MetaSystem):
+            
+            log.debug('building a chain node from system')
+            
+            obj=meta.r9Meta.MetaClass(obj)
+            
+            for socket in obj.getChildMetaNodes(mAttrs='mClass=TappSocket'):
+                if not socket.hasAttr('guideParent'):
+                    
+                    chain=self.chainFromSystem(socket)
+                    chain.addRoot(obj.root,'master')
+                    chain.addSystem(obj)
+                    
+                    return chain
+    
+    def chainFromGuide(self,obj,parent=None):
+        
+        #getting name
+        self.name=obj.split('|')[-1]
+        
+        #getting attr data
+        data={}
+        for attr in cmds.listAttr(obj,userDefined=True):
+            data[attr]=cmds.getAttr(obj+'.'+attr)
+        self.data=data
+        
+        #transforms
+        self.translation=cmds.xform(obj,q=True,ws=True,translation=True)
+        self.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
+        self.scale=cmds.xform(obj,q=True,relative=True,scale=True)
+        
+        #parent and children
+        self.parent=parent
+        
+        children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+        
+        if children:
+            for child in children:
+                self.addChild(self.chainFromGuide(child,parent=self))
+            
+            return self
+        else:
+            return self
+    
+    def chainFromSystem(self,obj,parent=None):
+        
+        node=chain(obj)
+        
+        node.name=obj.data['name']
+        
+        data=obj.data
+        del(data['name'])
+        node.data=data
+        
+        #transforms
+        node.translation=cmds.xform(obj.node,q=True,ws=True,translation=True)
+        node.rotation=cmds.xform(obj.node,q=True,ws=True,rotation=True)
+        node.scale=cmds.xform(obj.node,q=True,relative=True,scale=True)
+        
+        #parent and children
+        node.parent=parent
+        
+        if obj.hasAttr('guideChildren'):
+            for child in obj.guideChildren:
+                node.addChild(self.chainFromSystem(child,parent=node))
+            
+            return node
+        else:
+            return node
     
     def blend(self,node,control):
         
@@ -430,13 +434,16 @@ class system():
         self.switch(self.chain)
 
 #build system
-system()
+print system('|clavicle')
 
 #rebuild system
 #chain=buildChain('TappSystem')
 #solver(chain).build(method='all',blend=True)
 
 '''
+need to treat chain as the data container it is! still need to be able to build a system directly from a node, instead of having to build the chain first
+    chain should not container anything to do with the system or build
+should treat the system as an overall system container, and have no operations specific to a build
 plugs!
 build spline
 possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
