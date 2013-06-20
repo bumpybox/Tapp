@@ -21,6 +21,9 @@ class ik(mrs.system):
     
     def __init__(self):
         
+        self.executeDefault=True
+        self.executeOrder=1
+        
         startAttr=['IK_solver_start','IK_control']
         endAttr=['IK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
@@ -208,6 +211,9 @@ class fk(mrs.system):
     
     def __init__(self):
         
+        self.executeDefault=True
+        self.executeOrder=1
+        
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
@@ -281,7 +287,8 @@ class guide(mrs.system):
     
     def __init__(self):
         
-        pass
+        self.executeDefault=False
+        self.executeOrder=1
     
     def build(self,node):
         #build controls---
@@ -309,8 +316,10 @@ class guide(mrs.system):
 class joints(mrs.system):
     
     def __init__(self):
+        super(joints, self).__init__(None)
         
-        pass
+        self.executeDefault=False
+        self.executeOrder=1
     
     def build(self,node):
     

@@ -55,6 +55,17 @@ class system(object):
     
     def __repr__(self):
         
+        result=''
+        
+        for subcls in self.getSubclasses(system):
+            
+            subcls()
+            if subcls.executeDefault:
+                for c in subcls.chains:
+                    result+='%s chain from:\n' % subcls.__name__
+                    for node in c:
+                        result+=node.name+'\n'
+        
         '''
         result=''
         
@@ -276,16 +287,3 @@ class system(object):
         #switching
         self.switch(self.chain)
         '''
-
-'''
-need to treat chain as the data container it is! still need to be able to build a system directly from a node, instead of having to build the chain first
-    chain should not container anything to do with the system or build
-should treat the system as an overall system container, and have no operations specific to a build
-plugs!
-build spline
-possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
-hook up controls visibility to blend control
-better inheritance model
-place guides like clusters tool
-    if multiple verts, use one of them to align the guide towards
-'''
