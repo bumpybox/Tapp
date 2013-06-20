@@ -42,7 +42,7 @@ class system(object):
         
         registerClasses()
         
-        self.chain=mrsu.buildChain(obj)
+        #self.chain=mrsu.buildChain(obj)
         
         self.socket={}
         self.control={}
@@ -50,21 +50,6 @@ class system(object):
         self.root={}
         self.guide=None
         self.joint={}
-        
-        print self.getSubclasses(system)
-    
-    def __repr__(self):
-        
-        result=''
-        
-        for subcls in self.getSubclasses(system):
-            
-            subcls()
-            if subcls.executeDefault:
-                for c in subcls.chains:
-                    result+='%s chain from:\n' % subcls.__name__
-                    for node in c:
-                        result+=node.name+'\n'
         
         '''
         result=''

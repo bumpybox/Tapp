@@ -24,9 +24,11 @@ class ik(mrs.system):
         self.executeDefault=True
         self.executeOrder=1
         
+        '''
         startAttr=['IK_solver_start','IK_control']
         endAttr=['IK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
+        '''
     
     def build(self,chainList):
     
@@ -214,9 +216,11 @@ class fk(mrs.system):
         self.executeDefault=True
         self.executeOrder=1
         
+        '''
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
+        '''
     
     def build(self,chainList):
     
@@ -316,8 +320,7 @@ class guide(mrs.system):
 class joints(mrs.system):
     
     def __init__(self):
-        super(joints, self).__init__(None)
-        
+                
         self.executeDefault=False
         self.executeOrder=1
     
@@ -349,5 +352,11 @@ class joints(mrs.system):
             for child in node.children:
                 self.build(child)
 
+class system(mrs.system):
+    
+    def __init__(self,obj):
+        super(system, self).__init__(obj)
+        
+        print super.__subclasses__()
 
 mrs.registerClasses()

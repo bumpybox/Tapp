@@ -1,7 +1,7 @@
 import Tapp.Maya.rigging.builds as mrb
 reload(mrb)
 
-print mrb.mrs.system('|clavicle')
+print mrb.system('|clavicle')
 
 '''
 need to have args* on all
