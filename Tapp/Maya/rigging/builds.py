@@ -7,28 +7,59 @@ import MG_Tools.python.rigging.script.MG_softIk as mpsi
 reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
-import Tapp.Maya.rigging.system as mrs
-reload(mrs)
 
-import logging
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler=logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s - %(funcName)s - LINE: %(lineno)d - %(message)s'))
-log.addHandler(handler)
+class base(object):
+    
+    def __init__(self):
+        
+        self.chain=None
+        self.socket={}
+        self.control={}
+        self.system=None
+        self.root={}
+        self.guide=None
+        self.joint={}
+        self.executeDefault=False
+        self.executeOrder=1
+    
+    def addSystem(self,system):
+        self.system=system
+        
+        if self.children:
+            for child in self.children:
+                child.addSystem(system)
+    
+    def addRoot(self,root,rootType):
+        self.root[rootType]=root
+        
+        if self.children:
+            for child in self.children:
+                child.addRoot(root,rootType)
 
-class ik(mrs.system):
+class ik(base):
     
     def __init__(self):
         
         self.executeDefault=True
-        self.executeOrder=1
+    
+    def __str__(self):
         
-        '''
+        result=''
+        
+        self.setChains()
+        
+        for c in self.chains:
+            result+='ik chain from:\n'
+            for node in c:
+                result+=node.name+'\n'
+        
+        return result
+    
+    def setChains(self):
+        
         startAttr=['IK_solver_start','IK_control']
         endAttr=['IK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
-        '''
     
     def build(self,chainList):
     
@@ -209,18 +240,30 @@ class ik(mrs.system):
                     
                     cmds.parent(phgrp,rootgrp)
 
-class fk(mrs.system):
+class fk(base):
     
     def __init__(self):
         
         self.executeDefault=True
-        self.executeOrder=1
+    
+    def __str__(self):
         
-        '''
+        result=''
+        
+        self.setChains()
+        
+        for c in self.chains:
+            result+='fk chain from:\n'
+            for node in c:
+                result+=node.name+'\n'
+        
+        return result
+    
+    def setChains(self):
+        
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
         self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
-        '''
     
     def build(self,chainList):
     
@@ -287,12 +330,14 @@ class fk(mrs.system):
                 
                 node.system.addControl(cnt,'fk')
 
-class guide(mrs.system):
+class guide(base):
     
     def __init__(self):
+        super(guide,self).__init__()
+    
+    def __str__(self):
         
-        self.executeDefault=False
-        self.executeOrder=1
+        return 'guide build!'
     
     def build(self,node):
         #build controls---
@@ -317,12 +362,14 @@ class guide(mrs.system):
             for child in node.children:
                 self.build(child)
 
-class joints(mrs.system):
-    
+class joints(base):
+
     def __init__(self):
-                
-        self.executeDefault=False
-        self.executeOrder=1
+        super(joints,self).__init__()
+    
+    def __str__(self):
+        
+        return 'joints build!'
     
     def build(self,node):
     
@@ -351,12 +398,3 @@ class joints(mrs.system):
         if node.children:
             for child in node.children:
                 self.build(child)
-
-class system(mrs.system):
-    
-    def __init__(self,obj):
-        super(system, self).__init__(obj)
-        
-        print super.__subclasses__()
-
-mrs.registerClasses()

@@ -1,5 +1,7 @@
-import Tapp.Maya.rigging.system_utils as mrsu
-reload(mrsu)
+import Tapp.Maya.rigging.builds as mrb
+reload(mrb)
+import Tapp.Maya.rigging.system_utils as mrs
+reload(mrs)
 
 import logging
 log = logging.getLogger(__name__)
@@ -8,92 +10,47 @@ handler=logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s - %(funcName)s - LINE: %(lineno)d - %(message)s'))
 log.addHandler(handler)
 
-def itersubclasses(cls,_seen=None):
-    """
-    itersubclasses(cls)
-    http://code.activestate.com/recipes/576949-find-all-subclasses-of-a-given-class/
-    """
-    if _seen is None: _seen = set()
-    try:
-        subs = cls.__subclasses__()
-    except TypeError: # fails only when cls is type
-        subs = cls.__subclasses__(cls)
-    for sub in subs:
-        if sub not in _seen:
-            _seen.add(sub)
-            yield sub
-            for sub in itersubclasses(sub, _seen):
-                yield sub
-
-def registerClasses():
-    '''
-    registers all subclasses of system
-    '''
-    
-    global TAPP_REGISTRY
-    TAPP_REGISTRY={}
-    TAPP_REGISTRY['system']=system
-    for cls in itersubclasses(system):
-        TAPP_REGISTRY[cls.__name__]=cls
-
 class system(object):
     
-    def __init__(self,obj):
+    def __init__(self,obj,method='default'):
         
-        registerClasses()
+        self.chain=mrs.buildChain(obj)
+        self.method=method
+        self.builds=self.getBuilds()
         
-        #self.chain=mrsu.buildChain(obj)
+    def __repr__(self):
         
-        self.socket={}
-        self.control={}
-        self.system=None
-        self.root={}
-        self.guide=None
-        self.joint={}
-        
-        '''
         result=''
         
-        for c in self.fk_chains:
-            result+='fk chain from:\n'
-            for node in c:
-                result+=node.name+'\n'
-        
-        for c in self.ik_chains:
-            result+='ik chain from:\n'
-            for node in c:
-                result+=node.name+'\n'
-        
-        for c in self.spline_chains:
-            result+='spline chain from:\n'
-            for node in c:
-                result+=node.name+'\n'
+        for build in self.builds:
+            
+            if build.executeDefault:
+                
+                result+=build.__str__()
         
         return result
-        '''
     
-    def getSubclasses(self,instance):
-        subClasses=[]
-        for cls in TAPP_REGISTRY.values():
-            if issubclass(cls, instance):
-                subClasses.append(cls)
-        return subClasses
-    
-    def addSystem(self,system):
-        self.system=system
+    def getBuilds(self):
         
-        if self.children:
-            for child in self.children:
-                child.addSystem(system)
-    
-    def addRoot(self,root,rootType):
-        self.root[rootType]=root
+        result=[]
         
-        if self.children:
-            for child in self.children:
-                child.addRoot(root,rootType)
-    
-    '''
+        for cls in mrb.base.__subclasses__():
+            temp=cls()
+            temp.chain=self.chain
+            
+            if self.method=='default':
+                if temp.executeDefault:
+                    
+                    result.append(temp)
+            else:
+                if self.method==temp.__class__.__name__:
+                    
+                    result.append(temp)
+        
+        return result
+
+print system('|clavicle',method='guide')
+'''
     def blend(self,node,control):
         
         prefix=node.name.split('|')[-1]+'_bld_'
@@ -272,3 +229,17 @@ class system(object):
         #switching
         self.switch(self.chain)
         '''
+
+'''
+need to have args* on all
+need to treat chain as the data container it is! still need to be able to build a system directly from a node, instead of having to build the chain first
+    chain should not container anything to do with the system or build
+should treat the system as an overall system container, and have no operations specific to a build
+plugs!
+build spline
+possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
+hook up controls visibility to blend control
+better inheritance model
+place guides like clusters tool
+    if multiple verts, use one of them to align the guide towards
+'''

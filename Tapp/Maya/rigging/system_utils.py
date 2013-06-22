@@ -1,18 +1,11 @@
 import maya.cmds as cmds
 
-import Tapp.Maya.rigging.chain as mrc
-reload(mrc)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 import Tapp.Maya.rigging.utils as mru
 reload(mru)
-
-import logging
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler=logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s - %(funcName)s - LINE: %(lineno)d - %(message)s'))
-log.addHandler(handler)
+import Tapp.Maya.rigging.chain as mrc
+reload(mrc)
 
 def buildChain(obj):
     
@@ -21,8 +14,6 @@ def buildChain(obj):
     #build from guide---
     if isinstance(check,meta.r9Meta.MetaClass):
         
-        log.debug('building a chain node from guide')
-        
         chain=chainFromGuide(obj)
         #self.addRoot(obj,'master')
         
@@ -30,8 +21,6 @@ def buildChain(obj):
         
     #build from system---
     if isinstance(check,meta.MetaSystem):
-        
-        log.debug('building a chain node from system')
         
         obj=meta.r9Meta.MetaClass(obj)
         
