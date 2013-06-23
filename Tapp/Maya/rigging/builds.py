@@ -8,45 +8,55 @@ reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
+import Tapp.Maya.rigging.system_utils as mrs
+reload(mrs)
+
 class base(object):
     
-    def __init__(self):
+    def __init__(self,chain):
         
-        self.chain=None
-        self.socket={}
-        self.control={}
-        self.system=None
-        self.root={}
-        self.guide=None
-        self.joint={}
+        self.chain=chain
         self.executeDefault=False
         self.executeOrder=1
+
+class system(base):
     
-    def addSystem(self,system):
-        self.system=system
+    def __init__(self,chain):
+        super(system,self).__init__(chain)
         
-        if self.children:
-            for child in self.children:
-                child.addSystem(system)
+        #overrides of default attributes
+        self.executeDefault=True
+        self.executeOrder=0
     
-    def addRoot(self,root,rootType):
-        self.root[rootType]=root
+    def build(self):
+        #rig asset
+        asset=cmds.container(n='rig',type='dagContainer')
+        #asset=cmds.group(empty=True,n='rig')
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz']
+        mru.ChannelboxClean(asset, attrs)
         
-        if self.children:
-            for child in self.children:
-                child.addRoot(root,rootType)
+        self.chain.addRoot(asset,'master')
+        
+        #meta rig
+        system=meta.MetaSystem()
+        
+        system.root=asset
+        
+        self.chain.addSystem(system)
 
 class ik(base):
     
-    def __init__(self):
+    def __init__(self,chain):
+        super(ik,self).__init__(chain)
         
         self.executeDefault=True
+        self.chain=chain
+        
+        self.chains=self.setChains()
     
     def __str__(self):
         
         result=''
-        
-        self.setChains()
         
         for c in self.chains:
             result+='ik chain from:\n'
@@ -59,35 +69,43 @@ class ik(base):
         
         startAttr=['IK_solver_start','IK_control']
         endAttr=['IK_solver_end']
-        self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
+        
+        return self.chain.breakdown(startAttr,endAttr,result=[])
     
-    def build(self,chainList):
+    def build(self):
+        
+        for chain in self.chains:
+            
+            self.__build(chain)
+    
+    def __build(self,chain):
     
         #build rig---
         #create root grp
         rootgrp=cmds.group(empty=True,name='ik_grp')
         
-        cmds.parent(rootgrp,chainList[0].root['master'])
+        if chain[0].root['master']:
+            cmds.parent(rootgrp,chain[0].root['master'])
         
         #create root object
         root=cmds.spaceLocator(name='ik_root')[0]
         
         mru.Snap(None,root,
-                 translation=chainList[0].translation,
-                 rotation=chainList[0].rotation)
+                 translation=chain[0].translation,
+                 rotation=chain[0].rotation)
         cmds.parent(root,rootgrp)
         
-        chainList[0].root['ik']=root
+        chain[0].root['ik']=root
         
         #finding upvector
-        crs=mru.CrossProduct(chainList[0].translation,
-                             chainList[1].translation,
-                             chainList[2].translation)
+        crs=mru.CrossProduct(chain[0].translation,
+                             chain[1].translation,
+                             chain[2].translation)
         
         #creating joints and sockets
         jnts=[]
-        for node in chainList:
-            count=chainList.index(node)
+        for node in chain:
+            count=chain.index(node)
             
             prefix=node.name.split('|')[-1]+'_ik_'
             
@@ -101,9 +119,9 @@ class ik(base):
             grp=cmds.group(empty=True)
             cmds.xform(grp,ws=True,translation=node.translation)
             
-            if chainList[count]!=chainList[-1]:
+            if chain[count]!=chain[-1]:
                 temp=cmds.group(empty=True)
-                mru.Snap(None,temp,translation=chainList[count+1].translation)
+                mru.Snap(None,temp,translation=chain[count+1].translation)
                 
                 cmds.delete(cmds.aimConstraint(temp,grp,worldUpType='vector',
                                                worldUpVector=crs))
@@ -118,7 +136,7 @@ class ik(base):
             
             cmds.delete(grp)
             
-            if chainList[count]!=chainList[0]:
+            if chain[count]!=chain[0]:
                 cmds.parent(jnt,jnts[-1])
             
             if len(jnts)==0:
@@ -151,14 +169,19 @@ class ik(base):
         cmds.parent(startStretch,root)
         
         #setup ik
-        cmds.addAttr(node.root['master'],ln='ik_stretch',at='float',min=0,max=1)
-        
-        cmds.connectAttr(node.root['master']+'.ik_stretch',ikResult['softIk']+'.stretch')
+        if chain[0].root['master']:
+            cmds.addAttr(node.root['master'],ln='ik_stretch',at='float',min=0,max=1)
+            
+            cmds.connectAttr(node.root['master']+'.ik_stretch',ikResult['softIk']+'.stretch')
+        else:
+            cmds.addAttr(rootgrp,ln='ik_stretch',at='float',min=0,max=1,k=True)
+            
+            cmds.connectAttr(rootgrp+'.ik_stretch',ikResult['softIk']+'.stretch')
         
         #build controls---
-        for node in chainList:
+        for node in chain:
             
-            count=chainList.index(node)
+            count=chain.index(node)
             
             prefix=node.name.split('|')[-1]+'_ik_'
             
@@ -179,11 +202,11 @@ class ik(base):
                 cmds.parent(cnt,sngrp)
                 cmds.parent(sngrp,phgrp)
                 
-                
-                node.system.addControl(cnt,'ik')
+                if node.system:
+                    node.system.addControl(cnt,'ik')
                 
                 #root control
-                if node==chainList[0]:
+                if node==chain[0]:
                     
                     cmds.parent(jnts[0],cnt)
                     cmds.parent(startStretch,cnt)
@@ -193,7 +216,7 @@ class ik(base):
                     cmds.parent(phgrp,rootgrp)
                 
                 #polevector control
-                if node.children and node!=chainList[0]:
+                if node.children and node!=chain[0]:
                     
                     mru.Snap(jnts[count],phgrp)
                     
@@ -242,10 +265,14 @@ class ik(base):
 
 class fk(base):
     
-    def __init__(self):
+    def __init__(self,chain):
+        super(fk,self).__init__(chain)
         
         self.executeDefault=True
-    
+        self.chain=chain
+        
+        self.chains=self.setChains()
+            
     def __str__(self):
         
         result=''
@@ -263,27 +290,35 @@ class fk(base):
         
         startAttr=['FK_solver_start','FK_control']
         endAttr=['FK_solver_end']
-        self.chains=self.chain.breakdown(startAttr,endAttr,result=[])
+        
+        return self.chain.breakdown(startAttr,endAttr,result=[])
     
-    def build(self,chainList):
+    def build(self):
+        
+        for chain in self.chains:
+            
+            self.__build(chain)
+    
+    def __build(self,chain):
     
         #build rig---
         #create root grp
         rootgrp=cmds.group(empty=True,name='fk_grp')
         
-        cmds.parent(rootgrp,chainList[0].root['master'])
+        if chain[0].root['master']:
+            cmds.parent(rootgrp,chain[0].root['master'])
         
         #create root object
         root=cmds.spaceLocator(name='fk_root')[0]
         
         mru.Snap(None,root,
-                 translation=chainList[0].translation,
-                 rotation=chainList[0].rotation)
+                 translation=chain[0].translation,
+                 rotation=chain[0].rotation)
         cmds.parent(root,rootgrp)
         
-        chainList[0].root['fk']=root
+        chain[0].root['fk']=root
         
-        for node in chainList:
+        for node in chain:
             
             prefix=node.name.split('|')[-1]+'_fk_'
             
@@ -300,7 +335,7 @@ class fk(base):
                 cmds.parent(socket,root)
         
         #build controls---
-        for node in chainList:
+        for node in chain:
             
             prefix=node.name.split('|')[-1]+'_fk_'
             
@@ -328,73 +363,82 @@ class fk(base):
                 else:
                     cmds.parent(phgrp,root)
                 
-                node.system.addControl(cnt,'fk')
+                if node.system:
+                    node.system.addControl(cnt,'fk')
 
 class guide(base):
     
-    def __init__(self):
-        super(guide,self).__init__()
+    def __init__(self,chain):
+        super(guide,self).__init__(chain)
     
     def __str__(self):
         
         return 'guide build!'
     
-    def build(self,node):
-        #build controls---
-        cnt=mru.implicitSphere(node.name)
-            
-        node.guide=cnt
+    def build(self):
         
-        mru.Snap(None, cnt, translation=node.translation, rotation=node.rotation)
+        self.__build(self.chain)
+    
+    def __build(self,chain):
+        #build controls---
+        cnt=mru.implicitSphere(chain.name)
+            
+        chain.guide=cnt
+        
+        mru.Snap(None, cnt, translation=chain.translation, rotation=chain.rotation)
         
         #adding data
-        for data in node.data:
+        for data in chain.data:
             
             mNode=meta.r9Meta.MetaClass(cnt)
-            mNode.addAttr(data,node.data[data])
+            mNode.addAttr(data,chain.data[data])
         
         #parenting
-        if node.parent:
-            cmds.parent(cnt,node.parent.guide)
+        if chain.parent:
+            chain.guide=cmds.parent(cnt,chain.parent.guide)
         
         #traversing down the node tree
-        if node.children:
-            for child in node.children:
-                self.build(child)
+        if chain.children:
+            for child in chain.children:
+                self.__build(child)
 
 class joints(base):
 
-    def __init__(self):
-        super(joints,self).__init__()
+    def __init__(self,chain):
+        super(joints,self).__init__(chain)
     
     def __str__(self):
         
         return 'joints build!'
     
-    def build(self,node):
+    def build(self):
+        
+        self.__build(self.chain)
+    
+    def __build(self,chain):
     
         #build rig---
         #creating joint
         cmds.select(cl=True)
-        jnt=cmds.joint(n=node.name)
+        jnt=cmds.joint(n=chain.name)
         
-        node.joint['blend']=jnt
+        chain.joint['blend']=jnt
         
         #setup joint
-        mru.Snap(None,jnt, translation=node.translation, rotation=node.rotation)
+        mru.Snap(None,jnt, translation=chain.translation, rotation=chain.rotation)
         
         #parent and children
-        if node.parent:
-            cmds.parent(jnt,node.parent.joint['blend'])
+        if chain.parent:
+            chain.joint['blend']=cmds.parent(jnt,chain.parent.joint['blend'])
         else:
             #create root grp
             rootgrp=cmds.group(empty=True,name='joints_grp')
             
-            if node.root['master']:
-                cmds.parent(rootgrp,node.root['master'])
+            if chain.root['master']:
+                cmds.parent(rootgrp,chain.root['master'])
             
             cmds.parent(jnt,rootgrp)
         
-        if node.children:
-            for child in node.children:
-                self.build(child)
+        if chain.children:
+            for child in chain.children:
+                self.__build(child)

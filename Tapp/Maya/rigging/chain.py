@@ -21,6 +21,28 @@ class chain(object):
         
         #attribute data
         self.data=None
+        
+        #builds attributes
+        self.socket={}
+        self.control={}
+        self.system=None
+        self.root={'master':None}
+        self.guide=None
+        self.joint={}
+    
+    def addSystem(self,system):
+        self.system=system
+        
+        if self.children:
+            for child in self.children:
+                child.addSystem(system)
+    
+    def addRoot(self,root,rootType):
+        self.root[rootType]=root
+        
+        if self.children:
+            for child in self.children:
+                child.addRoot(root,rootType)
     
     def addChild(self,node):
         '''
