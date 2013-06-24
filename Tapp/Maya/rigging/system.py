@@ -34,17 +34,23 @@ class system(object):
         
         result=[]
         
+        subclasses=mrb.base.__subclasses__()
+        
         #if methods is a string
         if isinstance(self.methods,str):
-            checkList=['fk','ik','joints','spline','guide']
-            if not self.methods in checkList:
+            
+            checklist=[]
+            for cls in subclasses:
+                checklist.append(cls.__class__.__name__)
+                
+            if not self.methods in checklist:
                 log.error('build: methods input string invalid!')
                 return
             else:
                 self.methods=[self.methods]
 
         
-        for cls in mrb.base.__subclasses__():
+        for cls in subclasses:
             temp=cls(self.chain)
             
             for method in self.methods:
