@@ -40,7 +40,7 @@ class MetaSystem(Meta):
     
     def __bindData__(self):
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
-        self.addAttr('root',attrType='messageSimple')
+        #self.addAttr('root',attrType='messageSimple')
     
     def addPlug(self, node, boundData=None):
               

@@ -17,6 +17,7 @@ uf.FrameratePrompt()
 #import Red9
 sys.path.append(os.path.dirname(__file__))
 cmds.evalDeferred('import Red9;Red9.start()')
+cmds.evalDeferred('import Tapp.Maya.rigging.meta')
 
 #opening command port for Eclipse
 try:

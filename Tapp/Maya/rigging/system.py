@@ -41,8 +41,8 @@ class system(object):
             
             checklist=[]
             for cls in subclasses:
-                checklist.append(cls.__class__.__name__)
-                
+                checklist.append(cls.__name__)
+            
             if not self.methods in checklist:
                 log.error('build: methods input string invalid!')
                 return
@@ -51,7 +51,7 @@ class system(object):
 
         
         for cls in subclasses:
-            temp=cls(self.chain)
+            temp=cls(self.chain,log)
             
             for method in self.methods:
                 
@@ -76,19 +76,21 @@ class system(object):
             
             mrs.deleteSource(self.chain)
         
+        #build system
+        mrs.buildSystem(self.chain)
+        
         #build methods
         for build in self.builds:
             
             build.build()
 
-system('|clavicle').build()
-
+system('|clavicle',methods='ik').build()
 '''
 plugs!
 build spline
-possibly need to not have one attr for activating systems, and go to each socket and activate the system if its present
+need to have a method for adding controls/sockets to systems
+    so I can add fk clavicle to ik system
 hook up controls visibility to blend control
-better inheritance model
 place guides like clusters tool
     if multiple verts, use one of them to align the guide towards
 '''

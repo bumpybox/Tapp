@@ -26,9 +26,9 @@ class chain(object):
         self.socket={}
         self.control={}
         self.system=None
-        self.root={'master':None}
+        self.plug={'master':None}
         self.guide=None
-        self.joint={}
+        self.joint=None
     
     def addSystem(self,system):
         self.system=system
@@ -37,12 +37,26 @@ class chain(object):
             for child in self.children:
                 child.addSystem(system)
     
-    def addRoot(self,root,rootType):
-        self.root[rootType]=root
+    def removeSystem(self):
+        self.system=None
         
         if self.children:
             for child in self.children:
-                child.addRoot(root,rootType)
+                child.removeSystem()
+    
+    def addPlug(self,plug,plugType):
+        self.plug[plugType]=plug
+        
+        if self.children:
+            for child in self.children:
+                child.addPlug(plug,plugType)
+    
+    def removePlug(self,plugType):
+        self.plug[plugType]=None
+        
+        if self.children:
+            for child in self.children:
+                child.removePlug(plugType)
     
     def addChild(self,node):
         '''

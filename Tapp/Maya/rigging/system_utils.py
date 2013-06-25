@@ -7,11 +7,18 @@ reload(mru)
 import Tapp.Maya.rigging.chain as mrc
 reload(mrc)
 
+def buildSystem(chain):
+    
+    #meta rig
+    system=meta.MetaSystem()
+    
+    chain.addSystem(system)
+
 def deleteSource(chain):
-    if chain.root:
+    if chain.plug:
         
-        cmds.delete(chain.root['master'])
-        chain.root['master']=None
+        cmds.delete(chain.plug['master'])
+        chain.removePlug('master')
     
     if chain.system:
         for control in chain.system.getChildren(cAttrs='controls'):
@@ -21,7 +28,7 @@ def deleteSource(chain):
             meta.r9Meta.MetaClass(socket).delete()
         
         chain.system.delete()
-        chain.system=None
+        chain.removeSystem()
 
 def buildChain(obj):
     
@@ -31,7 +38,7 @@ def buildChain(obj):
     if isinstance(check,meta.r9Meta.MetaClass):
         
         chain=chainFromGuide(obj)
-        chain.addRoot(obj,'master')
+        chain.addPlug(obj,'master')
         
         return chain
         
@@ -44,7 +51,7 @@ def buildChain(obj):
             if not socket.hasAttr('guideParent'):
                 
                 chain=chainFromSystem(socket)
-                chain.addRoot(obj.root,'master')
+                chain.addPlug(obj.plug,'master')
                 chain.addSystem(obj)
                 
                 return chain
