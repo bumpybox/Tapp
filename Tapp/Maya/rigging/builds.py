@@ -157,14 +157,9 @@ class ik(base):
         cmds.parent(startStretch,plug)
         
         #setup ik
-        if chain[0].plug['master']:
-            cmds.addAttr(node.plug['master'],ln='ik_stretch',at='float',min=0,max=1)
-            
-            cmds.connectAttr(node.plug['master']+'.ik_stretch',ikResult['softIk']+'.stretch')
-        else:
-            cmds.addAttr(rootgrp,ln='ik_stretch',at='float',min=0,max=1,k=True)
-            
-            cmds.connectAttr(rootgrp+'.ik_stretch',ikResult['softIk']+'.stretch')
+        cmds.addAttr(plug,ln='ik_stretch',at='float',min=0,max=1,k=True)
+        
+        cmds.connectAttr(plug+'.ik_stretch',ikResult['softIk']+'.stretch')
         
         #build controls---
         self.log.debug('building ik controls')
@@ -189,8 +184,20 @@ class ik(base):
                 mru.Snap(cnt,phgrp)
                 mru.Snap(cnt,sngrp)
                 
-                cmds.parent(cnt,sngrp)
                 cmds.parent(sngrp,phgrp)
+                
+                plug=cmds.spaceLocator(name=prefix+'plug')[0]
+                
+                chain[0].plug['ik_control']=plug
+                
+                mru.Snap(None,plug,
+                         translation=node.translation,
+                         rotation=node.rotation)
+                
+                cmds.parent(plug,sngrp)
+                cmds.parent(cnt,plug)
+                
+                self.chain.system.addPlug(plug)
                 
                 if node.system:
                     node.system.addControl(cnt,'ik')
@@ -297,18 +304,25 @@ class fk(base):
         #create root grp
         rootgrp=cmds.group(empty=True,name='fk_grp')
         
-        if chain.plug['master']:
+        if chain[0].plug['master']:
             cmds.parent(rootgrp,chain.plug['master'])
         
         #create plug object
         plug=cmds.spaceLocator(name='fk_plug')[0]
         
-        mru.Snap(None,plug,
+        #setup plug
+        phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+        sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+        
+        cmds.parent(sngrp,phgrp)
+        cmds.parent(plug,sngrp)
+        
+        mru.Snap(None,phgrp,
                  translation=chain[0].translation,
                  rotation=chain[0].rotation)
-        cmds.parent(plug,rootgrp)
+        cmds.parent(phgrp,rootgrp)
         
-        chain[0].plug['fk']=plug
+        self.chain.system.addPlug(plug)
         
         for node in chain:
             
@@ -359,6 +373,68 @@ class fk(base):
                 
                 if node.system:
                     node.system.addControl(cnt,'fk')
+
+class blend(base):
+    
+    def __init__(self,chain,log):
+        super(blend,self).__init__(chain,log)
+        
+        self.executeDefault=True
+        self.executeOrder=99
+        self.chain=chain
+    
+    def build(self):
+        
+        self.log.debug('building blend')
+        
+        #create extra control
+        cnt=mru.Pin('extra_cnt')
+        
+        self.__build(self.chain, cnt)
+        
+        #setup extra control
+        mru.Snap(None,cnt,translation=self.chain.translation,rotation=self.chain.rotation)
+        
+        cmds.parent(cnt,self.chain.socket['blend'])
+        cmds.rotate(0,90,0,cnt,r=True,os=True)
+        
+        self.chain.system.addControl(cnt,'extra')
+        
+        self.log.debug('blend build finished!')
+
+    def __build(self,node,control):
+        
+        prefix=node.name.split('|')[-1]+'_bld_'
+        
+        #create socket
+        socket=cmds.spaceLocator(name=prefix+'socket')[0]
+        
+        #setup socket
+        mru.Snap(None, socket,translation=node.translation,rotation=node.rotation)
+        
+        data=node.data
+        data['name']=node.name
+        metaNode=node.system.addSocket(socket,boundData={'data':data})
+        
+        #connecting sockets to replicate original guide hierarchy
+        '''
+        if node.parent:
+            metaParent=meta.r9Meta.MetaClass(node.parent.socket['blend'])
+            mParent=metaParent.getParentMetaNode()
+            
+            mParent.connectChildren([metaNode],'guideChildren', srcAttr='guideParent')
+            '''
+        
+        for s in node.socket:
+            
+            cmds.parentConstraint(node.socket[s],socket)
+        
+        node.socket['blend']=socket
+        
+        if node.children:
+            for child in node.children:
+                self.__build(child,control)
+
 
 class guide(base):
     
