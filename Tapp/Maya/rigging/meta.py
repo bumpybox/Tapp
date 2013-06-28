@@ -1,5 +1,5 @@
 import Red9.core.Red9_Meta as r9Meta
-        
+
 class Meta(r9Meta.MetaRig):
     '''
     Initial test for a MetaRig labelling system
@@ -37,10 +37,16 @@ class MetaSystem(Meta):
     def __init__(self,*args,**kws):
         super(MetaSystem, self).__init__(*args,**kws)
         self.lockState=True
+        
+        self.test()
     
     def __bindData__(self):
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
         #self.addAttr('root',attrType='messageSimple')
+    
+    def test(self):
+        
+        print 'this is the newest MetaSystem'
     
     def addPlug(self, node, boundData=None):
               

@@ -1,12 +1,12 @@
 import maya.cmds as cmds
 
-import Tapp.Maya.rigging.meta as meta
-reload(meta)
-import Tapp.Maya.rigging.utils as mru
-reload(mru)
-import Tapp.Maya.rigging.chain as mrc
-reload(mrc)
+import Red9.core.Red9_Meta as r9Meta
+#import Tapp.Maya.rigging.utils as mru
+#reload(mru)
+#import Tapp.Maya.rigging.chain as mrc
+#reload(mrc)
 
+'''
 def buildSystem(chain):
     
     #meta rig
@@ -22,30 +22,27 @@ def deleteSource(chain):
     
     if chain.system:
         for control in chain.system.getChildren(cAttrs='controls'):
-            meta.r9Meta.MetaClass(control).delete()
+            r9Meta.MetaClass(control).delete()
             
         for socket in chain.system.getChildren(cAttrs='sockets'):
-            meta.r9Meta.MetaClass(socket).delete()
+            r9Meta.MetaClass(socket).delete()
         
         chain.system.delete()
         chain.removeSystem()
+        '''
 
-def buildChain(obj):
+def buildChain(obj,log):
     
-    check=meta.r9Meta.MetaClass(obj)
+    check=r9Meta.MetaClass(obj)
     
-    #build from guide---
-    if isinstance(check,meta.r9Meta.MetaClass):
-        
-        chain=chainFromGuide(obj)
-        chain.addPlug(obj,'master')
-        
-        return chain
-        
+    print check
+    '''
     #build from system---
-    if isinstance(check,meta.MetaSystem):
+    if type(check)==meta.MetaSystem:
         
-        obj=meta.r9Meta.MetaClass(obj)
+        log.debug('building chain from system')
+        
+        obj=r9Meta.MetaClass(obj)
         
         for socket in obj.getChildMetaNodes(mAttrs='mClass=TappSocket'):
             if not socket.hasAttr('guideParent'):
@@ -55,6 +52,16 @@ def buildChain(obj):
                 chain.addSystem(obj)
                 
                 return chain
+    
+    #build from guide---
+    if type(check)==r9Meta.MetaClass:
+        
+        log.debug('building chain from guide')
+        
+        chain=chainFromGuide(obj)
+        chain.addPlug(obj,'master')
+        
+        return chain
 
 def chainFromSystem(obj,parent=None):
     
@@ -120,13 +127,13 @@ def switch(objs,switchSystem):
     if objs:
         systems=[]
         for obj in objs:
-            metaNode=meta.r9Meta.MetaClass(obj).getParentMetaNode()
+            metaNode=r9Meta.MetaClass(obj).getParentMetaNode()
             if metaNode:
                 systems.append(metaNode.getParentMetaNode().mNode)
         
         systems=set(systems)
         for system in systems:
-            system=meta.r9Meta.MetaClass(system)
+            system=r9Meta.MetaClass(system)
             
             controls=system.getChildren(cAttrs='controls')
             
@@ -134,7 +141,7 @@ def switch(objs,switchSystem):
             currentSystem=None
             for control in controls:
                 
-                control=meta.r9Meta.MetaClass(control)
+                control=r9Meta.MetaClass(control)
                 
                 if control.system=='extra':
                     for attr in cmds.listAttr(control.node,userDefined=True):
@@ -151,7 +158,7 @@ def switch(objs,switchSystem):
                 
                 for control in controls:
                     
-                    control=meta.r9Meta.MetaClass(control)
+                    control=r9Meta.MetaClass(control)
                     
                     if control.system!=currentSystem:
                         if control.hasAttr('switch'):
@@ -164,7 +171,7 @@ def switch(objs,switchSystem):
             #blending to switch system
             for control in controls:
                 
-                control=meta.r9Meta.MetaClass(control)
+                control=r9Meta.MetaClass(control)
                 
                 if control.system=='extra':
                     if switchSystem in cmds.listAttr(control.node,userDefined=True):
@@ -176,3 +183,4 @@ def switch(objs,switchSystem):
         cmds.warning('No objects found to switch!')
 
 #switch(cmds.ls(selection=True),'fk')
+'''

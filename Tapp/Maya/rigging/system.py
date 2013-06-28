@@ -1,7 +1,7 @@
 import operator
 
-import Tapp.Maya.rigging.builds as mrb
-reload(mrb)
+#import Tapp.Maya.rigging.builds as mrb
+#reload(mrb)
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
 
@@ -16,10 +16,11 @@ class system(object):
     
     def __init__(self,obj,methods=['default']):
         
-        self.chain=mrs.buildChain(obj)
+        self.chain=mrs.buildChain(obj,log)
         self.methods=methods
-        self.builds=self.getBuilds()
-        
+        #self.builds=self.getBuilds()
+    
+    '''
     def __repr__(self):
         
         result=''
@@ -83,8 +84,10 @@ class system(object):
         for build in self.builds:
             
             build.build()
+            '''
 
-system('|clavicle').build()
+#system('|clavicle')
+system('MetaSystem')
 
 '''
 switching

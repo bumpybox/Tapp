@@ -50,15 +50,15 @@ class ik(base):
     
     def build(self):
         
+        self.log.debug('building ik rig')
+        
         for chain in self.chains:
             
             self.__build(chain)
     
     def __build(self,chain):
     
-        #build rig---
-        self.log.debug('building ik rig')
-        
+        #build rig---       
         #create root grp
         rootgrp=cmds.group(empty=True,name='ik_grp')
         
@@ -292,6 +292,8 @@ class fk(base):
     
     def build(self):
         
+        self.log.debug('building fk rig')
+        
         for chain in self.chains:
             
             self.__build(chain)
@@ -299,8 +301,6 @@ class fk(base):
     def __build(self,chain):
     
         #build rig---
-        self.log.debug('building fk rig')
-        
         #create root grp
         rootgrp=cmds.group(empty=True,name='fk_grp')
         
@@ -399,8 +399,6 @@ class blend(base):
         cmds.rotate(0,90,0,cnt,r=True,os=True)
         
         self.chain.system.addControl(cnt,'extra')
-        
-        self.log.debug('blend build finished!')
 
     def __build(self,node,control):
         
@@ -417,13 +415,11 @@ class blend(base):
         metaNode=node.system.addSocket(socket,boundData={'data':data})
         
         #connecting sockets to replicate original guide hierarchy
-        '''
         if node.parent:
             metaParent=meta.r9Meta.MetaClass(node.parent.socket['blend'])
             mParent=metaParent.getParentMetaNode()
             
             mParent.connectChildren([metaNode],'guideChildren', srcAttr='guideParent')
-            '''
         
         for s in node.socket:
             
@@ -447,12 +443,12 @@ class guide(base):
     
     def build(self):
         
+        self.log.debug('building guide controls')
+        
         self.__build(self.chain)
     
     def __build(self,chain):
         #build controls---
-        self.log.debug('building guide controls')
-        
         cnt=mru.implicitSphere(chain.name)
             
         chain.guide=cnt
@@ -485,31 +481,31 @@ class joints(base):
     
     def build(self):
         
+        self.log.debug('building joints rig')
+        
         self.__build(self.chain)
     
     def __build(self,chain):
     
         #build rig---
-        self.log.debug('building joints rig')
-        
         #creating joint
         cmds.select(cl=True)
         jnt=cmds.joint(n=chain.name)
         
-        chain.joint['blend']=jnt
+        chain.joint=jnt
         
         #setup joint
         mru.Snap(None,jnt, translation=chain.translation, rotation=chain.rotation)
         
         #parent and children
         if chain.parent:
-            chain.joint['blend']=cmds.parent(jnt,chain.parent.joint['blend'])
+            chain.joint=cmds.parent(jnt,chain.parent.joint)
         else:
             #create root grp
             rootgrp=cmds.group(empty=True,name='joints_grp')
             
-            if chain.root['master']:
-                cmds.parent(rootgrp,chain.root['master'])
+            if chain.plug['master']:
+                cmds.parent(rootgrp,chain.plug['master'])
             
             cmds.parent(jnt,rootgrp)
         
