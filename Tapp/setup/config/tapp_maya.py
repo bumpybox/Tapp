@@ -1,6 +1,8 @@
-import maya.cmds as cmds
 import os
 import sys
+import ast
+
+import maya.cmds as cmds
 
 def TappInstall_UI():
     if cmds.window('TappInstall_UI', exists=True):
@@ -23,45 +25,62 @@ def TappInstall_UI():
     cmds.showWindow(window)
 
 def TappInstall_browse(*args):
-    repoPath=cmds.fileDialog2(dialogStyle=1,fileMode=3)[0]
+    repoPath=cmds.fileDialog2(dialogStyle=1,fileMode=3)
     
-    check=False
-    #checking all subdirectories
-    for name in os.listdir(repoPath):
+    if repoPath:
+        repoPath=repoPath[0].replace('\\','/')
         
-        #confirm that this is the Tapp directory
-        if name=='Tapp':
-            check=True
+        check=False
+        #checking all subdirectories
+        for name in os.listdir(repoPath):
+            
+            #confirm that this is the Tapp directory
+            if name=='Tapp':
+                check=True
+        
+        if check:
+            #create the text file that contains the Tapp directory path
+            path=cmds.internalVar(upd=True)+'Tapp.yml'
+            
+            f=open(path,'w')
+            data='{\'repositoryPath\':\''+repoPath+'\',\'launchWindowAtStartup\':False}'
+            f.write(data)
+            f.close()
     
-    if check:
-        #create the text file that contains the Tapp directory path
-        path=cmds.internalVar(upd=True)+'Tapp.config'
-        
-        f=open(path,'w')
-        f.write(repoPath)
-        f.close()
-
-        #run setup
-        sys.path.append(repoPath)
-        
-        cmds.evalDeferred('import Tapp')
-        
-        #delete ui
-        cmds.deleteUI('TappInstall_UI')
-        
-    else:
-        cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
+            #run setup
+            sys.path.append(repoPath)
+            
+            cmds.evalDeferred('import Tapp')
+            
+            #delete ui
+            cmds.deleteUI('TappInstall_UI')
+            
+        else:
+            cmds.warning('Selected directory is not the \'Tapp\' directory. Please try again')
 
 def TappInstall_cancel(*args):
     cmds.deleteUI('TappInstall_UI')
 
 def Tapp():
-    path=cmds.internalVar(upd=True)+'Tapp.config'
+    path=cmds.internalVar(upd=True)+'Tapp.yml'
 
     if os.path.exists(path):
         f=open(path,'r')
-        path=f.readline()
-
+        
+        settings=f.read()
+        
+        #a bit of brute force to get yaml data
+        settings=settings.replace('repositoryPath','\'repositoryPath\'')
+        settings=settings.replace('launchWindowAtStartup','\'launchWindowAtStartup\'')
+        settings=settings.replace('!!python/unicode','')
+        settings=settings.replace(' ','')
+        settings=settings.replace('false','False')
+        settings=settings.replace('true','True')
+        
+        settings=ast.literal_eval(settings)
+             
+        path=settings['repositoryPath']
+        
         if os.path.exists(path):
             if not path in sys.path:
                 sys.path.append(path)
