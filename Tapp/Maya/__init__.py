@@ -10,7 +10,7 @@ print 'Tapp.Maya imported!'
 import menu
 
 #launching window if preferred
-cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
+#cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
 
 #framerate prompting
 import utils.framerate as uf

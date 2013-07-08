@@ -23,5 +23,5 @@ def startup():
     
     settings=getSettings()
     
-    if settings['launchWindowAtStartup']:
+    if settings['launchWindowAtStartup']==True:
         win.show()
