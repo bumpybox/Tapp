@@ -85,17 +85,20 @@ class system(object):
             
             build.build()
 
-#chain=mrs.buildChain('|clavicle',log)
-#print mrs.chainToDict(chain)
+#chain=mrs.buildChain('MetaSystem',log)
+#print mrs.dictToChain(chain)
 
 #system('|clavicle').build()
-system('MetaSystem')
+system('MetaSystem',methods='guide').build()
 
 '''
-create a dictionary to chain method
-build guide from system
+need to have guide treated same as build
+    when building a guide need to delete source
+    when building guide need to not have system build
 guide data should not be stored on the sockets
     convert the chain tree to a dictionary, and store on meta system
+extra control is not doing anything atm
+    need to decide on whether to have blends on it
 switching
 need to have a method for adding controls/sockets to systems
     so I can add fk clavicle to ik system

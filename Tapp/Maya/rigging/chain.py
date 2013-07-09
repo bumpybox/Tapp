@@ -3,7 +3,7 @@ class chain(object):
     Generic data handler. This is the basis from which everything is build.
     '''
     
-    def __init__(self,node):
+    def __init__(self,node=None):
         
         if node:
             self.source=node

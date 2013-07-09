@@ -390,6 +390,9 @@ class blend(base):
         #create extra control
         cnt=mru.Pin('extra_cnt')
         
+        #building blends
+        self.rootgrp=cmds.group(empty=True,name='blend_grp')
+        
         self.__build(self.chain, cnt)
         
         #setup extra control
@@ -400,7 +403,7 @@ class blend(base):
         
         self.chain.system.addControl(cnt,'extra')
 
-    def __build(self,node,control):
+    def __build(self,node):
         
         prefix=node.name.split('|')[-1]+'_bld_'
         
@@ -409,6 +412,8 @@ class blend(base):
         
         #setup socket
         mru.Snap(None, socket,translation=node.translation,rotation=node.rotation)
+        
+        cmds.parent(socket,self.rootgrp)
         
         node.system.addSocket(socket)
         
@@ -420,7 +425,7 @@ class blend(base):
         
         if node.children:
             for child in node.children:
-                self.__build(child,control)
+                self.__build(child)
 
 
 class guide(base):

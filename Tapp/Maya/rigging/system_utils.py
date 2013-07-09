@@ -36,9 +36,31 @@ def chainToDict(node):
     
     return result
 
-def dictToChain(node):
+def dictToChain(dictionary,parent=None):
     
-    pass
+    node=mrc.chain()
+    
+    #getting data
+    node.name=dictionary['name']
+    node.data=dictionary['data']
+    
+    #transforms
+    node.translation=dictionary['translation']
+    node.rotation=dictionary['rotation']
+    node.scale=dictionary['scale']
+    
+    #parent and children
+    node.parent=parent
+    
+    children=dictionary['children']
+    
+    if children:
+        for child in children:
+            node.addChild(dictToChain(child,parent=node))
+        
+        return node
+    else:
+        return node
 
 def deleteSource(chain):
     if chain.plug:
@@ -65,9 +87,9 @@ def buildChain(obj,log):
         
         log.debug('building chain from system')
         
-        system=r9Meta.MetaClass(obj)
+        chain=dictToChain(check.guideData)
         
-        print system.guideData
+        return chain
     
     #build from guide---
     if type(check)==r9Meta.MetaClass:
@@ -78,32 +100,6 @@ def buildChain(obj,log):
         chain.addPlug(obj,'master')
         
         return chain
-
-def chainFromSystem(obj,parent=None):
-    
-    node=mrc.chain(obj)
-    
-    node.name=obj.data['name']
-    
-    data=obj.data
-    del(data['name'])
-    node.data=data
-    
-    #transforms
-    node.translation=cmds.xform(obj.node,q=True,ws=True,translation=True)
-    node.rotation=cmds.xform(obj.node,q=True,ws=True,rotation=True)
-    node.scale=cmds.xform(obj.node,q=True,relative=True,scale=True)
-    
-    #parent and children
-    node.parent=parent
-    
-    if obj.hasAttr('guideChildren'):
-        for child in obj.guideChildren:
-            node.addChild(chainFromSystem(child,parent=node))
-        
-        return node
-    else:
-        return node
 
 def chainFromGuide(obj,parent=None):
     
