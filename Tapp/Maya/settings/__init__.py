@@ -1,7 +1,6 @@
 import maya.cmds as cmds
 
 import Tapp.utils.yaml as uy
-import Tapp.Maya.window as win
 
 def getSettings():
     
@@ -24,4 +23,4 @@ def startup():
     settings=getSettings()
     
     if settings['launchWindowAtStartup']==True:
-        win.show()
+        cmds.evalDeferred('import Tapp.Maya.window as win;reload(win);win.show()')

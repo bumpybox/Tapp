@@ -4,10 +4,10 @@ import shiboken
 import maya.cmds as cmds
 import maya.OpenMayaUI as omu
 
-#import Tapp.Maya.lighting.gui as lighting
+import Tapp.Maya.lighting.gui as lighting
 import Tapp.Maya.animation.gui as animation
 #import Tapp.Maya.rigging.gui as rigging
-#import Tapp.Maya.modelling.gui as modelling
+import Tapp.Maya.modelling.gui as modelling
 
 def maya_main_window():
     """
@@ -30,10 +30,10 @@ class Window(QtGui.QDialog):
         self.main_tabs = QtGui.QTabWidget()
         self.main_layout.addWidget(self.main_tabs)
         
-        #main_tabs.addTab(modelling.Form(), 'Modelling')
+        self.main_tabs.addTab(modelling.Form(), 'Modelling')
         #main_tabs.addTab(rigging.Form(), 'Rigging')
         self.main_tabs.addTab(animation.Form(), 'Animation')
-        #main_tabs.addTab(lighting.Form(), 'Lighting')
+        self.main_tabs.addTab(lighting.Form(), 'Lighting')
 
 def show():
     #delete previous ui
@@ -42,6 +42,6 @@ def show():
 
     #creating ui
     Window()
-    dock=cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
+    cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
 
 #show()
