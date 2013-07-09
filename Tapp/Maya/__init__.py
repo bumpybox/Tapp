@@ -13,9 +13,9 @@ import menu
 cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
 
 #framerate prompting
-import utils.framerate as uf
+#import utils.framerate as uf
 
-uf.FrameratePrompt()
+#uf.FrameratePrompt()
 
 #import Red9
 sys.path.append(os.path.dirname(__file__))

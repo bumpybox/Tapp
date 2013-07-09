@@ -45,7 +45,7 @@ def loadUiType(uiFile):
         base_class = eval('QtGui.%s'%widget_class)
     return form_class, base_class
 
-uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
+uiPath=os.path.dirname(__file__)+'/resources/lighting.ui'
 form,base=loadUiType(uiPath)
 
 class Form(base,form):
