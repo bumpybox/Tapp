@@ -1,11 +1,11 @@
 import Red9.core.Red9_Meta as r9Meta
 
-class Meta(r9Meta.MetaRig):
+class MetaRoot(r9Meta.MetaRig):
     '''
     Initial test for a MetaRig labelling system
     '''
     def __init__(self,*args,**kws):
-        super(Meta, self).__init__(*args,**kws)
+        super(MetaRoot, self).__init__(*args,**kws)
         self.lockState=True
 
     def addMetaSubSystem(self, systemType, side, nodeName=None): 
@@ -32,21 +32,15 @@ class Meta(r9Meta.MetaRig):
         subSystem.mirrorSide=side
         return subSystem
 
-class MetaSystem(Meta):
+class MetaSystem(MetaRoot):
     
     def __init__(self,*args,**kws):
         super(MetaSystem, self).__init__(*args,**kws)
         self.lockState=True
-        
-        self.test()
     
     def __bindData__(self):
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
         #self.addAttr('root',attrType='messageSimple')
-    
-    def test(self):
-        
-        print 'this is the newest MetaSystem'
     
     def addPlug(self, node, boundData=None):
               
@@ -80,13 +74,15 @@ class MetaSystem(Meta):
         
         return metaNode
     
-    def addControl(self, node,system, boundData=None):
+    def addControl(self, node,controlSystem=None, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
         metaNode=MetaControl(name='meta_%s' % node)
-        metaNode.system=system
+        
+        if controlSystem:
+            metaNode.system=controlSystem
         
         self.connectChildren(metaNode, 'controls', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')

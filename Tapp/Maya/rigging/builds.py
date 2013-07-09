@@ -410,16 +410,7 @@ class blend(base):
         #setup socket
         mru.Snap(None, socket,translation=node.translation,rotation=node.rotation)
         
-        data=node.data
-        data['name']=node.name
-        metaNode=node.system.addSocket(socket,boundData={'data':data})
-        
-        #connecting sockets to replicate original guide hierarchy
-        if node.parent:
-            metaParent=meta.r9Meta.MetaClass(node.parent.socket['blend'])
-            mParent=metaParent.getParentMetaNode()
-            
-            mParent.connectChildren([metaNode],'guideChildren', srcAttr='guideParent')
+        node.system.addSocket(socket)
         
         for s in node.socket:
             

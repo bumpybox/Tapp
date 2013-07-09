@@ -1,7 +1,7 @@
 import operator
 
-#import Tapp.Maya.rigging.builds as mrb
-#reload(mrb)
+import Tapp.Maya.rigging.builds as mrb
+reload(mrb)
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
 
@@ -17,10 +17,10 @@ class system(object):
     def __init__(self,obj,methods=['default']):
         
         self.chain=mrs.buildChain(obj,log)
+        
         self.methods=methods
-        #self.builds=self.getBuilds()
+        self.builds=self.getBuilds()
     
-    '''
     def __repr__(self):
         
         result=''
@@ -84,12 +84,18 @@ class system(object):
         for build in self.builds:
             
             build.build()
-            '''
 
-#system('|clavicle')
+#chain=mrs.buildChain('|clavicle',log)
+#print mrs.chainToDict(chain)
+
+#system('|clavicle').build()
 system('MetaSystem')
 
 '''
+create a dictionary to chain method
+build guide from system
+guide data should not be stored on the sockets
+    convert the chain tree to a dictionary, and store on meta system
 switching
 need to have a method for adding controls/sockets to systems
     so I can add fk clavicle to ik system

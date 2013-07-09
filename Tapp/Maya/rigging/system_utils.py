@@ -1,18 +1,44 @@
 import maya.cmds as cmds
 
 import Red9.core.Red9_Meta as r9Meta
-#import Tapp.Maya.rigging.utils as mru
-#reload(mru)
-#import Tapp.Maya.rigging.chain as mrc
-#reload(mrc)
+import Tapp.Maya.rigging.meta as meta
+import Tapp.Maya.rigging.utils as mru
+reload(mru)
+import Tapp.Maya.rigging.chain as mrc
+reload(mrc)
 
-'''
 def buildSystem(chain):
     
     #meta rig
     system=meta.MetaSystem()
     
     chain.addSystem(system)
+    
+    #storing guide data
+    data=chainToDict(chain)
+    system.addAttr('guideData', data)
+
+def chainToDict(node):
+    
+    result=node.__dict__.copy()
+    
+    del(result['system'])
+    del(result['parent'])
+    
+    if node.children:
+        
+        children=[]
+        
+        for child in node.children:
+            children.append(chainToDict(child))
+        
+        result['children']=children
+    
+    return result
+
+def dictToChain(node):
+    
+    pass
 
 def deleteSource(chain):
     if chain.plug:
@@ -29,29 +55,19 @@ def deleteSource(chain):
         
         chain.system.delete()
         chain.removeSystem()
-        '''
 
 def buildChain(obj,log):
     
     check=r9Meta.MetaClass(obj)
     
-    print check
-    '''
     #build from system---
     if type(check)==meta.MetaSystem:
         
         log.debug('building chain from system')
         
-        obj=r9Meta.MetaClass(obj)
+        system=r9Meta.MetaClass(obj)
         
-        for socket in obj.getChildMetaNodes(mAttrs='mClass=TappSocket'):
-            if not socket.hasAttr('guideParent'):
-                
-                chain=chainFromSystem(socket)
-                chain.addPlug(obj.plug,'master')
-                chain.addSystem(obj)
-                
-                return chain
+        print system.guideData
     
     #build from guide---
     if type(check)==r9Meta.MetaClass:
@@ -183,4 +199,3 @@ def switch(objs,switchSystem):
         cmds.warning('No objects found to switch!')
 
 #switch(cmds.ls(selection=True),'fk')
-'''
