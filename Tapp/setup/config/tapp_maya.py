@@ -76,7 +76,7 @@ def Tapp():
         settings=settings.replace('false','False')
         
         #compensate for drive letter
-        settings=settings.replace('\':/T',':/T')
+        settings=settings.replace('\':/',':/')
         
         settings=ast.literal_eval(settings)
              

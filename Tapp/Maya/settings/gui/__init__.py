@@ -67,8 +67,6 @@ class Form(base,form):
         
         settings=ms.getSettings()
         
-        print settings
-        
         #reading repository path
         repoPath=settings['repositoryPath']
         self.repository_label.setText(repoPath)
@@ -122,7 +120,7 @@ class Form(base,form):
             launchWin=True
                 
         #collecting data
-        data={'repositoryPath':self.repoPath,'launchWindowAtStartup':launchWin}
+        data={'repositoryPath':str(self.repoPath),'launchWindowAtStartup':launchWin}
         
         ms.setSettings(data)
         
