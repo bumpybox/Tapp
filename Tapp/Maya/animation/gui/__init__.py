@@ -91,6 +91,7 @@ class Form(base,form):
         self.tools_changeRotationOrderHelp_pushButton.released.connect(self.on_tools_changeRotationOrderHelp_pushButton_released)
         self.tools_ghosting_pushButton.released.connect(self.on_tools_ghosting_pushButton_released)
         self.tools_ghostingHelp_pushButton.released.connect(self.on_tools_ghostingHelp_pushButton_released)
+        self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
     
     def on_character_ik_pushButton_released(self):
         
@@ -239,6 +240,21 @@ class Form(base,form):
     def on_tools_ghostingHelp_pushButton_released(self):
         
         webbrowser.open('https://vimeo.com/50029607')
+    
+    def on_tools_rat_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing rat util
+        melPath=parentDir+'/utils/RAT.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #launching rat gui
+        uiPath=parentDir+'/utils/RAT_ui.ui'
+        uiPath=uiPath.replace('\\','/')
+        mel.eval('RAT_GUI(1,"%s")' % uiPath)
 
 def show():
     #closing previous dialog
