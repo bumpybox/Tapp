@@ -12,6 +12,7 @@ import pysideuic
 from PySide import QtGui, QtCore
 
 import Tapp.Maya.animation.character as character
+reload(character)
 import Tapp.Maya.animation.tools as tools
 import Tapp.Maya.utils.ZvParentMaster as muz
 import Tapp.Maya.animation.utils as mau
@@ -52,6 +53,7 @@ def loadUiType(uiFile):
     return form_class, base_class
 
 uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
+uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\gui\resources/animation.ui'
 form,base=loadUiType(uiPath)
 
 class Form(base,form):
@@ -62,6 +64,15 @@ class Form(base,form):
         self.setObjectName('tatDialog')
         
         self.create_connections()
+        
+        self.character_start_pushButton.setEnabled(False)
+        self.character_end_pushButton.setEnabled(False)
+        
+        self.character_start_lineEdit.setReadOnly(False)
+        self.character_start_lineEdit.setReadOnly(False)
+        
+        self.character_start_lineEdit.setEnabled(False)
+        self.character_end_lineEdit.setEnabled(False)
     
     def create_connections(self):
         
@@ -75,6 +86,10 @@ class Form(base,form):
         self.character_keycharacter_pushButton.released.connect(self.on_character_keycharacter_pushButton_released)
         self.character_selectlimb_pushButton.released.connect(self.on_character_selectlimb_pushButton_released)
         self.character_selectcharacter_pushButton.released.connect(self.on_character_selectcharacter_pushButton_released)
+        
+        self.character_range_checkBox.stateChanged.connect(self.character_range)
+        self.character_start_pushButton.released.connect(self.character_start)
+        self.character_getTimeline_pushButton.released.connect(self.character_timeline)
         
         #tools---
         self.tools_zvparentmaster_pushButton.released.connect(self.on_tools_zvparentmaster_pushButton_released)
@@ -94,13 +109,66 @@ class Form(base,form):
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
         self.tools_importMayaFile_pushButton.released.connect(self.on_tools_importMayaFile_pushButton_released)
     
+    def character_range(self):
+        
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            self.character_start_pushButton.setEnabled(True)
+            self.character_end_pushButton.setEnabled(True)
+            
+            self.character_start_lineEdit.setEnabled(True)
+            self.character_end_lineEdit.setEnabled(True)
+        
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Unchecked:
+            self.character_start_pushButton.setEnabled(False)
+            self.character_end_pushButton.setEnabled(False)
+            
+            self.character_start_lineEdit.setEnabled(False)
+            self.character_end_lineEdit.setEnabled(False)
+            
+            self.character_start_lineEdit.clear()
+            self.character_end_lineEdit.clear()
+    
+    def character_start(self):
+        
+        t=cmds.currentTime(q=True)
+        self.character_start_lineEdit.setText(str(t))
+    
+    def character_end(self):
+        
+        t=cmds.currentTime(q=True)
+        self.character_end_lineEdit.setText(str(t))
+    
+    def character_timeline(self):
+        
+        minT=cmds.playbackOptions(q=True,min=True)
+        maxT=cmds.playbackOptions(q=True,max=True)
+        
+        self.character_start_lineEdit.setText(str(minT))
+        self.character_end_lineEdit.setText(str(maxT))
+    
     def on_character_ik_pushButton_released(self):
         
-        character.IkSwitch()
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            
+            start=int(float(self.character_start_lineEdit.text()))
+            end=int(float(self.character_end_lineEdit.text()))
+            
+            character.switch('ik',timeRange=True, start=start, end=end)
+            
+        else:
+            character.switch('ik')
     
     def on_character_fk_pushButton_released(self):
         
-        character.FkSwitch()
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            
+            start=int(float(self.character_start_lineEdit.text()))
+            end=int(float(self.character_end_lineEdit.text()))
+            
+            character.switch('fk',timeRange=True, start=start, end=end)
+            
+        else:
+            character.switch('fk')
     
     def on_character_zerocontrol_pushButton_released(self):
         

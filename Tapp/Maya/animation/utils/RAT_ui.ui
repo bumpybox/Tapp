@@ -881,6 +881,9 @@
      <bool>false</bool>
     </property>
     <widget class="QPushButton" name="cleanCurves_button">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -928,6 +931,9 @@
      </property>
      <property name="text">
       <string>Clean Animation Curves</string>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
      </property>
      <property name="-c" stdset="0">
       <string>&quot;RAT_cleanCurves `textField -q -tx cleanCurves_tField`&quot;</string>
@@ -1330,6 +1336,9 @@
      </property>
     </widget>
     <widget class="QLabel" name="label">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>215</x>
@@ -1343,6 +1352,9 @@
      </property>
     </widget>
     <widget class="QDoubleSpinBox" name="doubleSpinBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>280</x>

@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
-    <height>744</height>
+    <width>316</width>
+    <height>671</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Tapp Animation Tools</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
     <widget class="QTabWidget" name="tatTabWidget">
      <property name="currentIndex">
@@ -110,6 +110,70 @@
             <string>IK</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_26">
+         <item>
+          <widget class="QCheckBox" name="character_range_checkBox">
+           <property name="text">
+            <string>Range</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="character_getTimeline_pushButton">
+           <property name="text">
+            <string>Get Timeline Info</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_27">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QPushButton" name="character_start_pushButton">
+             <property name="text">
+              <string>Start:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="character_start_lineEdit">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_13">
+           <item>
+            <widget class="QPushButton" name="character_end_pushButton">
+             <property name="text">
+              <string>End:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="character_end_lineEdit">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
