@@ -92,6 +92,7 @@ class Form(base,form):
         self.tools_ghosting_pushButton.released.connect(self.on_tools_ghosting_pushButton_released)
         self.tools_ghostingHelp_pushButton.released.connect(self.on_tools_ghostingHelp_pushButton_released)
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
+        self.tools_importMayaFile_pushButton.released.connect(self.on_tools_importMayaFile_pushButton_released)
     
     def on_character_ik_pushButton_released(self):
         
@@ -255,6 +256,37 @@ class Form(base,form):
         uiPath=parentDir+'/utils/RAT_ui.ui'
         uiPath=uiPath.replace('\\','/')
         mel.eval('RAT_GUI(1,"%s")' % uiPath)
+    
+    def on_tools_importMayaFile_pushButton_released(self):
+        
+        workspace=cmds.workspace( q=True, dir=True )
+        workspace=os.path.abspath(os.path.join(workspace, os.pardir))
+        workspace=os.path.abspath(os.path.join(workspace, os.pardir))
+        workspace=os.path.join(workspace,'publish')
+        
+        #getting file path and name
+        basicFilter = "MAYA (*.ma)"
+        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                                  fileMode=1,startingDirectory=workspace,
+                                  caption='Import Maya File')
+        
+        if filePath!=None:
+            
+            #replace reference
+            cmds.file(filePath,i=True,namespace=':')
+            
+            #setting timeline
+            lastKey=int(cmds.findKeyframe( 'grandpa:c_spine1_master_cnt', which="last" ))
+            firstKey=cmds.findKeyframe( 'grandpa:c_spine1_master_cnt', which="first" )
+            
+            cmds.playbackOptions(min=firstKey)
+            cmds.playbackOptions(max=lastKey)
+            
+            cmds.playbackOptions(ast=firstKey)
+            cmds.playbackOptions(aet=lastKey)
+            
+            #final notification
+            cmds.confirmDialog( title='FINISHED', message='mocap imported')
 
 def show():
     #closing previous dialog

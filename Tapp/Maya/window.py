@@ -34,6 +34,11 @@ class Window(QtGui.QDialog):
         #main_tabs.addTab(rigging.Form(), 'Rigging')
         self.main_tabs.addTab(animation.Form(), 'Animation')
         self.main_tabs.addTab(lighting.Form(), 'Lighting')
+        
+        #prompting for 25 fps
+        import Tapp.Maya.utils.framerate as uf
+
+        uf.FrameratePrompt()
 
 def show():
     #delete previous ui

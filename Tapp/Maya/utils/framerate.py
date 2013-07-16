@@ -5,7 +5,8 @@ def FrameratePrompt():
     framerate=cmds.currentUnit(q=True,time=True)
     
     if framerate!='pal':
-        message='Working with 25 fps?'
+        message='Maya session is not working with 25 fps.\n'
+        message+='Do you want to switch to 25 fps?'
         result=cmds.confirmDialog(title='FRAMERATE',message=message,
                                   icon='warning',backgroundColor=(0.5,0,0))
         
