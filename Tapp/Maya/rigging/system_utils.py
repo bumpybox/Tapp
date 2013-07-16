@@ -7,17 +7,6 @@ reload(mru)
 import Tapp.Maya.rigging.chain as mrc
 reload(mrc)
 
-def buildSystem(chain):
-    
-    #meta rig
-    system=meta.MetaSystem()
-    
-    chain.addSystem(system)
-    
-    #storing guide data
-    data=chainToDict(chain)
-    system.addAttr('guideData', data)
-
 def chainToDict(node):
     
     result=node.__dict__.copy()
@@ -63,18 +52,48 @@ def dictToChain(dictionary,parent=None):
         return node
 
 def deleteSource(chain):
+    
     if chain.plug:
         
         cmds.delete(chain.plug['master'])
         chain.removePlug('master')
     
     if chain.system:
+        
+        roots=[]
+        
+        #deleting meta nodes
         for control in chain.system.getChildren(cAttrs='controls'):
-            r9Meta.MetaClass(control).delete()
+            control=r9Meta.MetaClass(control)
+            
+            root=cmds.listRelatives(control.node[0],fullPath=True,parent=True)[0].split('|')[1]
+            roots.append(root)
+            
+            control.delete()
             
         for socket in chain.system.getChildren(cAttrs='sockets'):
-            r9Meta.MetaClass(socket).delete()
+            socket=r9Meta.MetaClass(socket)
+            
+            root=cmds.listRelatives(socket.node[0],fullPath=True,parent=True)[0].split('|')[1]
+            roots.append(root)
+            
+            socket.delete()
         
+        for plug in chain.system.getChildren(cAttrs='plugs'):
+            plug=r9Meta.MetaClass(plug)
+            
+            root=cmds.listRelatives(plug.node[0],fullPath=True,parent=True)[0].split('|')[1]
+            roots.append(root)
+            
+            plug.delete()
+        
+        #deleting dag nodes
+        roots=set(roots)
+        for root in roots:
+            
+            cmds.delete(root)
+        
+        #deleting system
         chain.system.delete()
         chain.removeSystem()
 
@@ -88,6 +107,7 @@ def buildChain(obj,log):
         log.debug('building chain from system')
         
         chain=dictToChain(check.guideData)
+        chain.addSystem(check)
         
         return chain
     

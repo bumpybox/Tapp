@@ -77,9 +77,6 @@ class system(object):
             
             mrs.deleteSource(self.chain)
         
-        #build system
-        mrs.buildSystem(self.chain)
-        
         #build methods
         for build in self.builds:
             
@@ -89,14 +86,10 @@ class system(object):
 #print mrs.dictToChain(chain)
 
 #system('|clavicle').build()
-system('MetaSystem',methods='guide').build()
+system('MetaSystem',methods='fk').build()
 
 '''
-need to have guide treated same as build
-    when building a guide need to delete source
-    when building guide need to not have system build
-guide data should not be stored on the sockets
-    convert the chain tree to a dictionary, and store on meta system
+troubleshoot rebuilding builds from system
 extra control is not doing anything atm
     need to decide on whether to have blends on it
 switching

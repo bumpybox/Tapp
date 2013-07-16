@@ -7,7 +7,6 @@ import MG_Tools.python.rigging.script.MG_softIk as mpsi
 reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
-
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
 
@@ -19,6 +18,29 @@ class base(object):
         self.chain=chain
         self.executeDefault=False
         self.executeOrder=1
+
+class system(base):
+    
+    def __init__(self,chain,log):
+        super(system,self).__init__(chain,log)
+        
+        self.executeDefault=True
+        self.executeOrder=0
+        
+        self.chain=chain
+        
+    def build(self):
+        
+        self.log.debug('building system')
+        
+        #meta rig
+        system=meta.MetaSystem()
+        
+        self.chain.addSystem(system)
+        
+        #storing guide data
+        data=mrs.chainToDict(self.chain)
+        system.addAttr('guideData', data)
 
 class ik(base):
     
@@ -256,7 +278,9 @@ class ik(base):
                 if not node.children:
                 
                     cmds.pointConstraint(cnt,endStretch)
-                    cmds.parent(node.socket['ik'],cnt)
+                    
+                    cmds.orientConstraint(cnt,node.socket['ik'])
+                    #cmds.parent(node.socket['ik'],cnt)
                     
                     cmds.parent(phgrp,rootgrp)
 
@@ -393,7 +417,7 @@ class blend(base):
         #building blends
         self.rootgrp=cmds.group(empty=True,name='blend_grp')
         
-        self.__build(self.chain, cnt)
+        self.__build(self.chain)
         
         #setup extra control
         mru.Snap(None,cnt,translation=self.chain.translation,rotation=self.chain.rotation)
