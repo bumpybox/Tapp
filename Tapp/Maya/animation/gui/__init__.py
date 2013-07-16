@@ -53,7 +53,6 @@ def loadUiType(uiFile):
     return form_class, base_class
 
 uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
-uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\gui\resources/animation.ui'
 form,base=loadUiType(uiPath)
 
 class Form(base,form):
