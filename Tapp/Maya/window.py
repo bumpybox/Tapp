@@ -47,6 +47,6 @@ def show():
 
     #creating ui
     Window()
-    cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
+    cmds.evalDeferred('import maya.cmds as cmds;cmds.dockControl(\'tappWindow\',content=\'tappDialog\', area=\'right\',label=\'Tapp\')')
 
 #show()

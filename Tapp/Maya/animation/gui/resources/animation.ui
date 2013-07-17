@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>316</width>
-    <height>671</height>
+    <height>715</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Tapp Animation Tools</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_4">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
     <widget class="QTabWidget" name="tatTabWidget">
      <property name="currentIndex">
@@ -1180,6 +1180,25 @@
          </property>
          <property name="text">
           <string>Import Maya File</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="tools_paie_pushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>PAIE</string>
          </property>
         </widget>
        </item>

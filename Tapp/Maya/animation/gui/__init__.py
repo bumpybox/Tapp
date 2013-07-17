@@ -14,11 +14,19 @@ from PySide import QtGui, QtCore
 import Tapp.Maya.animation.character as character
 reload(character)
 import Tapp.Maya.animation.tools as tools
+reload(tools)
 import Tapp.Maya.utils.ZvParentMaster as muz
+reload(muz)
 import Tapp.Maya.animation.utils as mau
+reload(mau)
 import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
+reload(maumlb)
 import Tapp.Maya.animation.utils.ml_hold as maumlh
+reload(maumlh)
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
+reload(maumlk)
+import Tapp.Maya.utils.paie as paie
+reload(paie)
 
 def maya_main_window():
     """
@@ -107,6 +115,12 @@ class Form(base,form):
         self.tools_ghostingHelp_pushButton.released.connect(self.on_tools_ghostingHelp_pushButton_released)
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
         self.tools_importMayaFile_pushButton.released.connect(self.on_tools_importMayaFile_pushButton_released)
+        
+        self.tools_paie_pushButton.released.connect(self.tools_paie)
+    
+    def tools_paie(self):
+        
+        paie.GUI()
     
     def character_range(self):
         
