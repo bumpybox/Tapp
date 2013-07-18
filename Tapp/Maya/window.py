@@ -3,6 +3,7 @@ import shiboken
 
 import maya.cmds as cmds
 import maya.OpenMayaUI as omu
+import pymel.core as pmc
 
 import Tapp.Maya.lighting.gui as lighting
 import Tapp.Maya.animation.gui as animation
@@ -34,11 +35,6 @@ class Window(QtGui.QDialog):
         #main_tabs.addTab(rigging.Form(), 'Rigging')
         self.main_tabs.addTab(animation.Form(), 'Animation')
         self.main_tabs.addTab(lighting.Form(), 'Lighting')
-        
-        #prompting for 25 fps
-        import Tapp.Maya.utils.framerate as uf
-
-        uf.FrameratePrompt()
 
 def show():
     #delete previous ui
@@ -47,6 +43,7 @@ def show():
 
     #creating ui
     Window()
-    cmds.evalDeferred('import maya.cmds as cmds;cmds.dockControl(\'tappWindow\',content=\'tappDialog\', area=\'right\',label=\'Tapp\')')
+    cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
+    
 
 #show()
