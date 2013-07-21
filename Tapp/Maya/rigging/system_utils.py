@@ -152,8 +152,9 @@ def chainFromGuide(obj,parent=None):
     else:
         return node
 
-#experimental---
+#---
 
+'''
 def switch(objs,switchSystem):
     
     if objs:
@@ -168,6 +169,7 @@ def switch(objs,switchSystem):
             system=r9Meta.MetaClass(system)
             
             controls=system.getChildren(cAttrs='controls')
+            
             
             #transforming controls to switch system
             currentSystem=None
@@ -214,4 +216,5 @@ def switch(objs,switchSystem):
     else:
         cmds.warning('No objects found to switch!')
 
-#switch(cmds.ls(selection=True),'fk')
+switch(cmds.ls(selection=True),'fk')
+'''

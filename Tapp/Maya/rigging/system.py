@@ -54,6 +54,12 @@ class system(object):
         for cls in subclasses:
             temp=cls(self.chain,log)
             
+            #adding dependencies
+            for dependent in temp.dependencies:
+                
+                result.append(dependent(self.chain,log))
+            
+            #comparing builds to input builds
             for method in self.methods:
                 
                 if method=='default':
@@ -65,8 +71,16 @@ class system(object):
                         
                         result.append(temp)
         
+        #getting rid of duplicate builds
+        seen_builds=set()
+        new_result=[]
+        for build in result:
+            if build.__class__.__name__ not in seen_builds:
+                new_result.append(build)
+                seen_builds.add(build.__class__.__name__)
+        
         #sort builds by executeOrder attribute
-        result = sorted(result, key=operator.attrgetter('executeOrder'))
+        result = sorted(new_result, key=operator.attrgetter('executeOrder'))
         
         return result
     
@@ -85,60 +99,19 @@ class system(object):
 #chain=mrs.buildChain('MetaSystem',log)
 #print mrs.dictToChain(chain)
 
-#system('|clavicle').build()
-system('MetaSystem',methods='fk').build()
+system('|clavicle').build()
+#system('MetaSystem').build()
 
 '''
-troubleshoot rebuilding builds from system
+connect extra with sockets constraints
+need to have a method for adding controls/sockets to systems
+    so I can add fk clavicle to ik system
+possibly build extra control with system and add to chain for referencing later?
 extra control is not doing anything atm
     need to decide on whether to have blends on it
 switching
-need to have a method for adding controls/sockets to systems
-    so I can add fk clavicle to ik system
-better way of getting from system back to guide
 hook up controls visibility to blend control
 build spline
 place guides like clusters tool
     if multiple verts, use one of them to align the guide towards
 '''
-
-'''         
-            #parenting roots
-            self.rootParent(self.chain)
-        
-        #switching
-        self.switch(self.chain)
-    
-    def switch(self,node):
-        
-        if len(node.control)>1:
-            for control in node.control:
-                
-                mNode=meta.r9Meta.MetaClass(node.control[control])
-                mNode=mNode.getParentMetaNode()
-                
-                otherControls=[]
-                for c in node.control:
-                    if c!=control:
-                        
-                        otherControl=meta.r9Meta.MetaClass(node.control[c])
-                        otherControl=otherControl.getParentMetaNode()
-                        otherControls.append(otherControl)
-                
-                mNode.connectChildren(otherControls,'switch')
-        
-        if node.children:
-            for child in node.children:
-                self.switch(child)
-    
-    def rootParent(self,node):
-        
-        for key in node.root:
-            if key!='master':
-                if node.parent:
-                    cmds.parentConstraint(node.parent.socket['blend'],node.root[key],maintainOffset=True)
-        
-        if node.children:
-            for child in node.children:
-                self.rootParent(child)
-        '''

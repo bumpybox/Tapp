@@ -9,6 +9,7 @@ import Tapp.Maya.rigging.meta as meta
 reload(meta)
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
+import Red9.core.Red9_Meta as r9Meta
 
 class base(object):
     
@@ -18,6 +19,7 @@ class base(object):
         self.chain=chain
         self.executeDefault=False
         self.executeOrder=1
+        self.dependencies=[]
 
 class system(base):
     
@@ -51,6 +53,8 @@ class ik(base):
         self.chain=chain
         
         self.chains=self.setChains()
+        
+        self.dependencies=[system]
     
     def __str__(self):
         
@@ -293,6 +297,8 @@ class fk(base):
         self.chain=chain
         
         self.chains=self.setChains()
+        
+        self.dependencies=[system]
             
     def __str__(self):
         
@@ -414,6 +420,8 @@ class blend(base):
         #create extra control
         cnt=mru.Pin('extra_cnt')
         
+        self.control=cnt
+        
         #building blends
         self.rootgrp=cmds.group(empty=True,name='blend_grp')
         
@@ -425,8 +433,34 @@ class blend(base):
         cmds.parent(cnt,self.chain.socket['blend'])
         cmds.rotate(0,90,0,cnt,r=True,os=True)
         
+        attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+        mru.ChannelboxClean(cnt, attrs)
+        
         self.chain.system.addControl(cnt,'extra')
+        
+        self.switch(self.chain)
+    
+    def switch(self,node):
+        
+        self.log.debug('setup switching')
+            
+        for system in node.control:
+            
+            mNode=r9Meta.MetaClass(node.control[system])
+            mNode=mNode.getParentMetaNode()
+            
+            sockets=[]
+            for s in node.socket:
+                if s!=system and s!='blend':
+                    
+                    sockets.append(node.socket[s])
+            
+            mNode.connectChildren(sockets,'switch')
 
+        if node.children:
+            for child in node.children:
+                self.switch(child)
+    
     def __build(self,node):
         
         prefix=node.name.split('|')[-1]+'_bld_'
@@ -443,7 +477,12 @@ class blend(base):
         
         for s in node.socket:
             
-            cmds.parentConstraint(node.socket[s],socket)
+            con=cmds.parentConstraint(node.socket[s],socket)
+            
+            #ensuring extra control has the attribute
+            if not cmds.objExists(self.control+'.'+s):
+                
+                cmds.addAttr(self.control,ln=s,at='float',min=0,max=1,k=True)
         
         node.socket['blend']=socket
         
@@ -464,6 +503,10 @@ class guide(base):
     def build(self):
         
         self.log.debug('building guide controls')
+        
+        #if system exists, deletes it
+        if self.chain.system:
+            self.chain.system.delete()
         
         self.__build(self.chain)
     
