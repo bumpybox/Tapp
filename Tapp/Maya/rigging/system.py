@@ -103,13 +103,21 @@ system('|clavicle').build()
 #system('MetaSystem').build()
 
 '''
-connect extra with sockets constraints
+troubleshoot:
+    why are ik plugs hooking to the wrong point?
+        
+need to restructure meta system
+    have metaPoint that stores guideData
+    metaPoints are for local referencing of nodes
+
+need two methods:
+    adding socket to controller
+    parent control or system plug to something
 need to have a method for adding controls/sockets to systems
     so I can add fk clavicle to ik system
-possibly build extra control with system and add to chain for referencing later?
-extra control is not doing anything atm
-    need to decide on whether to have blends on it
-switching
+
+revise system to guide
+
 hook up controls visibility to blend control
 build spline
 place guides like clusters tool

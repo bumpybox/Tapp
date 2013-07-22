@@ -36,13 +36,26 @@ class system(base):
         self.log.debug('building system')
         
         #meta rig
-        system=meta.MetaSystem()
+        self.system=meta.MetaSystem()
         
-        self.chain.addSystem(system)
+        self.chain.addSystem(self.system)
         
         #storing guide data
         data=mrs.chainToDict(self.chain)
-        system.addAttr('guideData', data)
+        self.system.addAttr('guideData', data)
+        
+        #create points
+        self.createPoints(self.chain)
+    
+    def createPoints(self,node):
+        
+        node.point=self.system.addPoint(name=node.name.split('|')[-1])
+        
+        if node.children:
+            
+            for child in node.children:
+                
+                self.createPoints(child)
 
 class ik(base):
     
@@ -109,7 +122,7 @@ class ik(base):
                  rotation=chain[0].rotation)
         cmds.parent(phgrp,rootgrp)
         
-        self.chain.system.addPlug(plug)
+        self.chains[0].point.addPlug(plug,plugType='system')
         
         #finding upvector
         crs=mru.CrossProduct(chain[0].translation,
@@ -223,10 +236,10 @@ class ik(base):
                 cmds.parent(plug,sngrp)
                 cmds.parent(cnt,plug)
                 
-                self.chain.system.addPlug(plug)
+                self.chains[0].point.addPlug(plug,plugType='control')
                 
-                if node.system:
-                    node.system.addControl(cnt,'ik')
+                if node.point:
+                    node.point.addControl(cnt,controlSystem='ik')
                 
                 #root control
                 if node==chain[0]:
@@ -352,7 +365,7 @@ class fk(base):
                  rotation=chain[0].rotation)
         cmds.parent(phgrp,rootgrp)
         
-        self.chain.system.addPlug(plug)
+        self.chain.point.addPlug(plug,plugType='system')
         
         for node in chain:
             
@@ -401,8 +414,8 @@ class fk(base):
                 else:
                     cmds.parent(phgrp,plug)
                 
-                if node.system:
-                    node.system.addControl(cnt,'fk')
+                if node.point:
+                    node.point.addControl(cnt,controlSystem='fk')
 
 class blend(base):
     
@@ -436,7 +449,7 @@ class blend(base):
         attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
         mru.ChannelboxClean(cnt, attrs)
         
-        self.chain.system.addControl(cnt,'extra')
+        self.chain.point.addControl(cnt,'extra')
         
         self.switch(self.chain)
     
@@ -473,16 +486,25 @@ class blend(base):
         
         cmds.parent(socket,self.rootgrp)
         
-        node.system.addSocket(socket)
+        node.point.addSocket(socket)
         
         for s in node.socket:
             
-            con=cmds.parentConstraint(node.socket[s],socket)
+            con=cmds.parentConstraint(node.socket[s],socket)[0]
             
             #ensuring extra control has the attribute
             if not cmds.objExists(self.control+'.'+s):
                 
                 cmds.addAttr(self.control,ln=s,at='float',min=0,max=1,k=True)
+            
+            #connecting extra to target weights - using string search, which probably needs improvement ---
+            targets=cmds.parentConstraint(con,q=True,weightAliasList=True)
+            
+            for target in targets:
+                
+                if ('_'+s+'_') in target:
+                    
+                    cmds.connectAttr(self.control+'.'+s,con+'.'+target)
         
         node.socket['blend']=socket
         

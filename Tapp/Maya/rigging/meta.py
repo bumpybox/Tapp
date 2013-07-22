@@ -42,12 +42,35 @@ class MetaSystem(MetaRoot):
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
         #self.addAttr('root',attrType='messageSimple')
     
-    def addPlug(self, node, boundData=None):
+    def addPoint(self,name=None, boundData=None):
+        
+        if name:
+            metaNode=MetaPoint(name='meta_%s' % name)
+            
+            metaNode.name=name
+        else:
+            metaNode=MetaPoint()
+        
+        self.connectChildren(metaNode, 'points', srcAttr='metaParent')
+        
+        if boundData:
+            if issubclass(type(boundData),dict): 
+                for key, value in boundData.iteritems():
+                    r9Meta.log.debug('Adding boundData to node : %s:%s' %(key,value))
+                    r9Meta.MetaClass(metaNode).addAttr(key, value=value)
+        
+        return metaNode
+    
+    def addPlug(self, node,plugType=None, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
         metaNode=MetaPlug(name='meta_%s' % node)
+        
+        if plugType:
+            metaNode.type=plugType
+        
         self.connectChildren(metaNode, 'plugs', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
@@ -58,12 +81,16 @@ class MetaSystem(MetaRoot):
         
         return metaNode
     
-    def addSocket(self, node, boundData=None):
+    def addSocket(self, node,socketSystem=None, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
         
         metaNode=MetaSocket(name='meta_%s' % node)
+        
+        if socketSystem:
+            metaNode.system=socketSystem
+        
         self.connectChildren(metaNode, 'sockets', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
@@ -94,6 +121,16 @@ class MetaSystem(MetaRoot):
         
         return metaNode
 
+class MetaPoint(MetaSystem):
+    
+    def __init__(self,*args,**kws):
+        super(MetaPoint, self).__init__(*args,**kws)
+        self.lockState=True
+    
+    def __bindData__(self):
+        
+        self.addAttr('name','')
+
 class MetaSocket(r9Meta.MetaRig):
     '''
     Example Export base class inheriting from MetaClass
@@ -106,7 +143,7 @@ class MetaSocket(r9Meta.MetaRig):
         '''
         Overload call to wipe MetaRig bind data
         '''
-        pass
+        self.addAttr('system','')
 
 class MetaControl(r9Meta.MetaRig):
     '''
@@ -134,7 +171,7 @@ class MetaPlug(r9Meta.MetaRig):
         '''
         Overload call to wipe MetaRig bind data
         '''
-        pass
+        self.addAttr('type','')
         
 #========================================================================
 # This HAS to be at the END of this module so that the RED9_META_REGISTRY

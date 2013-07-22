@@ -23,12 +23,13 @@ class chain(object):
         self.data=None
         
         #builds attributes
+        self.point=None
         self.socket={}
         self.control={}
         self.system=None
-        self.plug={'master':None}
-        self.guide=None
-        self.joint=None
+        self.plug={}
+        #self.guide=None
+        #self.joint=None
     
     def addSystem(self,system):
         self.system=system
