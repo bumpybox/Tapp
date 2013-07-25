@@ -1,3 +1,8 @@
+'''
+
+will need to modify the dora files and remove namespaces from the joints
+
+'''
 import os
 
 import maya.cmds as cmds
