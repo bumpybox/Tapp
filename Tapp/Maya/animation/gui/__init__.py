@@ -340,7 +340,7 @@ class Form(base,form):
     
     def on_tools_importMayaFile_pushButton_released(self):
         
-        workspace=cmds.workspace( q=True, dir=True )
+        workspace=cmds.workspace(q=True,fullName=True)
         workspace=os.path.abspath(os.path.join(workspace, os.pardir))
         workspace=os.path.abspath(os.path.join(workspace, os.pardir))
         workspace=os.path.join(workspace,'publish')
