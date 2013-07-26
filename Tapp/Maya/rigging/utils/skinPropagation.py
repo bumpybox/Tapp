@@ -1,21 +1,22 @@
 '''
 
-will need to modify the dora files and remove namespaces from the joints
+polish and add to tapp
 
 '''
 import os
+import tempfile
 
 import maya.cmds as cmds
 import maya.mel as mel
 
-'''
-#sourcing dora util
-path=os.path.dirname(__file__)
-
-melPath=path+'/DoraSkinWeightImpExp.mel'
-melPath=melPath.replace('\\','/')
-mel.eval('source "%s"' % melPath)
-'''
+def sourceDora():
+    #sourcing dora util
+    path=os.path.dirname(__file__)
+    path=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\rigging\utils'
+    
+    melPath=path+'/DoraSkinWeightImpExp.mel'
+    melPath=melPath.replace('\\','/')
+    mel.eval('source "%s"' % melPath)
 
 def stripNamespaceFromNamePath( name, namespace ):
     '''
@@ -83,10 +84,6 @@ def getRefFilepathDictForNodes( nodes ):
 
     return refFileDict
 
-def doraExportSkin():
-    
-    pass
-
 def propagateWeightChangesToModel( meshes ):
     '''
     Given a list of meshes to act on, this function will store the skin weights, remove any
@@ -144,29 +141,68 @@ def propagateWeightChangesToModel( meshes ):
 
         #get a list of skin cluster nodes - its actually the skin cluster nodes we want to remove edits from...
         nodesToCleanRefEditsFrom = []
-        for m, ns in meshesToUpdateWeightsOn_withNS:
-            nodesToCleanRefEditsFrom.append( mel.eval('findRelatedSkinCluster("%s");' % m) )
         
         #now we want to store out the weighting from the referenced meshes
-        weights = []
+        weightFiles = []
         for mesh, meshNamespace in meshesToUpdateWeightsOn_withNS:
-            #insert dora export skin weights here---
-            #weights.append( storeWeightsById( mesh, meshNamespace ) )
             
-            print mesh
-            print meshNamespace
-
+            nodesToCleanRefEditsFrom.append(mesh)
+            
+            m=cmds.listConnections(mesh+'.outputGeometry')[0]
+            mStrip=stripNamespaceFromNamePath(m,meshNamespace)
+            
+            #export dora skin
+            tempDir=tempfile.gettempdir()
+            filepath=tempDir.replace('\\','/')+'/'+mStrip.replace(':','_-_')+'.dsw'
+            weightFiles.append(filepath)
+            
+            sourceDora()
+            
+            cmds.select(m)
+            mel.eval('DoraSkinWeightExport("%s")' % filepath)
+            
+            #modify dora skin
+            f=open(filepath,'r')
+            data=f.readlines()
+            
+            jntData=''
+            for jnt in data[1].split(','):
+                
+                jnt=jnt.replace('\n','')
+                
+                jnt=stripNamespaceFromNamePath(jnt,meshNamespace)
+                
+                jntData+=jnt+','
+            
+            jntData=jntData[0:-1]+'\n'
+            
+            data[1]=jntData
+            
+            newData=''
+            
+            for line in data:
+                
+                newData+=line
+            
+            f.close()
+            
+            #writing new dora skin
+            f=open(filepath,'w')
+            f.write(newData)
+            f.close()
+            
             #also lets remove any ref edits from the mesh and all of its shape nodes - this isn't strictly nessecary, but I can't think of a reason to make edits to these nodes outside of their native file
-            nodesToCleanRefEditsFrom.append( mesh )
-            nodesToCleanRefEditsFrom += cmds.listRelatives( mesh, s=True, pa=True ) or []
+            nodesToCleanRefEditsFrom.append( m )
+            nodesToCleanRefEditsFrom += cmds.listRelatives( m, s=True, pa=True )
         
-        '''
         #remove the skinweights reference edits from the meshes in the current scene
         for f in referencesToUnload:
             cmds.file( f, unloadReference=True )
 
         #remove ref edits from the shape node as well - this isn't strictly nessecary but there probably shouldn't be changes to the shape node anyway
         for node in nodesToCleanRefEditsFrom:
+            print node
+            
             cmds.referenceEdit( node, removeEdits=True, successfulEdits=True, failedEdits=True )
 
         #re-load references
@@ -179,25 +215,20 @@ def propagateWeightChangesToModel( meshes ):
         #load up the referenced file and apply the weighting to the meshes in that scene
         cmds.file( refFilepath, open=True, f=True )
         
-        for mesh, weightData in zip( meshesToUpdateWeightsOn, weights ):
-
-            #if there is no weight data to store - keep loopin...
-            if not weightData:
-                continue
-
-            skinCluster = mel.eval('findRelatedSkinCluster("%s");' % mesh)
-            if not skinCluster:
-                cmds.warning( "Couldn't find a skin cluster driving %s - skipping this mesh" % mesh )
-                continue
+        for f in weightFiles:
             
-            #insert dora import skin weights here---
-            skinWeights.setSkinWeights( skinCluster, weightData )
-
+            mesh=f.split('/')[-1].replace('_-_',':').split('.')[0]
+            
+            cmds.select(mesh)
+            
+            mel.eval('DoraSkinWeightImport("%s",0,0,1,0.001);' % f)
+            
+            os.remove(f)
+        
         #save the referenced scene now that we've applied the weights to it
-        file( save=True, f=True )
+        cmds.file( save=True, f=True )
 
     #reload the original file
-    file( curFile, o=True, f=True )
-    '''
+    cmds.file( curFile, o=True, f=True )
 
 propagateWeightChangesToModel(['character:skin:geo:pSphere1'])
