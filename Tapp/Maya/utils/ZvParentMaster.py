@@ -517,7 +517,7 @@ def attach():
 	# carica la selezione
 	sel = cmds.ls(sl=True)
 	if sel == None: sel = []
-	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint']		# nota: ls con filtro transforms non funziona bene (include i constraint)
+	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint' or cmds.nodeType(s) == 'hikIKEffector']		# nota: ls con filtro transforms non funziona bene (include i constraint)
 	
 	ctrls = []
 	# elimina gli elementi che hanno un suffisso di ZVPM
@@ -823,7 +823,8 @@ def ZvParentMaster(posX=56, posY=180, width=_defaultSize[0], height=_defaultSize
 	cmds.columnLayout(adj=True, rs=0, bgc=(0.3, 0.3, 0.3))
 	
 	#### PULSANTI ####
-	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_attach.xpm', c=lambda:mu.ZvParentMaster.attach(), ann='Attach objects')
+	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_attach.xpm',
+					c='import Tapp.Maya.utils as mu;mu.ZvParentMaster.attach()', ann='Attach objects')
 	cmds.popupMenu(mm=True)
 	cmds.menuItem(l='Create parent groups - translation', c=lambda:mu.ZvParentMaster.createParentGroups(True, False), rp='NE')
 	cmds.menuItem(l='Create parent groups - available attrs', c=lambda:mu.ZvParentMaster.createParentGroups(), rp='E')
