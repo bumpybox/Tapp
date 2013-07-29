@@ -106,12 +106,6 @@ def propagateWeightChangesToModel( meshes ):
     
     referencedSkins=getRefFilepathDictForNodes(skinClusters)
     
-    '''
-    if not curFile.name():
-        printWarningStr( "The current scene isn't saved - please save the current scene first before proceeding!" )
-        return
-    '''
-
     for refFilepath, refNodeMeshDict in referencedSkins.iteritems():
         
         referencesToUnload = []
@@ -201,7 +195,6 @@ def propagateWeightChangesToModel( meshes ):
 
         #remove ref edits from the shape node as well - this isn't strictly nessecary but there probably shouldn't be changes to the shape node anyway
         for node in nodesToCleanRefEditsFrom:
-            print node
             
             cmds.referenceEdit( node, removeEdits=True, successfulEdits=True, failedEdits=True )
 
@@ -227,8 +220,20 @@ def propagateWeightChangesToModel( meshes ):
         
         #save the referenced scene now that we've applied the weights to it
         cmds.file( save=True, f=True )
-
+    
     #reload the original file
     cmds.file( curFile, o=True, f=True )
+    
+    #informing user of edited files and printing
+    cmd='\nFiles updated:\n'
+    
+    for f in referencedSkins:
+        
+        cmd+=f+'\n'
+    
+    cmds.confirmDialog(title='Skin Propagation complete!',message=cmd)
+    
+    print cmd
 
-propagateWeightChangesToModel(['character:skin:geo:pSphere1'])
+propagateWeightChangesToModel(['grandpa:rig:main_outfit_geo_v004:trousers','grandpa:rig:main_outfit_geo_v004:shirt',
+                               'grandpa:rig:main_outfit_geo_v004:jumper'])
