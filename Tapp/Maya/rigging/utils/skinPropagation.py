@@ -12,7 +12,7 @@ import maya.mel as mel
 def sourceDora():
     #sourcing dora util
     path=os.path.dirname(__file__)
-    path=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\rigging\utils'
+    path=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\rigging\utils'
     
     melPath=path+'/DoraSkinWeightImpExp.mel'
     melPath=melPath.replace('\\','/')
@@ -84,7 +84,7 @@ def getRefFilepathDictForNodes( nodes ):
 
     return refFileDict
 
-def propagateWeightChangesToModel( meshes ):
+def propagateWeightChangesToReference( meshes ):
     '''
     Given a list of meshes to act on, this function will store the skin weights, remove any
     edits from the skin clusters that affect them, open the scene file the meshes come from
@@ -93,9 +93,14 @@ def propagateWeightChangesToModel( meshes ):
     This makes it possible to fix skinning problems while animating with minimal workflow
     changes
     '''
-    #curFile = Path( file( q=True, sn=True ) )
     curFile = cmds.file( q=True, sn=True )
-    #referencedMeshes = getRefFilepathDictForNodes( meshes )
+    
+    #failsafe for untitled file
+    if curFile=='':
+        
+        cmds.warning('Current file is not saved. Please save file and try again!')
+        
+        return
     
     #getting skin cluster nodes from meshes
     skinClusters=[]
@@ -235,5 +240,6 @@ def propagateWeightChangesToModel( meshes ):
     
     print cmd
 
-propagateWeightChangesToModel(['grandpa:rig:main_outfit_geo_v004:trousers','grandpa:rig:main_outfit_geo_v004:shirt',
-                               'grandpa:rig:main_outfit_geo_v004:jumper'])
+sel=cmds.ls(selection=True)
+
+propagateWeightChangesToReference(sel)
