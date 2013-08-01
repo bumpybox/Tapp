@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>342</width>
+    <height>538</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="mainGB">
+     <property name="title">
+      <string>MG_splinePath Ui V 1.00</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="baseNameL">
+        <property name="text">
+         <string>baseName :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2" colspan="5">
+       <widget class="QLineEdit" name="baseNameLE"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="sideL">
+        <property name="text">
+         <string>side  :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2" colspan="5">
+       <widget class="QLineEdit" name="sideLE"/>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLabel" name="samplesL">
+        <property name="text">
+         <string>Number of sample :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2" colspan="2">
+       <widget class="QSpinBox" name="samplesSB">
+        <property name="value">
+         <number>40</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="outputsL">
+        <property name="text">
+         <string>Number of output:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2" colspan="2">
+       <widget class="QSpinBox" name="outputsSB">
+        <property name="value">
+         <number>30</number>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="offsetL">
+        <property name="text">
+         <string>Offset:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2" colspan="2">
+       <widget class="QSpinBox" name="offsetSB"/>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="inputCurveL">
+        <property name="text">
+         <string>Input Curve :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1" colspan="5">
+       <widget class="QLineEdit" name="inputCurveLE"/>
+      </item>
+      <item row="5" column="6">
+       <widget class="QPushButton" name="inputCurvePB">
+        <property name="text">
+         <string>LOAD</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="firstupVecZL">
+        <property name="text">
+         <string>First upVec :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1" colspan="2">
+       <widget class="QSpinBox" name="firstupVecXSB"/>
+      </item>
+      <item row="6" column="3">
+       <widget class="QSpinBox" name="firstupVecYSB">
+        <property name="value">
+         <number>1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="4">
+       <widget class="QCheckBox" name="connectMatrixCB">
+        <property name="text">
+         <string>connect parentMatrix</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0" colspan="3">
+       <widget class="QCheckBox" name="createTargetsCB">
+        <property name="text">
+         <string>Create Targets</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0">
+       <widget class="QLabel" name="targetsL">
+        <property name="text">
+         <string>Targets :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="1" colspan="3">
+       <widget class="QPushButton" name="targetsPB">
+        <property name="text">
+         <string>LOAD</string>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0" colspan="7">
+       <widget class="QListWidget" name="targetsLW"/>
+      </item>
+      <item row="12" column="0" colspan="7">
+       <widget class="QPushButton" name="createPB">
+        <property name="text">
+         <string>CREATE</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="4">
+       <widget class="QSpinBox" name="firstupVecZSB"/>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QCheckBox" name="makeLiveVectorCB">
+        <property name="text">
+         <string>make live vector</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -12,7 +12,6 @@ import maya.mel as mel
 def sourceDora():
     #sourcing dora util
     path=os.path.dirname(__file__)
-    path=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\rigging\utils'
     
     melPath=path+'/DoraSkinWeightImpExp.mel'
     melPath=melPath.replace('\\','/')
@@ -158,7 +157,7 @@ def propagateWeightChangesToReference( meshes ):
             sourceDora()
             
             cmds.select(m)
-            mel.eval('DoraSkinWeightExport("%s")' % filepath)
+            mel.eval('DoraSkinWeightExport_mod("%s")' % filepath)
             
             #modify dora skin
             f=open(filepath,'r')
@@ -219,7 +218,7 @@ def propagateWeightChangesToReference( meshes ):
             
             cmds.select(mesh)
             
-            mel.eval('DoraSkinWeightImport("%s",0,0,1,0.001);' % f)
+            mel.eval('DoraSkinWeightImport_mod("%s",0,0,1,0.001);' % f)
             
             os.remove(f)
         

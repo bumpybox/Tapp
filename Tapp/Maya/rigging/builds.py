@@ -3,7 +3,7 @@ import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 reload(mru)
-import MG_Tools.python.rigging.script.MG_softIk as mpsi
+import Tapp.Maya.MG_Tools.python.rigging.script.MG_softIk as mpsi
 reload(mpsi)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
@@ -122,7 +122,7 @@ class ik(base):
                  rotation=chain[0].rotation)
         cmds.parent(phgrp,rootgrp)
         
-        self.chains[0].point.addPlug(plug,plugType='system')
+        self.chains[0][0].point.addPlug(plug,plugType='system')
         
         #finding upvector
         crs=mru.CrossProduct(chain[0].translation,
@@ -236,7 +236,7 @@ class ik(base):
                 cmds.parent(plug,sngrp)
                 cmds.parent(cnt,plug)
                 
-                self.chains[0].point.addPlug(plug,plugType='control')
+                self.chains[0][0].point.addPlug(plug,plugType='control')
                 
                 if node.point:
                     node.point.addControl(cnt,controlSystem='ik')

@@ -2,6 +2,7 @@ import os
 from PyQt4 import QtCore, QtGui,uic
 
 import maya.cmds as cmds
+import maya.mel as mel
 import maya.OpenMayaUI as omu
 import sip
 
@@ -9,6 +10,7 @@ import Tapp.Maya.rigging.modules as mrm
 import Tapp.Maya.rigging.gui.create as create
 import Tapp.Maya.rigging.gui.setup as setup
 import Tapp.Maya.rigging.gui.utilities as utilities
+#import Tapp.Maya.rigging.utils.skinPropagation as skinPropagation
 
 uiPath=os.path.dirname(__file__)+'/resources/rigging.ui'
 form,base=uic.loadUiType(uiPath)
@@ -123,6 +125,24 @@ class Form(base,form):
         dirPath=str(self.create_path_lineEdit.text())
         
         create.Create(module,dirPath)
+    
+    ''''
+    def on_utilities_skinPropagate_pushButton(self):
+        
+        pass
+    
+    def on_doraSkin_pushButton(self):
+        
+        #sourcing dora util
+        path=os.path.dirname(skinPropagation.__file__)
+        
+        melPath=path+'/DoraSkinWeightImpExp.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #showing gui
+        mel.eval('DoraSkinWeightImpExp')
+        '''
 
 def show():
     #closing previous dialog

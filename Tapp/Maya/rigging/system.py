@@ -105,7 +105,7 @@ system('|clavicle').build()
 '''
 troubleshoot:
     why are ik plugs hooking to the wrong point?
-        
+
 need to restructure meta system
     have metaPoint that stores guideData
     metaPoints are for local referencing of nodes
@@ -113,6 +113,7 @@ need to restructure meta system
 need two methods:
     adding socket to controller
     parent control or system plug to something
+
 need to have a method for adding controls/sockets to systems
     so I can add fk clavicle to ik system
 

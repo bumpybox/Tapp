@@ -195,10 +195,213 @@ proc string DoraSkinWeightImpExp_simpleObjName( string $name )
 	}
 
 
+global proc int DoraSkinWeightExport( string $dsw_name )
+	{
+	string $exportFileName;	
+	int $fileId;			
+	string $slList[];		
+	string $shape;			
+	string $sc;				
+	string $jointList[];	
+	int $i,$j;
+	int $wp[];				
+	string $workString,$workVtx;
+	string $outputFileLine;	
+	float $weightList[];	
+	global string $gMainProgressBar;
+	float $wpos[3];			
+	float $uv[2];			
+	int $noneUVCount;		
+	int $mode;				
+	
+	
+	if( $dsw_name=="")
+		{
+		error("No Export Name");
+		return( 0 );
+		}
+	
+	
+	$slList= `filterExpand -sm 12`;
+	if( size( $slList )==0 )
+		{
+		
+		$slList= `filterExpand -sm 31`; 
+		$slList= `ls -fl $slList`;
+		if( size( $slList )==0 )
+			{
+			
+			error("No objects SmoothSkinMesh selected (1)");
+			return( 0 );
+			}
+		else{ $mode=2; }
+		}
+	else{ $mode=1;}
+	
+	
+	
+	$shape= DoraSkinWeightImpExp_shapeName( $slList[0] );
+	
+	
+	
+	$sc= DoraSkinWeightImpExp_searchSC( $shape );
+	if( $sc=="" )
+		{
+		error("No objects SmoothSkinMesh selected (2)");
+		return( 0 );
+		}
+	
+	
+	
+	
+	
+	$jointList= `listConnections -type "joint" ($sc+".matrix")`;
+	
+	
+	
+	for( $i=0 ; $i<size($jointList) ; $i++ )
+		{
+		$jointList[$i]= DoraSkinWeightImpExp_simpleObjName( $jointList[$i] );
+		}
+	
+	$workString= DoraSkinWeightImpExp_checkOverlapsList( $jointList );
+	if( $workString!="" )
+		{
+		error("JointName Overlaps [ " + $workString + "]" );
+		return( 0 );
+		}
+	
+	
+	switch( $mode )
+		{
+		case 1:
+		$wp= `polyEvaluate -v $shape`;
+		break;
+		
+		case 2:
+		$wp[0]= size( $slList );
+		break;
+		}
+
+
+	
+	
+	$exportFileName = toNativePath(`workspace -q -fn` + "/" + "dsw/" + DoraSkinWeightImpExp_extCheck($dsw_name, ".dsw"));
+	
+	sysFile -makeDir `dirname( $exportFileName )`;
+	
+	
+	
+	
+	
+	progressBar -edit
+		-beginProgress
+		-status ("Export  [ " + $exportFileName +" ]")
+		-maxValue $wp[0]
+		$gMainProgressBar;
+	
+	
+	
+	$fileId=`fopen $exportFileName "w"`;
+	
+	fprint $fileId ("DoraYuki Skin Weight Format 3.00\n");
+	
+	
+	
+	$outputFileLine= "";
+	for( $i=0 ; $i<size($jointList) ; $i++ )
+		{
+		$outputFileLine+= ($jointList[$i]);
+		if( $i+1 < size($jointList) )
+			{
+			$outputFileLine+= ",";
+			}
+		}
+	fprint $fileId ( $outputFileLine + "\n" );
+	
+	
+	$noneUVCount= 0;
+	
+	
+	for( $i=0 ; $i<$wp[0] ; $i++ )
+		{
+		
+		
+		switch( $mode )
+			{
+			case 1:
+			$workVtx= ($shape + ".vtx[" + $i + "]");
+			break;
+			
+			case 2:
+			$workVtx= $slList[$i];
+			break;
+			}
+		
+		$weightList= `skinPercent -q -v $sc $workVtx`;
+		
+		$outputFileLine= "";
+		
+		for( $j=0 ; $j<size($weightList) ; $j++ )
+			{
+			$outputFileLine+= $weightList[$j];
+			if( $j+1 < size($weightList) )
+				{
+				$outputFileLine+= ",";
+				}
+			}
+		
+		$outputFileLine+= "|";
+		
+		
+		$wpos= `pointPosition -w $workVtx`;
+		$outputFileLine+= ( $wpos[0] + "," + $wpos[1] + "," + $wpos[2] + "|" );
+		
+		
+		$workString= DoraSkinWeightImpExp_vtx2uv($workVtx);
+		
+		if( $workString!="" )
+			{
+			$uv= `getAttr $workString`;
+			}
+		else
+			{
+			$noneUVCount++;
+			warning("noneUV Vartex[ " + $i + " ]");
+			$uv[0]=0.0;
+			$uv[1]=0.0;
+			}
+		
+		$outputFileLine+= ( $uv[0] + "," + $uv[1] );
+		
+		
+		fprint $fileId ( $outputFileLine + "\n");
+		
+		
+		
+		progressBar -edit
+			-step 1 $gMainProgressBar;
+		}
+	
+	
+	fclose $fileId;
+	
+	
+	progressBar -edit
+		-endProgress
+		$gMainProgressBar;
+	
+	
+	$i= $wp[0];
+	$wp= `polyEvaluate -v $shape`;
+	confirmDialog -title "DSW Exported" -message ( "[ " + $shape + " ] Vertex : " + $wp[0] + "\n\nDSW VertexPoint : " + $i + "\n\nnoneUV VartexPoint : " + $noneUVCount + "\n\nExportDSWFile : \n[ "+ $exportFileName + " ]") -button "OK" -defaultButton "OK";
+	
+	return( 1 );
+	}
 
 
 
-global proc int DoraSkinWeightExport( string $exportFileName)
+global proc int DoraSkinWeightExport_mod( string $exportFileName)
 	{	
 	int $fileId;			
 	string $slList[];		
@@ -528,10 +731,549 @@ proc string DoraSkinWeightImpExp_getParam_weightSet( string $selectJoint[], int 
 	return( $workString );
 	}
 
+global proc int DoraSkinWeightImport( string $dsw_name, int $importMode, int $interpolationWeight, int $interpolationMode, float $para)
+	{
+	global string $gDoraSkinWeightImpExp_jointNameNew[];
+	string $ImportFileName;			
+	int $fileId;					
+	string $textLine;				
+	string $slList[];				
+	string $shape;					
+	string $sc;						
+	string $jointList[];			
+	string $selectMeshJointList[];	
+	int $existJointN[];				
+	int $unknownJointN[];			
+	string $weightList[];			
+	int $wp[];						
+	string $vtxName;				
+	int $i, $j, $k, $l;
+	string $workString,$workString2;
+	string $pointData[];			
+	
+	float $weight;
+	global string $gMainProgressBar;
+	string $workXYZs[];
+	float $workXYZf[];
+	vector $workVec[2];
+	vector $wpos[2];
+	int $minNo;
+	float $workDistance[2];			
+	
+	int $weightSetF[];				
+	int $dataCount;					
+	int $weightSetCount;			
+	int $weightSet2Count;			
+	
+	
+	if( $dsw_name=="")
+		{
+		return( 0 );
+		}
+	
+	
+	
+	$slList= `filterExpand -sm 12`;
+	if( size( $slList )==0 )
+		{
+		error("No objects SmoothSkinMesh selected (1)");
+		return( 0 );
+		}
+	
+	
+	$shape= DoraSkinWeightImpExp_shapeName( $slList[0] );
+	
+	
+	$sc= DoraSkinWeightImpExp_searchSC( $shape );
+	if( $sc=="" )
+		{
+		error("No objects SmoothSkinMesh selected (2)");
+		return( 0 );
+		}
+	
+	
+	
+	
+	
+	$selectMeshJointList= `listConnections -type "joint" ($sc+".matrix")`;
+	
+	
+	for( $i=0 ; $i<size($selectMeshJointList) ; $i++ )
+		{
+		$selectMeshJointList[$i]= DoraSkinWeightImpExp_simpleObjName( $selectMeshJointList[$i] );
+		}
+	
+	$workString= DoraSkinWeightImpExp_checkOverlapsList( $selectMeshJointList );
+	if( $workString!="" )
+		{
+		error("JointName Overlaps [ " + $workString + "]" );
+		return( 0);
+		}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	$importFileName = toNativePath(`workspace -q -fn` + "/dsw/" + $dsw_name);
+	
+	
+	
+	$wp= `polyEvaluate -v $shape`;
+	
+	
+	for( $i=0 ; $i<$wp[0] ; $i++ )$weightSetF[$i]=0;
+	
+	
+	$fileId=`fopen $importFileName "r"`;
+	
+	
+	$textLine= `fgetline $fileId`;
+	$textLine= `substitute "\n" $textLine ""`;
+	
+	if( $textLine!="DoraYuki Skin Weight Format 3.00" )
+		{
+		error( "No DSW Format 3.00" );
+		return( 0 );
+		}
+	
+	
+	$textLine= `fgetline $fileId`;
+	
+	$textLine= `substitute "\n" $textLine ""`;
+	
+	if($textLine=="" )
+		{
+		return( 0 );
+		}
+	
+	
+	tokenizeList($textLine, $jointList);
+	
+	
+	for( $j=0 ; $j<size($jointList) ; $j++ )
+		{
+		$jointList[$j]= DoraSkinWeightImpExp_simpleObjName( $jointList[$j] );
+		}
+	
+	
+	if( `window -ex DoraSkinWeightImpExpJointNameEditWindow` == true )
+		{
+		for( $i=0 ; $i<size($jointList) ; $i++ )
+			{
+			$jointList[$i]= $gDoraSkinWeightImpExp_jointNameNew[$i];
+			}
+		}
+	
+	
+	$e=0;
+	$u=0;
+	for( $s=0 ; $s<size($selectMeshJointList); $s++ )
+		{
+		$check=0;
+		for( $d=0 ; $d<size($jointList) ; $d++ )
+			{
+			
+			if( $selectMeshJointList[$s]==$jointList[$d])
+				{
+				$existJointN[$e]= $s;
+				$e++;
+				$check=1;
+				break;
+				}
+			}
+		
+		if( $check==0 )
+			{
+			$unknownJointN[$u]=$s;
+			$u++;
+			}
+		}
+	
+	
+	
+	
+	
+	
+		progressBar -edit
+		-beginProgress
+		-status ("Import  [ " + $importFileName +" ]")
+		-maxValue $wp[0]
+		$gMainProgressBar;
+	
+	
+	
+	setAttr ( $sc + ".normalizeWeights") 0;
+	
+	
+	
+	setAttr ( $sc + ".envelope") 0;
+	
+	
+	
+	$dataCount=0;
+	$weightSetCount=0;
+	$weightSet2Count=0;
+	
+	switch( $importMode )
+		{
+		
+		
+		
+		case 0:
+		
+		for( $i=0 ; $i<$wp[0] ; $i++ )
+			{
+			
+			
+			
+			
+			
+			$textLine= `fgetline $fileId`;
+			
+			$textLine= `substitute "\n" $textLine ""`;
+			
+			
+			if($textLine=="" )break;
+				
+			
+			tokenize( $textLine, "|", $pointData );
+			
+			
+			tokenizeList($pointData[0], $weightList);
+			
+			
+			$dataCount++;
+			
+			
+			
+			$workString=DoraSkinWeightImpExp_getParam_weightSet( $selectMeshJointList, $existJointN, $unknownJointN, $jointList, $weightList  );
+			
+			
+			if( $workString!="" )
+				{
+				$vtxName= ($shape + ".vtx[" + $i + "]");
+				
+				$workString= ("skinPercent -r false " + $workString + $sc + " " + $vtxName );
+				eval( $workString );
+				$weightSetCount++;
+				
+				
+				$weightSetF[$i]= 1;
+				
+				}
+			
+			
+			progressBar -edit
+				-step 1 $gMainProgressBar;
+			}
+		
+		break;
+		
+		
+		
+		
+		case 1:
+		
+		$textLine= `fgetline $fileId`;
+		while( $textLine!="" )
+			{
+			
+			
+			
+			
+			$textLine= `substitute "\n" $textLine ""`;
+			
+			tokenize( $textLine, "|", $pointData );
+			
+			
+			
+			
+			tokenizeList($pointData[0], $weightList);
+			
+			
+			tokenizeList($pointData[1], $workXYZs);
+			$wpos[0]= << float($workXYZs[0]), float($workXYZs[1]), float($workXYZs[2])>>;
+			
+			
+			$dataCount++;
+			
+			
+			
+			
+			$minNo= DoraSkinWeightImpExp_vtxDistanceMin( $wpos[0], $shape, 0, $weightSetF, $para);
+			
+			if( $minNo!=-1 )
+				{
+				
+				$workString=DoraSkinWeightImpExp_getParam_weightSet( $selectMeshJointList, $existJointN, $unknownJointN, $jointList, $weightList  );
+				
+				
+				if( $workString!="" )
+					{
+					$vtxName= ($shape + ".vtx[" + $minNo + "]");
+					
+					$workString= ("skinPercent -r false " + $workString + $sc + " " + $vtxName );
+					
+					eval( $workString );
+					$weightSetCount++;
+					
+					
+					$weightSetF[$minNo]= 1;
+					}
+				
+				}
+			
+			
+			progressBar -edit
+				-step 1 $gMainProgressBar;
+			
+			$textLine= `fgetline $fileId`;
+			}
+		
+		break;
+		
+		
+		
+		
+		case 2:
+		
+		$textLine= `fgetline $fileId`;
+		while( $textLine!="" )
+			{
+			
+			
+			
+			
+			$textLine= `substitute "\n" $textLine ""`;
+			
+			tokenize( $textLine, "|", $pointData );
+			
+			
+			tokenizeList($pointData[0], $weightList);
+			
+			
+			tokenizeList($pointData[2], $workXYZs);
+			$wpos[0]= << float($workXYZs[0]), float($workXYZs[1]), 0>>;
+			
+			
+			$dataCount++;
+			
+			
+			
+			
+			$minNo= DoraSkinWeightImpExp_vtxDistanceMin( $wpos[0], $shape, 1, $weightSetF, $para );
+			
+			if( $minNo!=-1 )
+				{
+				
+				$workString=DoraSkinWeightImpExp_getParam_weightSet( $selectMeshJointList, $existJointN, $unknownJointN, $jointList, $weightList  );
+				
+				
+				if( $workString!="" )
+					{
+					$vtxName= ($shape + ".vtx[" + $minNo + "]");
+					
+					$workString= ("skinPercent -r false " + $workString + $sc + " " + $vtxName );
+					
+					eval( $workString );
+					$weightSetCount++;
+					
+					$weightSetF[$minNo]= 1;
+					}
+				}
+			
+			
+			progressBar -edit
+				-step 1 $gMainProgressBar;
+			
+			$textLine= `fgetline $fileId`;
+			}
+		break;
+
+		}
+	
+	
+	
+
+	
+	
+	
+	
+	if( $interpolationWeight == 1 )
+		{
+		switch( $interpolationMode )
+			{
+			
+			case 1:
+			
+			$workString="";
+			for( $i=0 ; $i<size($weightSetF) ; $i++ )
+				{
+				
+				if( $weightSetF[$i]==1 )continue;
+				
+				
+				
+				
+				
+				$minNo= -1;
+				for( $j=0 ; $j<$wp[0] ; $j++ )
+					{
+					
+					if( $i!=$j && $weightSetF[$j]==1 )
+						{
+						
+						$workVec[0]= DoraSkinWeightImpExp_vtx2vector($shape + ".vtx[" +  $j + "]");
+						$minNo= $j;
+						break;
+						}
+					
+					}
+				
+				for( ; $j<$wp[0] ; $j++ )
+					{
+					
+					if( $i!=$j && $weightSetF[$j]==1 )
+						{
+						$workVec[1]= DoraSkinWeightImpExp_vtx2vector($shape + ".vtx[" + $j + "]");
+						
+						if( DoraSkinWeightImpExp_compDistance( DoraSkinWeightImpExp_vtx2vector($shape + ".vtx[" + $i + "]"), $workVec[0], $workVec[1], $workDistance )==0 )
+							{
+							$workVec[0]= $workVec[1];
+							$minNo= $j;
+							}
+						}
+					}
+				
+				
+				progressBar -edit
+					-step 1 $gMainProgressBar;
+				
+				
+				
+				
+				if( $minNo == -1 )break;
+				
+				
+				DoraSkinWeightImpExp_weightCopy( $minNo, $i, $sc, $shape );
+				$weightSet2Count++;
+				
+				$weightSetF[$i]=2;
+				}
+			break;
+			
+			
+			case 2:
+			
+			$workString="";
+			for( $i=0 ; $i<size($weightSetF) ; $i++ )
+				{
+				
+				if( $weightSetF[$i]==1 )continue;
+				
+				
+				
+				
+				$minNo= -1;
+				for( $j=0 ; $j<$wp[0] ; $j++ )
+					{
+					
+					if( $i!=$j && $weightSetF[$j]==1 )
+						{
+						
+						$workVec[0]= DoraSkinWeightImpExp_vtx2uvVector($shape + ".vtx[" +  $j + "]");
+						$minNo= $j;
+						break;
+						}
+					
+					}
+				
+				for( ; $j<$wp[0] ; $j++ )
+					{
+					
+					if( $i!=$j && $weightSetF[$j]==1 )
+						{
+						$workVec[1]= DoraSkinWeightImpExp_vtx2uvVector($shape + ".vtx[" + $j + "]");
+						
+						if( DoraSkinWeightImpExp_compDistance( DoraSkinWeightImpExp_vtx2uvVector($shape + ".vtx[" + $i + "]"), $workVec[0], $workVec[1], $workDistance )==0 )
+							{
+							$workVec[0]= $workVec[1];
+							$minNo= $j;
+							}
+						}
+					}
+				
+				progressBar -edit
+					-step 1 $gMainProgressBar;
+				
+				
+				
+				if( $minNo == -1 )break;
+				
+				
+				DoraSkinWeightImpExp_weightCopy( $minNo, $i, $sc, $shape );
+				$weightSet2Count++;
+				
+				$weightSetF[$i]=2;
+				}
+			
+			break;
+			}
+		}
+	
+	
+	
+	$workString="";
+	for( $i=0 ; $i<$wp[0] ; $i++)
+		{
+		
+		switch( $weightSetF[$i]) 
+			{
+			case 1:
+			$workString+= ($shape + ".vtx[" + $i + "] ");
+			break;
+			
+			case 2:
+			$workString2= DoraSkinWeightImpExp_vtx2uv( $shape + ".vtx[" + $i + "] " );
+			$workString2= `substitute ".uv" $workString2 ".map"`;
+			$workString+= ( $workString2 + " ");
+			break;
+			}
+		}
+	if( $workString!="" ){eval( "select " + $workString );}
+	
+	
+	
+	
+	setAttr ( $sc + ".envelope") 1;
+	
+	
+	skinPercent -normalize true $sc;
+	setAttr ( $sc + ".normalizeWeights") 1;
+	
+	
+	
+	progressBar -edit
+		-endProgress
+		$gMainProgressBar;
+	
+	
+	fclose $fileId;
+	
+	
+	confirmDialog -title "DSW Imported" -message ( "[ " + $shape + " ] Vertex : " + $wp[0] +  "\n\nDSW VertexPoint : "+ $dataCount + "\n\nSetPoint : "+ ($weightSetCount + $weightSet2Count) + "\n( InterpolationPoint :" + $weightSet2Count + " )" ) -button "OK" -defaultButton "OK";
+	
+	return( 1 );
+	}
 
 
 
-global proc int DoraSkinWeightImport( string $importFileName, int $importMode, int $interpolationWeight, int $interpolationMode, float $para)
+global proc int DoraSkinWeightImport_mod( string $importFileName, int $importMode, int $interpolationWeight, int $interpolationMode, float $para)
 	{
 	global string $gDoraSkinWeightImpExp_jointNameNew[];		
 	int $fileId;					
