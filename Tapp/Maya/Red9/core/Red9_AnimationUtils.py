@@ -194,7 +194,38 @@ def timeLineRangeProcess(start, end, step, incEnds=True):
         rng.append(end)
     return rng
  
-    
+def animCurveDrawStyle(style='simple', forceBuffer=True, 
+                   showBufferCurves=False, displayTangents=False, displayActiveKeyTangents=True, *args):
+    '''
+    Toggle the state of the graphEditor curve display, used in the Filter and Randomizer to 
+    simplify the display abnd the curve whilst processing. This allows you to also pass in 
+    the state directly, used by the UI close event to return the editor to the last cached state
+    '''
+    print 'toggleCalled', style, showBufferCurves, displayTangents, displayActiveKeyTangents
+
+    if style == 'simple':
+        print 'toggle On'
+        if forceBuffer:
+            mel.eval('doBuffer snapshot;')
+        mel.eval('animCurveEditor -edit -showBufferCurves 1 -displayTangents false -displayActiveKeyTangents false graphEditor1GraphEd;')
+    elif style == 'full':
+        print 'toggleOff'
+        cmd='animCurveEditor -edit'
+        if showBufferCurves:
+            cmd+=' -showBufferCurves 1'
+        else:
+            cmd+=' -showBufferCurves 0'
+        if displayTangents:
+            cmd+=' -displayTangents true'
+        else:
+            cmd+=' -displayTangents false'
+        if displayActiveKeyTangents:
+            cmd+= ' -displayActiveKeyTangents true'
+        else:
+            cmd+= ' -displayActiveKeyTangents false'
+        mel.eval('%s graphEditor1GraphEd;' % cmd)
+
+
 #def timeLineRangeSet(time):
 #    '''
 #    Return the current PlaybackTimeline OR if a range is selected in the
@@ -244,20 +275,20 @@ class AnimationUI(object):
         
         #take generic filterSettings Object
         self.filterSettings = r9Core.FilterNode_Settings()
-        self.filterSettings.transformClamp=True
+        self.filterSettings.transformClamp = True
         self.presetDir = os.path.join(r9Setup.red9ModulePath(), 'presets')
         
         #Pose Management variables
-        self.posePath=None #working variable
-        self.posePathLocal='Local Pose Path not yet set' 
-        self.posePathProject='Project Pose Path not yet set'
-        self.posePathMode='localPoseMode' # or 'project' : mode of the PosePath field and UI
-        self.poseSelected=None 
-        self.poseGridMode='thumb'  # or text
-        self.poseRootMode='RootNode' # or MetaRig
+        self.posePath = None #working variable
+        self.posePathLocal = 'Local Pose Path not yet set' 
+        self.posePathProject = 'Project Pose Path not yet set'
+        self.posePathMode = 'localPoseMode' # or 'project' : mode of the PosePath field and UI
+        self.poseSelected = None 
+        self.poseGridMode = 'thumb'  # or text
+        self.poseRootMode = 'RootNode' # or MetaRig
         self.poses=None
-        self.poseButtonBGC=[0.27,0.3,0.3]        
-        self.poseButtonHighLight=[0.7,0.95,0.75]  
+        self.poseButtonBGC = [0.27,0.3,0.3]        
+        self.poseButtonHighLight = [0.7,0.95,0.75]  
         
         #Internal config file setup for the UI state
         if self.internalConfigPath:
@@ -281,10 +312,11 @@ class AnimationUI(object):
             if cmds.dockControl(self.dockCnt, exists=True):
                 cmds.deleteUI(self.dockCnt, control=True)  
         except:
-            pass
+            self.dock=False
         
         if cmds.window(self.win, exists=True): cmds.deleteUI(self.win, window=True)
-        animwindow = cmds.window(self.win , title=self.label)#, widthHeight=(325, 420))
+        animwindow=cmds.window(self.win , title=self.label)
+        
         cmds.menuBarLayout()
         cmds.menu(l="VimeoHelp")
         cmds.menuItem(l="Open Vimeo > WalkThrough",\
@@ -296,11 +328,13 @@ class AnimationUI(object):
         cmds.menuItem(l="Open Vimeo > CopyKeys & TimeOffsets",\
                       c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/33440348')") 
         cmds.menuItem(l="Open Vimeo > MirrorSetups",\
-                      c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/57882801')")         
+                      c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/57882801')")
+        cmds.menuItem(l="Open Vimeo > PoseSaver - Advanced Topics",\
+                      c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/66269033')")          
         cmds.menuItem(divider=True) 
         cmds.menuItem(l="Contact Me",c=lambda *args:(r9Setup.red9ContactInfo()))
-        self.MainLayout = cmds.columnLayout(adjustableColumn=True)
-        
+
+        self.MainLayout = cmds.scrollLayout('red9MainScroller',rc=self.__uiCB_resizeMainScroller)
         self.form = cmds.formLayout()
         self.tabs = cmds.tabLayout(innerMarginWidth=5, innerMarginHeight=5)
         cmds.formLayout(self.form, edit=True, attachForm=((self.tabs, 'top', 0), 
@@ -362,8 +396,19 @@ class AnimationUI(object):
                                             #onc="cmds.checkBox('uicbCKeyHierarchy', e=True, v=False)")  
         self.uicbCKeyChnAttrs = cmds.checkBox(ann='Copy only those channels selected in the channelBox', 
                                             l='ChBox Attrs', al='left', v=False)   
+
+        cmds.setParent('..')
+        cmds.separator(h=2, style='none')  
+        cmds.rowColumnLayout(numberOfColumns=3, columnWidth=[(1, 100), (2, 70), (3, 130)], columnSpacing=[(1, 10), (2, 10)])
         self.uicbCKeyRange = cmds.checkBox(ann='ONLY Copy Keys over PlaybackTimeRange or Selected TimeRange (in Red on the timeline)', 
-                                            l='TimeRange', al='left', v=False)   
+                                            l='TimeRange', al='left', v=False)
+        cmds.text(l='Paste by ' , align='right') 
+        cmds.optionMenu('om_PasteMethod',
+                        ann='Default = "replace", paste method used by the copy code internally',
+                        cc=partial(self.__uiCB_setCopyKeyPasteMethod))                                               
+        for preset in ["insert", "replace", "replaceCompletely", "merge", "scaleInsert", "scaleReplace", "scaleMerge", "fitInsert", "fitReplace", "fitMerge"]: 
+            cmds.menuItem(l=preset)
+        cmds.optionMenu('om_PasteMethod', e=True, v='replace')   
         cmds.setParent(self.AnimLayout)
 
 
@@ -384,11 +429,14 @@ class AnimationUI(object):
         self.uicbSnapRange = cmds.checkBox(ann='Snap Nodes over PlaybackTimeRange or Selected TimeRange (in Red on the timeline)', 
                                             l='TimeRange', al='left', v=False, 
                                             cc=partial(self.__uiCB_manageSnapTime))  
-        self.uicbSnapPreCopyKeys = cmds.checkBox(ann='Copy all animation data for all channels prior to running the Snap over Time', 
-                                            l='PreCopyKeys', al='left', en=False, v=True)               
+        self.uicbSnapPreCopyKeys = cmds.checkBox(l='PreCopyKeys', al='left', 
+                                                 ann='Copy all animation data for all channels prior to running the Snap over Time',
+                                                 en=False, v=True)               
         self.uiifgSnapStep = cmds.intFieldGrp('uiifgSnapStep', l='FrmStep', en=False, value1=1, cw2=(50, 40), 
                                            ann='Frames to advance the timeline after each Process Run')
-
+        cmds.separator(h=2, style='none')
+        cmds.separator(h=2, style='none')
+        cmds.separator(h=2, style='none')
         self.uicbSnapHierarchy = cmds.checkBox(ann='Filter Hierarchies with given args - then Snap Transforms for matched nodes', 
                                             l='Hierarchy', al='left', v=False, 
                                             cc=partial(self.__uiCB_manageSnapHierachy)) 
@@ -396,8 +444,7 @@ class AnimationUI(object):
                                             l='PreCopyAttrs', al='left', en=False, v=True) 
         self.uiifSnapIterations = cmds.intFieldGrp('uiifSnapIterations', l='Iterations', en=False, value1=1, cw2=(50, 40), 
                                            ann='This is the number of iterations over each hierarchy node during processing, if you get issues during snap then increase this')
-        cmds.setParent('..')
-        cmds.separator(h=5, style='none')
+        cmds.setParent(self.AnimLayout)  
 
 
         #====================
@@ -446,7 +493,7 @@ class AnimationUI(object):
                                             ann='ON:Scene Level Processing: OFF:SelectedNode Processing - Offsets Animation, Sound and Clip data as appropriate', 
                                             al='left', v=False, en=False)        
         cmds.setParent('..')   
-        cmds.separator(h=5, style='none')
+        cmds.separator(h=2, style='none')
         cmds.rowColumnLayout(numberOfColumns=3, columnWidth=[(1, 100), (2, 100), (3, 100)], columnSpacing=[(1, 10), (2, 10), (3, 5)])
         self.uicbTimeOffsetFlocking = cmds.checkBox('uicbTimeOffsetFlocking', 
                                             l='Flocking', al='left', en=True, v=False, 
@@ -462,6 +509,7 @@ class AnimationUI(object):
                      If processing on selected it will deal with each node type as it finds', 
                      command=partial(self.__uiCall, 'TimeOffset'))  
         cmds.setParent(self.AnimLayout) 
+        
         
         #====================
         # Mirror Controls
@@ -571,6 +619,13 @@ class AnimationUI(object):
                                             l='Include Roots', 
                                             al='left', v=True,
                                             cc=lambda x:self.__uiCache_storeUIElements())   
+        
+#        cmds.optionMenuGrp('uiomMatchMethod',label='MatchMethod:',
+#                        ann='Default = "replace", paste method used by the copy code internally',
+#                        cc=partial(self.__uiCB_setCopyKeyPasteMethod))                                               
+#        for preset in ["base","stripPrefix","index"]: 
+#            cmds.menuItem(l=preset)
+#        cmds.optionMenu('om_PasteMethod', e=True, v='replace')   
             
         self.uicbMatchMethod = cmds.checkBox('uicbMatchMethod',
                                             ann='Match method allow prefix stripping?', 
@@ -654,6 +709,7 @@ class AnimationUI(object):
         self.uitslPoses = cmds.textScrollList('uitslPoses',numberOfRows=8, allowMultiSelection=False, 
                                                #selectCommand=partial(self.__uiPresetSelection), \
                                                height=350, vis=False)
+        self.posePopupText = cmds.popupMenu()
         
         self.uiglPoseScroll = cmds.scrollLayout('uiglPoseScroll', 
                                                 cr=True, 
@@ -661,9 +717,10 @@ class AnimationUI(object):
                                                 hst=16,  
                                                 vst=16, 
                                                 vis=False, 
-                                                rc=lambda * x:self.__uiCB_gridResize())
+                                                rc=self.__uiCB_gridResize)
         self.uiglPoses = cmds.gridLayout('uiglPoses', cwh=(100,100), cr=False, ag=True)
-
+        self.posePopupGrid = cmds.popupMenu()
+        
         cmds.setParent(self.poseUILayout)
         cmds.rowColumnLayout(numberOfColumns=2, columnWidth=[(1, 162), (2, 162)])
         cmds.button('loadPoseButton',label='Load Pose', bgc=self.buttonBgc, 
@@ -733,10 +790,11 @@ class AnimationUI(object):
         #====================
         # Header
         #====================
-        cmds.setParent(self.MainLayout)
+        if not r9Setup.mayaVersion()==2009:
+            cmds.setParent(self.MainLayout)
         cmds.separator(h=10, style='none')
-        cmds.iconTextButton(style='iconOnly', bgc=(0.7, 0, 0), image1='Rocket9_buttonStrap2.bmp', 
-                             c=lambda * args:(r9Setup.red9ContactInfo()), h=22, w=200)
+        self.r9strap=cmds.iconTextButton('r9strap', style='iconOnly', bgc=(0.7, 0, 0), image1='Rocket9_buttonStrap2.bmp', 
+                             c=lambda * args:(r9Setup.red9ContactInfo()), h=22, w=340)
         
         #needed for 2009
         cmds.scrollLayout('uiglPoseScroll',e=True,h=330)
@@ -748,11 +806,16 @@ class AnimationUI(object):
             try:
                 #Maya2011 QT docking
                 allowedAreas = ['right', 'left']
-                cmds.dockControl(self.dockCnt, area='right', label=self.label, content=animwindow, floating=False, allowedArea=allowedAreas, width=325)
+                cmds.dockControl(self.dockCnt, area='right', label=self.label, 
+                                 content=animwindow, 
+                                 floating=False, 
+                                 allowedArea=allowedAreas, 
+                                 width=350)
             except:
                 #Dock failed, opening standard Window
                 cmds.showWindow(animwindow)
-                cmds.window(self.win, edit=True, widthHeight=(355, 600))
+                cmds.window(self.win, edit=True, widthHeight=(355, 720))
+                self.dock = False
         else:
             cmds.showWindow(animwindow)
             cmds.window(self.win, edit=True, widthHeight=(355, 720))
@@ -818,7 +881,27 @@ class AnimationUI(object):
             nodeTypes.append(nodeType)
         cmds.textFieldGrp('uitfgSpecificNodeTypes', e=True, text=','.join(nodeTypes))
  
-
+    def __uiCB_resizeMainScroller(self,*args):
+        if self.dock:
+            width=cmds.dockControl(self.dockCnt, q=True, w=True)
+            height=cmds.dockControl(self.dockCnt, q=True, h=True)
+        else:
+            newSize=cmds.window(self.win, q=True, wh=True)
+            width=newSize[0]
+            height=newSize[1]
+        if width>350:
+            cmds.formLayout(self.form, edit=True, w=width-10)
+            #cmds.iconTextButton(self.r9strap, e=True, w=width-10)
+        else:
+            cmds.scrollLayout(self.MainLayout,e=True,w=350)
+        if height>440:
+            cmds.scrollLayout('uiglPoseScroll',e=True,h=height-430)
+            
+    def __uiCB_setCopyKeyPasteMethod(self, *args):
+        self.ANIM_UI_OPTVARS['AnimationUI']['keyPasteMethod'] = cmds.optionMenu('om_PasteMethod', q=True, v=True)
+        self.__uiCache_storeUIElements()
+        
+    
     # Preset FilterSettings Object Management
     #------------------------------------------------------------------------------    
     
@@ -1029,7 +1112,7 @@ class AnimationUI(object):
         @param mode: 'local' or 'project', in project the poses are load only, save=disabled
         '''
         if mode=='local':
-            self.posePath=os.path.join(self.posePathLocal,self.__uiCB_getsubFolderFromUI())
+            self.posePath=os.path.join(self.posePathLocal,self.getPoseSubFolder())
             if not os.path.exists(self.posePath):
                 log.warning('No Matching Local SubFolder path found - Reverting to Root')
                 self.__uiCB_clearSubFolders()
@@ -1039,7 +1122,7 @@ class AnimationUI(object):
             cmds.button('savePoseButton',edit=True,en=True,bgc=r9Setup.red9ButtonBGC(1))
             cmds.textFieldButtonGrp('uitfgPosePath',edit=True,text=self.posePathLocal)
         elif mode=='project':
-            self.posePath=os.path.join(self.posePathProject,self.__uiCB_getsubFolderFromUI())
+            self.posePath=os.path.join(self.posePathProject,self.getPoseSubFolder())
             if not os.path.exists(self.posePath):
                 log.warning('No Matching Project SubFolder path found - Reverting to Root')
                 self.__uiCB_clearSubFolders()
@@ -1091,7 +1174,7 @@ class AnimationUI(object):
     
         #fill the cache up for the ini file
         self.ANIM_UI_OPTVARS['AnimationUI']['posePath']=self.posePath
-        self.ANIM_UI_OPTVARS['AnimationUI']['poseSubPath']=self.__uiCB_getsubFolderFromUI()
+        self.ANIM_UI_OPTVARS['AnimationUI']['poseSubPath']=self.getPoseSubFolder()
         self.ANIM_UI_OPTVARS['AnimationUI']['posePathLocal']=self.posePathLocal
         self.ANIM_UI_OPTVARS['AnimationUI']['posePathProject']=self.posePathProject
         self.ANIM_UI_OPTVARS['AnimationUI']['posePathMode'] = self.posePathMode
@@ -1105,9 +1188,7 @@ class AnimationUI(object):
         note we prefix the folder with '/' to help denote it's a folder in the UI
         '''
         basePath=cmds.textFieldButtonGrp('uitfgPosePath', query=True, text=True)
-        dirs=[subdir for subdir in os.listdir(basePath) if os.path.isdir(os.path.join(basePath, subdir))]
-        if not dirs:
-            raise StandardError('Folder has no subFolders for pose scanning')
+        
         #turn OFF the 2 main poseScrollers
         cmds.textScrollList(self.uitslPoses, edit=True, vis=False)
         cmds.scrollLayout(self.uiglPoseScroll, edit=True, vis=False)
@@ -1115,6 +1196,14 @@ class AnimationUI(object):
         cmds.textScrollList(self.uitslPoseSubFolders, edit=True, vis=True)
         cmds.textScrollList(self.uitslPoseSubFolders, edit=True, ra=True)
         
+        if not os.path.exists(basePath):
+            #path not valid clear all
+            log.warning('No current PosePath set')
+            return
+        
+        dirs=[subdir for subdir in os.listdir(basePath) if os.path.isdir(os.path.join(basePath, subdir))]
+        if not dirs:
+            raise StandardError('Folder has no subFolders for pose scanning')        
         for subdir in dirs:
             cmds.textScrollList(self.uitslPoseSubFolders, edit=True, 
                                             append='/%s' % subdir,
@@ -1137,36 +1226,38 @@ class AnimationUI(object):
         cmds.textScrollList(self.uitslPoseSubFolders, edit=True, vis=False)
         self.__uiCB_setPosePath()
                
-    def __uiCB_getsubFolderFromUI(self):
+         
+
+    #------------------------------------------------------------------------------
+    #Build Pose UI calls  -------------------------------------------------------     
+     
+    def getPoseSubFolder(self):
         '''
-        why??? means we can modify the folder display name without worries.
+        Return the given pose subFolder if set
         '''
         try:
             return cmds.textFieldButtonGrp('uitfgPoseSubPath',q=True,text=True)
         except:
-            return ""          
-
-    #------------------------------------------------------------------------------
-    #Build Pose UI calls  -------------------------------------------------------     
-             
-    def __uiCB_getPoseDir(self):
+            return "" 
+                
+    def getPoseDir(self):
         '''
         Return the poseDir including subPath
         '''
-        return os.path.join(cmds.textFieldButtonGrp('uitfgPosePath', query=True, text=True),\
-                            self.__uiCB_getsubFolderFromUI()) 
+        return os.path.join(cmds.textFieldButtonGrp('uitfgPosePath', query=True, text=True),
+                            self.getPoseSubFolder()) 
         
-    def __uiCB_getPosePath(self):
+    def getPosePath(self):
         '''
         Return the full posePath for loading
         '''
-        return os.path.join(self.__uiCB_getPoseDir(), '%s.pose' % self.getPoseSelected())
+        return os.path.join(self.getPoseDir(), '%s.pose' % self.getPoseSelected())
         
-    def __uiCB_getIconPath(self):
+    def getIconPath(self):
         '''
         Return the full posePath for loading
         '''
-        return os.path.join(self.__uiCB_getPoseDir(), '%s.bmp' % self.getPoseSelected())   
+        return os.path.join(self.getPoseDir(), '%s.bmp' % self.getPoseSelected())   
                            
     def __uiCB_fillPoses(self, rebuildFileList=False, searchFilter=None, *args):
         '''
@@ -1183,16 +1274,14 @@ class AnimationUI(object):
             log.debug('Rebuilt Pose internal Lists') 
             #Project mode and folder contains NO poses so switch to subFolders
             if not self.poses and self.posePathMode =='projectPoseMode':
-                log.warning('no poses found in root project directory, switching to subFolder pickers')
+                log.warning('No Poses found in Root Project directory, switching to subFolder pickers')
                 self.__uiCB_switchSubFolders()
                 return
         log.debug( 'searchFilter  : %s : rebuildFileList : %s' %(searchFilter, rebuildFileList))
-
-        
+            
         #TextScroll Layout
         #================================ 
         if not self.poseGridMode=='thumb':
-            popupBind=self.uitslPoses
             cmds.textScrollList(self.uitslPoseSubFolders, edit=True, vis=False) #subfolder scroll OFF
             cmds.textScrollList(self.uitslPoses, edit=True, vis=True)           #pose TexScroll ON
             cmds.scrollLayout(self.uiglPoseScroll, edit=True, vis=False)        #pose Grid OFF
@@ -1208,17 +1297,16 @@ class AnimationUI(object):
         #Grid Layout
         #================================ 
         else:
-            popupBind=self.uiglPoseScroll
             cmds.textScrollList(self.uitslPoseSubFolders, edit=True, vis=False) #subfolder scroll OFF
             cmds.textScrollList(self.uitslPoses, edit=True, vis=False)          #pose TexScroll OFF
             cmds.scrollLayout(self.uiglPoseScroll, edit=True, vis=True)         #pose Grid ON
             self.__uiCB_gridResize()
-              
+
             #Clear the Grid if it's already filled
             try:
                 [cmds.deleteUI(button) for button in cmds.gridLayout(self.uiglPoses,q=True,ca=True)]
-            except:
-                pass
+            except StandardError,error:
+                print error
             for pose in self.buildFilteredPoseList(searchFilter):
                 try:
                     #:NOTE we prefix the buttons to get over the issue of non-numeric 
@@ -1237,77 +1325,75 @@ class AnimationUI(object):
             if searchFilter:
                 #with search scroll the list to the top as results may seem blank otherwise
                 cmds.scrollLayout('uiglPoseScroll',edit=True,sp='up')   
-                    
-        #Finally Bind the Popup-menu                
-        self.__uiCB_PosePopup(popupBind)
-  
           
-    def __uiCB_PosePopup(self,parentUI):
+        #Finally Bind the Popup-menu                
+        self.__uiCB_PosePopup()
+
+          
+    def __uiCB_PosePopup(self):
         '''
         RMB popup menu for the Pose functions
-        '''
-        try:
-            cmds.deleteUI(self.posePopup)
-        except:
-            pass 
-        enableState=True  
+        '''   
+        enableState=True            
         if self.posePathMode=='projectPoseMode':
             enableState=False
-
-        self.posePopup = cmds.popupMenu(parent=parentUI)                    
-        cmds.menuItem(label='Delete Pose', en=enableState, command=partial(self.__uiPoseDelete))
-        cmds.menuItem(label='Rename Pose', en=enableState, command=partial(self.__uiPoseRename))
-        cmds.menuItem(label='Select IntenalPose Objects', command=partial(self.__uiPoseSelectObjects))
-        
-        cmds.menuItem(divider=True)
-        cmds.menuItem(label='Update : Pose Only', en=enableState, command=partial(self.__uiPoseUpdate,False))
-        cmds.menuItem(label='Update : Pose and Thumb', en=enableState, command=partial(self.__uiPoseUpdate,True))
-        if self.poseGridMode=='thumb':
-            cmds.menuItem(label='Update : Thumb Only', command=partial(self.__uiPoseUpdateThumb))
             
-        cmds.menuItem(divider=True)
-        cmds.menuItem(label='Make Subfolder', en=enableState,command=partial(self.__uiPoseMakeSubFolder))  
-        cmds.menuItem(label='Refresh List', en=True,command=lambda x: self.__uiCB_fillPoses(rebuildFileList=True))
-        cmds.menuItem(divider=True)
-        cmds.menuItem(label='Debug: Open Pose File', command=partial(self.__uiPoseOpenFile))
-        cmds.menuItem(label='Debug: Open Pose Directory', command=partial(self.__uiPoseOpenDir))
-        cmds.menuItem(label='Debug: Pose Compare with current', command=partial(self.__uiPoseCompare))
-        cmds.menuItem(label='Debug: Copy poseHandler.py to folder', en=enableState,command=partial(self.__uiPoseAddPoseHandler))  
-        cmds.menuItem(divider=True)
-        cmds.menuItem(label='Copy Pose >> Project Poses', en=enableState,command=partial(self.__uiPoseCopyToProject))     
+        if self.poseGridMode=='thumb':
+            parent=self.posePopupGrid
+            cmds.popupMenu(self.posePopupGrid, e=True, deleteAllItems=True) 
+        else:
+            parent=self.posePopupText
+            cmds.popupMenu(self.posePopupText, e=True, deleteAllItems=True) 
+            
+        cmds.menuItem(label='Delete Pose', en=enableState, p=parent, command=partial(self.__uiPoseDelete))
+        cmds.menuItem(label='Rename Pose', en=enableState, p=parent, command=partial(self.__uiPoseRename))
+        cmds.menuItem(label='Select IntenalPose Objects', p=parent, command=partial(self.__uiPoseSelectObjects))
         
-        cmds.menuItem(divider=True)
-        cmds.menuItem(label='Switch Pose Mode - Thumb/Text', command=partial(self.__uiCB_switchPoseMode))
+        cmds.menuItem(divider=True, p=parent)
+        cmds.menuItem(label='Update : Pose Only', en=enableState, p=parent, command=partial(self.__uiPoseUpdate,False))
+        cmds.menuItem(label='Update : Pose and Thumb', en=enableState, p=parent, command=partial(self.__uiPoseUpdate,True))
+        
+        if self.poseGridMode=='thumb':
+            cmds.menuItem(label='Update : Thumb Only', p=parent, command=partial(self.__uiPoseUpdateThumb))
+            
+        cmds.menuItem(divider=True, p=parent)
+        cmds.menuItem(label='Make Subfolder', en=enableState, p=parent, command=partial(self.__uiPoseMakeSubFolder))  
+        cmds.menuItem(label='Refresh List', en=True, p=parent, command=lambda x: self.__uiCB_fillPoses(rebuildFileList=True))
+        cmds.menuItem(divider=True, p=parent)
+        cmds.menuItem(label='Debug: Open Pose File', p=parent, command=partial(self.__uiPoseOpenFile))
+        cmds.menuItem(label='Debug: Open Pose Directory', p=parent, command=partial(self.__uiPoseOpenDir))
+        cmds.menuItem(label='Debug: Pose Compare with current', p=parent, command=partial(self.__uiPoseCompare))
+        cmds.menuItem(label='Debug: Copy poseHandler.py to folder', en=enableState, p=parent, command=partial(self.__uiPoseAddPoseHandler))  
+        cmds.menuItem(divider=True, p=parent)
+        cmds.menuItem(label='Copy Pose >> Project Poses', en=enableState, p=parent, command=partial(self.__uiPoseCopyToProject))     
+        
+        cmds.menuItem(divider=True, p=parent)
+        cmds.menuItem(label='Switch Pose Mode - Thumb/Text', p=parent, command=self.__uiCB_switchPoseMode)
 
         if self.poseGridMode=='thumb':
-            cmds.menuItem(divider=True)
-            cmds.menuItem(label='Grid Size: Small', command=partial(self.__uiCB_setPoseGrid,'small'))
-            cmds.menuItem(label='Grid Size: Medium', command=partial(self.__uiCB_setPoseGrid,'medium'))
-            cmds.menuItem(label='Grid Size: Large', command=partial(self.__uiCB_setPoseGrid,'large'))
-
-        if self.hasFolderOverload():
-            print 'Adding to menus From PoseHandler File!!!!'
-            self.addPopupMenusFromFolderConfig(self.posePopup)
+            cmds.menuItem(divider=True, p=parent)
+            cmds.menuItem(label='Grid Size: Small', p=parent, command=partial(self.__uiCB_setPoseGrid,'small'))
+            cmds.menuItem(label='Grid Size: Medium', p=parent, command=partial(self.__uiCB_setPoseGrid,'medium'))
+            cmds.menuItem(label='Grid Size: Large', p=parent, command=partial(self.__uiCB_setPoseGrid,'large'))
+            
+        if self.posePath:
+            self.addPopupMenusFromFolderConfig(parent)
                                     
-
-    def hasFolderOverload(self):    
-        '''
-        current folder has a poseHandler.py file
-        '''
-        return os.path.exists(os.path.join(self.__uiCB_getPoseDir(),'poseHandler.py'))
-    
-    def addPopupMenusFromFolderConfig(self,parentPopup):
+    def addPopupMenusFromFolderConfig(self, parentPopup):
         '''
         if the poseFolder has a poseHandler.py file see if it has the 'posePopupAdditions' func
         and if so, use that to extend the standard menu's
         '''
-        import imp,inspect
-        tempPoseFuncs = imp.load_source('poseHandler', os.path.join(self.__uiCB_getPoseDir(),'poseHandler.py'))
-        if [func for name,func in inspect.getmembers(tempPoseFuncs, inspect.isfunction) if name=='posePopupAdditions']:
-            tempPoseFuncs.posePopupAdditions(parentPopup)
-        del(tempPoseFuncs)
+        poseHandler=r9Pose.getFolderPoseHandler(self.getPoseDir())
+        if poseHandler:
+            import imp,inspect
+            print 'Adding to menus From PoseHandler File!!!!'
+            tempPoseFuncs = imp.load_source(poseHandler.split('.py')[0], os.path.join(self.getPoseDir(), poseHandler))
+            if [func for name,func in inspect.getmembers(tempPoseFuncs, inspect.isfunction) if name=='posePopupAdditions']:
+                #NOTE we pass in self so the new additions have the same access as everything else!
+                tempPoseFuncs.posePopupAdditions(parentPopup, self)
+            del(tempPoseFuncs)
 
-    
     def __uiCB_setPoseGrid(self,size,*args):
         '''
         Set size of the Thumnails used in the PoseGrid Layout
@@ -1336,7 +1422,7 @@ class AnimationUI(object):
                 cmds.iconTextCheckBox(button,e=True,v=True,bgc=self.poseButtonHighLight)
         self.setPoseSelected(current) 
         
-    def __uiCB_gridResize(self):
+    def __uiCB_gridResize(self,*args):
         if r9Setup.mayaVersion()>=2010:
             cells=int(cmds.scrollLayout('uiglPoseScroll',q=True,w=True)/cmds.gridLayout('uiglPoses',q=True,cw=True))
             cmds.gridLayout('uiglPoses',e=True,nc=cells)
@@ -1374,7 +1460,7 @@ class AnimationUI(object):
             name=cmds.promptDialog(query=True, text=True)
             try:
                 if r9Core.validateString(name):
-                    return os.path.join(self.__uiCB_getPoseDir(), '%s.pose' % name)
+                    return os.path.join(self.getPoseDir(), '%s.pose' % name)
             except ValueError,error:
                 raise ValueError(error)
    
@@ -1459,11 +1545,11 @@ class AnimationUI(object):
                 dismissString='Cancel')
         if result == 'Yes':
             try:
-                os.remove(self.__uiCB_getPosePath())
+                os.remove(self.getPosePath())
             except:
                 log.info('Failed to Delete PoseFile')
             try:
-                os.remove(self.__uiCB_getIconPath())
+                os.remove(self.getIconPath())
             except:
                 log.info('Failed to Delete PoseIcon')
             self.__uiCB_fillPoses(rebuildFileList=True)
@@ -1474,8 +1560,8 @@ class AnimationUI(object):
         except ValueError,error:
             raise ValueError(error)
         try:
-            os.rename(self.__uiCB_getPosePath(), newName)
-            os.rename(self.__uiCB_getIconPath(), '%s.bmp' % newName.split('.pose')[0])
+            os.rename(self.getPosePath(), newName)
+            os.rename(self.getIconPath(), '%s.bmp' % newName.split('.pose')[0])
         except:
             log.info('Failed to Rename Pose')
         self.__uiCB_fillPoses(rebuildFileList=True)  
@@ -1484,12 +1570,12 @@ class AnimationUI(object):
         
     def __uiPoseOpenFile(self,*args):
         import subprocess
-        path=os.path.normpath(self.__uiCB_getPosePath())
+        path=os.path.normpath(self.getPosePath())
         subprocess.Popen('notepad "%s"' % path)
         
     def __uiPoseOpenDir(self,*args):
         import subprocess
-        path=os.path.normpath(self.__uiCB_getPoseDir())
+        path=os.path.normpath(self.getPoseDir())
         subprocess.Popen('explorer "%s"' % path)
      
     def __uiPoseUpdate(self, storeThumbnail, *args):
@@ -1504,16 +1590,16 @@ class AnimationUI(object):
         if result=='OK':
             if storeThumbnail:
                 try:
-                    os.remove(self.__uiCB_getIconPath())
+                    os.remove(self.getIconPath())
                 except:
                     log.debug('unable to delete the Pose Icon file')
-            self.__PoseSave(self.__uiCB_getPosePath(),storeThumbnail)
+            self.__PoseSave(self.getPosePath(),storeThumbnail)
             self.__uiCB_selectPose(self.poseSelected)   
     
     def __uiPoseUpdateThumb(self,*args):
         sel=cmds.ls(sl=True,l=True)
         cmds.select(cl=True)
-        thumbPath=self.__uiCB_getIconPath()
+        thumbPath=self.getIconPath()
         if os.path.exists(thumbPath):
             try:
                 os.remove(thumbPath)
@@ -1521,7 +1607,7 @@ class AnimationUI(object):
                 log.error('Unable to delete the Pose Icon file')
         r9General.thumbNailScreen(thumbPath,128,128)
         if sel:
-            cmds.select(sel)
+            cmds.select(sel)   
         self.__uiCB_fillPoses()
         self.__uiCB_selectPose(self.poseSelected)   
 
@@ -1530,7 +1616,7 @@ class AnimationUI(object):
         mPoseA=r9Pose.PoseData()
         mPoseA.metaPose=True
         mPoseA.buildInternalPoseData(self.__uiCB_getPoseInputNodes())
-        compare=r9Pose.PoseCompare(mPoseA,self.__uiCB_getPosePath(),compareDict='skeletonDict')
+        compare=r9Pose.PoseCompare(mPoseA,self.getPosePath(),compareDict='skeletonDict')
         
         if not compare.compare():
             info='Selected Pose is different to the rigs current pose\nsee script editor for debug details'
@@ -1551,7 +1637,7 @@ class AnimationUI(object):
         if rootNode and cmds.objExists(rootNode):  
             self.__uiPresetFillFilter() #fill the filterSettings Object
             pose=r9Pose.PoseData(self.filterSettings)
-            pose._readPose(self.__uiCB_getPosePath())
+            pose._readPose(self.getPosePath())
             nodes=pose.matchInternalPoseObjects(rootNode)
             if nodes:
                 cmds.select(cl=True)
@@ -1591,7 +1677,7 @@ class AnimationUI(object):
         if not os.path.exists(self.posePathProject):
             raise StandardError('Project Pose Path is inValid or not yet set')
         if syncSubFolder:
-            subFolder=self.__uiCB_getsubFolderFromUI()
+            subFolder=self.getPoseSubFolder()
             projectPath=os.path.join(projectPath,subFolder)
             
             if not os.path.exists(projectPath):
@@ -1615,8 +1701,8 @@ class AnimationUI(object):
             
         log.info('Copying Local Pose: %s >> %s' % (self.poseSelected,projectPath))
         try:
-            shutil.copy2(self.__uiCB_getPosePath(),projectPath)
-            shutil.copy2(self.__uiCB_getIconPath(),projectPath)
+            shutil.copy2(self.getPosePath(),projectPath)
+            shutil.copy2(self.getIconPath(),projectPath)
         except:
             raise StandardError('Unable to copy pose : %s > to Project dirctory' % self.poseSelected)
                      
@@ -1689,6 +1775,9 @@ class AnimationUI(object):
                 cmds.textScrollList(self.uitslPresets, e=True, si=AnimationUI['filterNode_preset'])
                 self.__uiPresetSelection(Read=True)   ###not sure on this yet????
                 
+            if AnimationUI.has_key('keyPasteMethod') and AnimationUI['keyPasteMethod']:
+                cmds.optionMenu('om_PasteMethod', e=True, v=AnimationUI['keyPasteMethod'])
+            
             if AnimationUI.has_key('poseMode') and AnimationUI['poseMode']:
                 self.poseGridMode=AnimationUI['poseMode']
                 
@@ -1770,6 +1859,7 @@ class AnimationUI(object):
         Internal UI call for CopyKeys call
         '''
         self.kws['toMany'] = cmds.checkBox(self.uicbCKeyToMany, q=True, v=True)
+        self.kws['pasteKey']=cmds.optionMenu('om_PasteMethod', q=True, v=True)
         if cmds.checkBox(self.uicbCKeyRange, q=True, v=True):
             self.kws['time'] = timeLineRangeGet()
         if cmds.checkBox(self.uicbCKeyChnAttrs, q=True, v=True):
@@ -1792,7 +1882,8 @@ class AnimationUI(object):
         self.kws['preCopyAttrs'] = False
         self.kws['iterations'] = cmds.intFieldGrp('uiifSnapIterations', q=True, v=True)[0]
         self.kws['step'] = cmds.intFieldGrp('uiifgSnapStep', q=True, v=True)[0]
-       
+        self.kws['pasteKey']=cmds.optionMenu('om_PasteMethod', q=True, v=True)
+        
         if cmds.checkBox(self.uicbSnapRange, q=True, v=True):
             self.kws['time'] = timeLineRangeGet()
         if cmds.checkBox(self.uicbSnapPreCopyKeys, q=True, v=True):
@@ -1859,7 +1950,7 @@ class AnimationUI(object):
                 raise ValueError(error)
         poseHierarchy=cmds.checkBox('uicbPoseHierarchy',q=True,v=True)
         
-        r9Pose.PoseData(self.filterSettings).PoseSave(self.__uiCB_getPoseInputNodes(), 
+        r9Pose.PoseData(self.filterSettings).poseSave(self.__uiCB_getPoseInputNodes(), 
                                                       path,
                                                       useFilter=poseHierarchy,
                                                       storeThumbnail=storeThumbnail)
@@ -1878,9 +1969,9 @@ class AnimationUI(object):
         if not tranRelMethod=='tranProjected':
             relativeTrans='absolute'
             
-        path=self.__uiCB_getPosePath()
+        path=self.getPosePath()
         log.info('PosePath : %s' % path)
-        r9Pose.PoseData(self.filterSettings).PoseLoad(self.__uiCB_getPoseInputNodes(), 
+        r9Pose.PoseData(self.filterSettings).poseLoad(self.__uiCB_getPoseInputNodes(), 
                                                       path,
                                                       useFilter=poseHierarchy,
                                                       relativePose=poseRelative,
@@ -1928,7 +2019,8 @@ class AnimationUI(object):
         '''
         Internal UI call for Mirror Animation / Pose
         '''
-        mirror=MirrorHierarchy(nodes=cmds.ls(sl=True, l=True), filterSettings=self.filterSettings)
+        self.kws['pasteKey']=cmds.optionMenu('om_PasteMethod', q=True, v=True)
+        mirror=MirrorHierarchy(nodes=cmds.ls(sl=True, l=True), filterSettings=self.filterSettings, **self.kws)
         mirrorMode='Anim'
         if func=='MirrorPose':
             mirrorMode='Pose' 
@@ -2449,6 +2541,7 @@ class AnimFunctions(object):
         @param attributes: Only copy the given attributes[]
         @param bindMethod: method of binding the data
         @param matchMethod: arg passed to the match code, sets matchMethod used to match 2 node names
+        #TODO: expose this to the UI's!!!!
         '''
         
         if not matchMethod:matchMethod=self.matchMethod
@@ -2512,6 +2605,52 @@ class AnimFunctions(object):
                 log.debug('failed to inverse %s.%s attr' % (node,chan))
   
 
+class curveModifierContext(object):
+    """
+    Simple Context Manager to allow modifications to animCurves in the 
+    graphEditor interactively by simply managing the undo stack and making
+    sure that selections are maintained
+    NOTE that this is optimized to run with a floatSlider and used in both interactive
+    Randomizer and FilterCurves
+    """        
+    
+    def __init__(self, initialUndo=False, undoFuncCache=[], undoDepth=1):
+        '''
+        @param initialUndo: on first process whether undo on entry to the context manager
+        @param undoFuncCache: functions to catch in the undo stack
+        @param undoDepth: depth of the undo stack to go to
+        '''
+        self.initialUndo = initialUndo
+        self.undoFuncCache = undoFuncCache
+        self.undoDepth = undoDepth
+    
+    def undoCall(self):
+        for _ in range(1, self.undoDepth + 1):
+            #log.depth('undoDepth : %s' %  i)
+            if [func for func in self.undoFuncCache if func in cmds.undoInfo(q=True,undoName=True)]:
+                cmds.undo()
+                      
+    def __enter__(self):
+        if self.initialUndo:
+            self.undoCall()
+        cmds.undoInfo(openChunk=True)
+        
+        self.range=None
+        self.keysSelected=cmds.keyframe(q=True, n=True, sl=True)
+        
+        if self.keysSelected:
+            self.range=cmds.keyframe(q=True,sl=True, timeChange=True)
+            
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.keysSelected and self.range:
+            cmds.selectKey(self.keysSelected, t=(self.range[0],self.range[-1]))
+        cmds.undoInfo(closeChunk=True)
+        if exc_type:
+            log.exception('%s : %s'%(exc_type, exc_value))
+        # If this was false, it would re-raise the exception when complete
+        return True 
+
+
 
 class RandomizeKeys(object):
     '''
@@ -2522,6 +2661,17 @@ class RandomizeKeys(object):
     '''
     def __init__(self):
         self.win='KeyRandomizerOptions' 
+        self.contextManager=curveModifierContext
+        self.dragActive=False
+        self.toggledState=False
+        
+        #catch the current state of the GrapthEditor so that the toggle respects it
+        self.displayTangents = cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayTangents=True)
+        self.displayActiveKeyTangents = cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayActiveKeyTangents=True)
+        if cmds.animCurveEditor('graphEditor1GraphEd', q=True, showBufferCurves=True)=='on':
+            self.showBufferCurves = True
+        else:
+            self.showBufferCurves = False
         
     def noiseFunc(self,initialValue,randomRange,damp):
         '''
@@ -2536,53 +2686,127 @@ class RandomizeKeys(object):
     def _showUI(self):
                  
             if cmds.window(self.win, exists=True): cmds.deleteUI(self.win, window=True)
-            window = cmds.window(self.win, title="KeyRandomizer", s=False, widthHeight=(260,300))
-            
+            cmds.window(self.win, title="KeyRandomizer", s=True, widthHeight=(320,280))
+            cmds.menuBarLayout()
+            cmds.menu(l="VimeoHelp")
+            cmds.menuItem(l="Open Vimeo Help File",
+                          ann='simple demo showing the functionality of Simplify curve and Randomizer',
+                          c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/69270932')")
+            #cmds.menuItem(divider=True) 
+            cmds.menuItem(l="Contact Me",c=r9Setup.red9ContactInfo)
             cmds.columnLayout(adjustableColumn=True,columnAttach=('both',5))
             cmds.separator(h=15, style='none')
-
+            
             cmds.floatFieldGrp('ffg_rand_damping', label='strength : value', v1=1, precision=2)
             cmds.floatFieldGrp('ffg_rand_frmStep', label='frameStep', v1=1, en=False, precision=2)
-            cmds.separator(h=15, style='in')
-            cmds.rowColumnLayout(numberOfColumns=2,columnWidth=[(1,125),(2,125)])
+            cmds.separator(h=20, style='in')
+
+            cmds.rowColumnLayout(numberOfColumns=2,columnWidth=[(1,150),(2,150)])
             cmds.checkBox('cb_rand_current',
                           l='Current Keys Only',v=True,
                           ann='ONLY randomize selected keys, if OFF the core will add keys to the curve at the frameStep incremenet',
-                          cc=lambda x:self.__uicb_currentKeysCallback()) 
+                          cc=self.__uicb_currentKeysCallback) 
             cmds.checkBox('cb_rand_percent',
                           l='Pre-Normalize Curves', v=True,
                           ann='Pre-Normalize: process based on value percentage range auto-calculated from curves',
-                          cc=lambda x:self.__uicb_percentageCallback()) 
+                          cc=self.__uicb_percentageCallback) 
             #cmds.checkBox('cb_rand_ignoreBounds',
             #              l='Ignore Start and End Keys', v=True,
             #              ann='Remove the first and last key from processing, maintaining any animation cycles') 
             cmds.setParent('..')
-            cmds.separator(h=15,style='none')  
-            cmds.rowColumnLayout(numberOfColumns=2,columnWidth=[(1,125),(2,125)])
-            cmds.button(label='Apply', bgc=r9Setup.red9ButtonBGC(1),
-                         command=lambda *args:(RandomizeKeys().curveMenuFunc()))   
-            cmds.button(label='SavePref', bgc=r9Setup.red9ButtonBGC(1),
-                         command=lambda *args:(self.__storePrefs()))
+            cmds.separator(h=15, style='in')          
+            cmds.checkBox('interactiveRand', value=False, label="Interactive Mode", 
+                          ann="Turn on the interactiveMode - ONLY supported in CurrentKeys mode",
+                          onc=lambda *x:self.__uicb_interactiveMode(True),
+                          ofc=lambda *x:self.__uicb_interactiveMode(False)) 
+            cmds.separator(h=10, style='none')     
+                
+            cmds.rowColumnLayout('interactiveLayout', numberOfColumns=3, columnWidth=[(1,220),(2,40),(3,30)])       
+            cmds.floatSliderGrp('fsg_randfloatValue',
+                                    field=True, 
+                                    minValue=0, 
+                                    maxValue=1.0,
+                                    pre=2,
+                                    value=0,\
+                                    columnWidth=[(1, 40),  (2, 100)],
+                                    dc=self.interactiveWrapper)
+            cmds.floatField('ffg_rand_intMax', v=1, precision=2, cc=self.__uicb_setRanges) 
+            cmds.text(label='max') 
             cmds.setParent('..')
+
+            cmds.separator(h=15,style='none')  
+            
+            cmds.rowColumnLayout(numberOfColumns=3,columnWidth=[(1,100),(2,100),(3,100)])
+            cmds.button(label='Apply', bgc=r9Setup.red9ButtonBGC(1),
+                         command=self.curveMenuFunc)   
+            cmds.button(label='SavePref', bgc=r9Setup.red9ButtonBGC(1),
+                         command=self.__storePrefs)
+            cmds.button(label='ToggleBuffers', bgc=r9Setup.red9ButtonBGC(1),
+                         command=self.__uicb_toggleGraphDisplay)
+            cmds.setParent('..')
+            
             cmds.separator(h=15,style='none')  
             cmds.iconTextButton( style='iconOnly', bgc=(0.7,0,0),image1='Rocket9_buttonStrap2.bmp',
-                                 c=lambda *args:(r9Setup.red9ContactInfo()),h=22,w=200 )
-            cmds.showWindow(window)
+                                 c=r9Setup.red9ContactInfo,h=22,w=200 )
+            cmds.showWindow(self.win)
+            cmds.window('KeyRandomizerOptions', e=True, widthHeight=(320,280))
+            self.__uicb_interactiveMode(False)
             self.__loadPrefsToUI()
-    
-    def __uicb_currentKeysCallback(self):
-        if cmds.checkBox('cb_rand_current',q=True,v=True):
-            cmds.floatFieldGrp('ffg_rand_frmStep',e=True,en=False)
-        else:
-            cmds.floatFieldGrp('ffg_rand_frmStep',e=True,en=True)
+            
+            #set close event to restore stabndard GraphEditor curve status
+            cmds.scriptJob(runOnce=True, uiDeleted=[self.win, lambda *x:animCurveDrawStyle(style='full', forceBuffer=False,
+                                                                                      showBufferCurves=self.showBufferCurves,
+                                                                                      displayTangents=self.displayTangents, 
+                                                                                      displayActiveKeyTangents=self.displayActiveKeyTangents)])
 
-    def __uicb_percentageCallback(self):
+    def __uicb_setRanges(self, *args):
+        cmds.floatSliderGrp('fsg_randfloatValue', e=True, maxValue=args[0])#cmds.floatField('ffg_rand_intMax',q=True,v=True))
+   
+    def __uicb_toggleGraphDisplay(self,*args):
+        if not self.toggledState:
+            self.displayTangents=cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayTangents=True)
+            self.displayActiveKeyTangents = cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayActiveKeyTangents=True)
+            if cmds.animCurveEditor('graphEditor1GraphEd', q=True, showBufferCurves=True)=='on':
+                self.showBufferCurves = True
+            else:
+                self.showBufferCurves = False
+                
+            animCurveDrawStyle(style='simple', forceBuffer=True)
+            self.toggledState=True
+        else:
+            animCurveDrawStyle(style='full', forceBuffer=False,
+                                 showBufferCurves=self.showBufferCurves,
+                                 displayTangents=self.displayTangents, 
+                                 displayActiveKeyTangents=self.displayActiveKeyTangents)
+            self.toggledState=False
+                        
+    def __uicb_interactiveMode(self, mode):
+        if mode:
+            if not cmds.checkBox('cb_rand_current', q=True, v=True):
+                cmds.checkBox('interactiveRand', e=True, v=False)
+                log.warning('Interactive is ONLY supported in "CurrentKeys" Mode')
+                return
+            cmds.floatFieldGrp('ffg_rand_damping', e=True,en=False)
+            cmds.rowColumnLayout('interactiveLayout', e=True, en=True)
+        else:
+            cmds.floatFieldGrp('ffg_rand_damping', e=True,en=True)
+            cmds.rowColumnLayout('interactiveLayout', e=True, en=False)
+            
+    def __uicb_currentKeysCallback(self, *args):
+        if cmds.checkBox('cb_rand_current', q=True, v=True):
+            cmds.floatFieldGrp('ffg_rand_frmStep', e=True,en=False)
+        else:
+            cmds.floatFieldGrp('ffg_rand_frmStep', e=True,en=True)
+            cmds.checkBox('interactiveRand', e=True, v=False)
+            self.__uicb_interactiveMode(False)
+
+    def __uicb_percentageCallback(self, *args):
         if not cmds.checkBox('cb_rand_percent',q=True,v=True):
             cmds.floatFieldGrp('ffg_rand_damping',e=True, label='strength : value')
         else: 
             cmds.floatFieldGrp('ffg_rand_damping',e=True, label='strength : normalized %')
             
-    def __storePrefs(self):
+    def __storePrefs(self, *args):
         if cmds.window(self.win, exists=True):
             cmds.optionVar(floatValue=('red9_randomizer_damp',cmds.floatFieldGrp('ffg_rand_damping',q=True,v1=True)))
             cmds.optionVar(intValue=('red9_randomizer_current',cmds.checkBox('cb_rand_current',q=True,v=True)))
@@ -2599,7 +2823,7 @@ class RandomizeKeys(object):
             cmds.checkBox('cb_rand_percent',e=True,v=cmds.optionVar(q='red9_randomizer_percent'))
         if cmds.optionVar(exists='red9_randomizer_frmStep'):
             cmds.floatFieldGrp('ffg_rand_frmStep',e=True,v1=cmds.optionVar(q='red9_randomizer_frmStep'))
-        self.__uicb_currentKeysCallback()
+        self.__uicb_currentKeysCallback() 
         self.__uicb_percentageCallback()
     
     def __calcualteRangeValue(self,keyValues):
@@ -2609,7 +2833,15 @@ class RandomizeKeys(object):
             return [-rng,rng]
         else:
             return [-1,1]
-                       
+   
+    def interactiveWrapper(self, *args):
+        with self.contextManager(self.dragActive, undoFuncCache = ['interactiveWrapper']):
+            self.dragActive=True
+            self.addNoise(cmds.keyframe(q=True, sl=True, n=True), time=(), step=1, 
+                          currentKeys=True,
+                          damp=cmds.floatSliderGrp('fsg_randfloatValue',q=True,v=True), 
+                          percent=cmds.checkBox('cb_rand_percent',q=True,v=True))
+                                
     def addNoise(self, curves, time=(), step=1, currentKeys=True, randomRange=[-1,1], damp=1, percent=False):
         '''
         Simple noise function designed to add noise to keyframed animation data
@@ -2635,7 +2867,7 @@ class RandomizeKeys(object):
                     if percent:
                         #figure the upper and lower value bounds
                         randomRange=self.__calcualteRangeValue(keyData[1::2])
-                        log.info('Percent data : randomRange=%f>%f, percentage=%f' % (randomRange[0],randomRange[1],damp))
+                        log.debug('Percent data : randomRange=%f>%f, percentage=%f' % (randomRange[0],randomRange[1],damp))
                     value=self.noiseFunc(v,randomRange,damp)
                     cmds.setKeyframe(curve, v=value,t=t)
         else:  #allow to ADD keys at 'step' frms
@@ -2647,22 +2879,20 @@ class RandomizeKeys(object):
                 if percent:    
                     #figure the upper and lower value bounds
                     randomRange=self.__calcualteRangeValue(cmds.keyframe(curve, q=True,vc=True,t=time))
-                    log.info('Percent data : randomRange=%f>%f, percentage=%f' % (randomRange[0],randomRange[1],damp))
+                    log.debug('Percent data : randomRange=%f>%f, percentage=%f' % (randomRange[0],randomRange[1],damp))
                 connection=cmds.listConnections(curve,source=False,d=True,p=True)[0]
                 for t in timeLineRangeProcess(time[0], time[1], step, incEnds=True):
                     value=self.noiseFunc(cmds.getAttr(connection,t=t),randomRange,damp)
                     cmds.setKeyframe(connection, v=value,t=t)
                     
-    @classmethod
-    def curveMenuFunc(cls):
-        randomizer=cls()
-        randomizer.__storePrefs()
+    def curveMenuFunc(self, *args):
+        self.__storePrefs()
         frmStep=1
         damping=1
         percent=False
         currentKeys=True
         
-        if cmds.window(randomizer.win, exists=True):
+        if cmds.window(self.win, exists=True):
             currentKeys=cmds.checkBox('cb_rand_current',q=True,v=True)
             damping=cmds.floatFieldGrp('ffg_rand_damping',q=True,v1=True)
             frmStep=cmds.floatFieldGrp('ffg_rand_frmStep',q=True,v1=True)
@@ -2680,10 +2910,210 @@ class RandomizeKeys(object):
         selectedCurves=cmds.keyframe(q=True, sl=True, n=True)
         if not selectedCurves:
             raise StandardError('No Keys or Anim curves selected!')
-        randomizer.addNoise(curves=selectedCurves,step=frmStep,damp=damping,currentKeys=currentKeys,percent=percent)  
+        
+        self.addNoise(curves=selectedCurves,
+                      step=frmStep,
+                      damp=damping,
+                      currentKeys=currentKeys,
+                      percent=percent)  
                             
+
+ 
+class FilterCurves(object):
+    
+    def __init__(self):
+        self.win='interactiveCurveFilter' 
+        self.contextManager=curveModifierContext
+        self.dragActive=False
+        self.undoFuncCache=['simplifyWrapper', 'snapAnimCurvesToFrms', 'resampleCurves']
+        self.undoDepth = 1
+        self.snapToFrame=False
+        self.toggledState=False
         
+        #cache the current state of the GrapthEditor so that the toggle respects it
+        self.displayTangents=cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayTangents=True)
+        self.displayActiveKeyTangents = cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayActiveKeyTangents=True)
+        if cmds.animCurveEditor('graphEditor1GraphEd', q=True, showBufferCurves=True)=='on':
+            self.showBufferCurves = True
+        else:
+            self.showBufferCurves = False
+
+    @classmethod
+    def show(cls):
+        cls()._showUI()
+    
+    def _showUI(self):  
+        if cmds.window(self.win, exists=True): cmds.deleteUI(self.win, window=True)
+        cmds.window(self.win , title=self.win)
+        cmds.menuBarLayout()
+        cmds.menu(l="VimeoHelp")
+        cmds.menuItem(l="Open Vimeo Help File",
+                          ann='simple demo showing the functionality of Simplify curve and Randomizer',
+                          c="import Red9.core.Red9_General as r9General;r9General.os_OpenFile('https://vimeo.com/69270932')")
+        cmds.menuItem(divider=True) 
+        cmds.menuItem(l="Contact Me",c=r9Setup.red9ContactInfo)    
+        cmds.columnLayout(adjustableColumn=True)
         
+        cmds.text(label='Curve Resampler')
+        cmds.separator(h=5, style='none')
+        cmds.rowColumnLayout(numberOfColumns=2, cw=((1,350),(2,40)))
+        cmds.floatSliderGrp('fsg_resampleStep',
+                                label='Resample',
+                                field=True, 
+                                minValue=1, 
+                                maxValue=10.0,
+                                pre=1,
+                                value=1,
+                                columnWidth=[(1, 80),  (2, 50), (3,100)],
+                                dc=self.resampleCurves)#,
+                                #cc=self.snapAnimCurvesToFrms)  #set the dragActive state back to false on release
+        cmds.floatField('stepRange', v=10, pre=2,
+                        cc=self.__uicb_setMaxRanges,
+                        dc=self.__uicb_setMaxRanges)
+        cmds.setParent('..')
+        cmds.separator(h=25, style='in') 
+           
+        cmds.text(label='Curve Simplfier')
+        cmds.separator(h=5,style='none')
+        cmds.rowColumnLayout(numberOfColumns=2, cw=((1,350),(2,40)))
+        cmds.floatSliderGrp('fsg_filtertimeValue',
+                                label='Time tolerance',
+                                field=True, 
+                                minValue=0.05, 
+                                maxValue=10.0,
+                                pre=2,
+                                value=0,
+                                columnWidth=[(1, 80),  (2, 50), (3,50)],
+                                dc=self.simplifyWrapper,
+                                cc=self.snapAnimCurvesToFrms) 
+        cmds.floatField('timeRange', v=10, pre=2,
+                        cc=self.__uicb_setMaxRanges,
+                        dc=self.__uicb_setMaxRanges)
+        cmds.floatSliderGrp('fsg_filterfloatValue',
+                                label='Value tolerance',
+                                field=True, 
+                                minValue=0, 
+                                maxValue=1.0,
+                                pre=2,
+                                value=0,
+                                columnWidth=[(1, 80),  (2, 50), (3,50)],
+                                dc=self.simplifyWrapper,
+                                cc=self.snapAnimCurvesToFrms)
+        cmds.floatField('valueRange', v=1, pre=2,
+                        cc=self.__uicb_setMaxRanges,
+                        dc=self.__uicb_setMaxRanges)
+        cmds.setParent('..')
+        cmds.separator(h=20, style='in') 
+        cmds.rowColumnLayout(numberOfColumns=2, cs=((1,80)))
+        cmds.checkBox('snapToFrames', value=self.snapToFrame, label="Snap to Frame", 
+                      ann="on exit of the sliders snap the keys to whole frames",
+                      cc=self.__uicb_setToFrame)
+        cmds.setParent('..')   
+        
+        cmds.separator (h=10, style="none") 
+        cmds.rowColumnLayout(numberOfColumns=2, cw=((1,200),(2,200)))
+        cmds.button(label='Reset All', bgc=r9Setup.red9ButtonBGC(1),
+                         command=self.__uicb_resetSliders)
+        cmds.button(label='ToggleBuffers', bgc=r9Setup.red9ButtonBGC(1),
+                         command=self.__uicb_toggleGraphDisplay)
+        cmds.setParent('..')   
+        
+        cmds.separator (h=20, style="none") 
+        cmds.iconTextButton( style='iconOnly', bgc=(0.7,0,0),image1='Rocket9_buttonStrap2.bmp',
+                                 c=r9Setup.red9ContactInfo,
+                                 h=22,w=220 )
+        cmds.showWindow(self.win)
+        cmds.window(self.win , e=True, widthHeight=(410, 280))
+        
+        #set close event to restore standard GraphEditor curve status
+        cmds.scriptJob(runOnce=True, uiDeleted=[self.win, lambda *x:animCurveDrawStyle(style='full', forceBuffer=False,
+                                                                                      showBufferCurves=self.showBufferCurves,
+                                                                                      displayTangents=self.displayTangents, 
+                                                                                      displayActiveKeyTangents=self.displayActiveKeyTangents)])
+
+    def __uicb_setMaxRanges(self, *args):
+        cmds.floatSliderGrp('fsg_filtertimeValue', e=True, maxValue=cmds.floatField("timeRange",q=True,v=True))
+        cmds.floatSliderGrp('fsg_filterfloatValue', e=True, maxValue=cmds.floatField("valueRange",q=True,v=True))
+        cmds.floatSliderGrp('fsg_resampleStep', e=True, maxValue=cmds.floatField("stepRange",q=True,v=True))
+    
+    def __uicb_resetSliders(self,*args):
+        cmds.floatSliderGrp('fsg_filtertimeValue', e=True, v=0)
+        cmds.floatSliderGrp('fsg_filterfloatValue', e=True, v=0)
+        cmds.floatSliderGrp('fsg_resampleStep', e=True, v=1)
+        self.contextManager(self.dragActive, 
+                            undoFuncCache = self.undoFuncCache, 
+                            undoDepth = self.undoDepth ).undoCall()
+    
+    def __uicb_toggleGraphDisplay(self,*args):
+        if not self.toggledState:
+            #cache the current state
+            self.displayTangents=cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayTangents=True)
+            self.displayActiveKeyTangents = cmds.animCurveEditor('graphEditor1GraphEd', q=True, displayActiveKeyTangents=True)
+            if cmds.animCurveEditor('graphEditor1GraphEd', q=True, showBufferCurves=True)=='on':
+                self.showBufferCurves = True
+            else:
+                self.showBufferCurves = False
+                
+            animCurveDrawStyle(style='simple', forceBuffer=True)
+            self.toggledState=True
+        else:
+            animCurveDrawStyle(style='full', forceBuffer=False,
+                               showBufferCurves=self.showBufferCurves,
+                               displayTangents=self.displayTangents, 
+                               displayActiveKeyTangents=self.displayActiveKeyTangents)
+            self.toggledState=False
+        
+    def __uicb_setToFrame(self,*args):
+        #print args
+        if args[0]:
+            cmds.floatSliderGrp('fsg_resampleStep',
+                                e=True,
+                                pre=0)
+            self.snapToFrame=True
+            self.undoDepth=2
+        else:
+            cmds.floatSliderGrp('fsg_resampleStep',
+                                e=True,
+                                pre=1)
+            self.undoDepth=1
+            self.snapToFrame=False
+                                  
+    def simplifyWrapper(self, *args):            
+        with self.contextManager(self.dragActive, 
+                                 undoFuncCache = self.undoFuncCache, 
+                                 undoDepth = self.undoDepth ):
+            self.dragActive=True #turn on the undo management
+            simplify=True
+            if simplify:                
+                cmds.simplify( animation='keysOrObjects', 
+                               timeTolerance=cmds.floatSliderGrp('fsg_filtertimeValue',q=True,v=True), 
+                               valueTolerance=cmds.floatSliderGrp('fsg_filterfloatValue',q=True,v=True))
+            else:
+                print 'testing filter call'
+                objs=cmds.ls(sl=True)
+                cmds.filterCurve(objs, f='simplify', 
+                                 timeTolerance=cmds.floatSliderGrp('fsg_filterfloatValue',q=True,v=True)) 
+    
+    def resampleCurves(self, *args):  
+        step = args[0]
+        if self.snapToFrame:
+            step = int(args[0]) 
+        #print step
+        curves = cmds.keyframe(q=True, sl=True, n=True)         
+        if not curves:
+            curves = cmds.ls(sl=True,l=True)
+            time = ()
+        else:
+            keys = sorted(cmds.keyframe(curves, sl=True, q=True,tc=True))
+            time = (int(keys[0]),keys[-1]) # note the int convertion in case frist key is on a sub-frame
+        with self.contextManager(True, undoFuncCache = self.undoFuncCache):
+            cmds.bakeResults(curves, t=time, sb=step, pok=True) 
+
+    def snapAnimCurvesToFrms(self,*args):
+        if self.snapToFrame:
+            cmds.snapKey(timeMultiple=1)
+            
+            
 class MirrorHierarchy(object):
     
     '''
@@ -2700,7 +3130,7 @@ class MirrorHierarchy(object):
     TODO: We need to do a UI for managing these marker attrs and the Index lists
     '''
     
-    def __init__(self, nodes=[], filterSettings=None):
+    def __init__(self, nodes=[], filterSettings=None, **kws):
         '''
         @param nodes: initial nodes to process
         @param filterSettings: filterSettings object to process hierarchies
@@ -2718,6 +3148,8 @@ class MirrorHierarchy(object):
         self.mirrorIndex='mirrorIndex'
         self.mirrorAxis='mirrorAxis'
         self.mirrorDict={'Centre':{},'Left':{},'Right':{}}
+        self.kws=kws #allows us to pass kws into the copyKey and copyAttr call if needed
+        print 'kws in Mirror call : ',self.kws
         
         # make sure we have a settings object
         if filterSettings:
@@ -2732,7 +3164,7 @@ class MirrorHierarchy(object):
         #returned are part of the Mirror system
         self.settings.searchAttrs.append(self.mirrorSide)
     
-    def _validateMirrorEnum(self,side):
+    def _validateMirrorEnum(self, side):
         '''
         validate the given side to make sure it's formatted correctly before setting the data
         '''
@@ -2778,7 +3210,7 @@ class MirrorHierarchy(object):
                 mClass.__setattr__(self.mirrorAxis,axis) 
         del(mClass) #cleanup
         
-    def deleteMirrorIDs(self,node):
+    def deleteMirrorIDs(self, node):
         '''
         Remove the given node from the MirrorSystems
         '''
@@ -2803,20 +3235,20 @@ class MirrorHierarchy(object):
         '''
         return r9Core.FilterNode(self.nodes,filterSettings=self.settings).ProcessFilter()
      
-    def getMirrorSide(self,node):
+    def getMirrorSide(self, node):
         '''
         This is an enum Attr to denote the Side of the controller in the Mirror system
         '''
         return cmds.getAttr('%s.%s' % (node,self.mirrorSide),asString=True)
 
-    def getMirrorIndex(self,node):
+    def getMirrorIndex(self, node):
         '''
         get the mirrorIndex, these slots are used to denote matching pairs
         such that Left and Right Controllers to switch will have the same index
         '''
         return int(cmds.getAttr('%s.%s' % (node,self.mirrorIndex)))
    
-    def getMirrorAxis(self,node):
+    def getMirrorAxis(self, node):
         '''
         get any custom attributes set at node level to inverse, if none found
         return the default axis setup in the __init__
@@ -2833,7 +3265,7 @@ class MirrorHierarchy(object):
         else:
             return self.defaultMirrorAxis
         
-    def getMirrorSets(self,nodes=None):
+    def getMirrorSets(self, nodes=None):
         '''
         Filter the given nodes into the mirrorDict
         such that {'Centre':{id:node,},'Left':{id:node,},'Right':{id:node,}}
@@ -2864,33 +3296,33 @@ class MirrorHierarchy(object):
                 log.debug(error)
                 log.info('Failed to add Node to Mirror System : %s' % r9Core.nodeNameStrip(node))
     
-    def printMirrorDict(self,short=True):
+    def printMirrorDict(self, short=True):
         '''
         Pretty print the Mirror Dict 
         '''
         self.getMirrorSets()
         if not short:
             print '\nCenter MirrorLists ====================================================='
-            for i,data in sorted(self.mirrorDict['Centre'].items()): 
-                print '%s > %s' % (i,data['node'])
+            for i in r9Core.sortNumerically(self.mirrorDict['Centre'].keys()): 
+                print '%s > %s' % (i, self.mirrorDict['Centre'][i]['node'])
             print '\nRight MirrorLists ======================================================'
-            for i,data in sorted(self.mirrorDict['Right'].items()): 
-                print '%s > %s' % (i,data['node'])
+            for i in r9Core.sortNumerically(self.mirrorDict['Right'].keys()): 
+                print '%s > %s' % (i, self.mirrorDict['Right'][i]['node'])
             print '\nLeft MirrorLists ======================================================='
-            for i,data in sorted(self.mirrorDict['Left'].items()): 
-                print '%s > %s' % (i,data['node'])
+            for i in r9Core.sortNumerically(self.mirrorDict['Left'].keys()): 
+                print '%s > %s' % (i, self.mirrorDict['Left'][i]['node'])
         else:
             print '\nCenter MirrorLists ====================================================='
-            for i,data in sorted(self.mirrorDict['Centre'].items()): 
-                print '%s > %s' % (i,r9Core.nodeNameStrip(data['node']))
+            for i in r9Core.sortNumerically(self.mirrorDict['Centre'].keys()):
+                print '%s > %s' % (i,r9Core.nodeNameStrip(self.mirrorDict['Centre'][i]['node']))
             print '\nRight MirrorLists ======================================================'
-            for i,data in sorted(self.mirrorDict['Right'].items()): 
-                print '%s > %s' % (i,r9Core.nodeNameStrip(data['node']))
+            for i in r9Core.sortNumerically(self.mirrorDict['Right'].keys()): 
+                print '%s > %s' % (i, r9Core.nodeNameStrip(self.mirrorDict['Right'][i]['node']))
             print '\nLeft MirrorLists ======================================================='
-            for i,data in sorted(self.mirrorDict['Left'].items()): 
-                print '%s > %s' % (i,r9Core.nodeNameStrip(data['node']))
+            for i in r9Core.sortNumerically(self.mirrorDict['Left'].keys()): 
+                print '%s > %s' % (i, r9Core.nodeNameStrip(self.mirrorDict['Left'][i]['node']))
                           
-    def switchPairData(self,objA,objB,mode='Anim'):
+    def switchPairData(self, objA, objB, mode='Anim'):
         '''
         take the left and right matched pairs and exchange the animData
         or poseData across between them
@@ -2910,14 +3342,14 @@ class MirrorHierarchy(object):
         cmds.duplicate(name='DELETE_ME_TEMP')
         temp=cmds.ls(sl=True,l=True)[0]
         log.debug('temp %s:' % temp)
-        transferCall([objA,temp])
-        transferCall([objB,objA])
-        transferCall([temp,objB])
+        transferCall([objA,temp], **self.kws)
+        transferCall([objB,objA], **self.kws)
+        transferCall([temp,objB], **self.kws)
         cmds.delete(temp)
         
         if objs:cmds.select(objs)
     
-    def makeSymmetrical(self,nodes=None,mode='Anim',primeAxis='Left'):
+    def makeSymmetrical(self, nodes=None, mode='Anim', primeAxis='Left'):
         '''
         similar to the mirrorData except this is designed to take the data from an object in
         one side of the mirrorDict and pass that data to the opposite matching node, thus 
@@ -2947,7 +3379,7 @@ class MirrorHierarchy(object):
                 slaveData=self.mirrorDict[slaveAxis][index]
                 log.debug('SymmetricalPairs : %s >> %s' % (r9Core.nodeNameStrip(masterSide['node']),\
                                      r9Core.nodeNameStrip(slaveData['node'])))
-                transferCall([masterSide['node'],slaveData['node']])
+                transferCall([masterSide['node'],slaveData['node']], **self.kws)
                 
                 log.debug('Symmetrical Axis Inversion: %s' % ','.join(slaveData['axis'])) 
                 if slaveData['axis']:
@@ -2988,7 +3420,7 @@ class MirrorHierarchy(object):
         for data in self.mirrorDict['Centre'].values():
             inverseCall(data['node'], data['axis'])
      
-    def saveMirrorSetups(self,filepath):
+    def saveMirrorSetups(self, filepath):
         '''
         Store the mirrorSetups out to file
         '''
@@ -3117,7 +3549,7 @@ class MirrorSetup(object):
         cmds.setParent('..')  
         cmds.separator(h=15,style='none')  
         cmds.iconTextButton( style='iconOnly', bgc=(0.7,0,0),image1='Rocket9_buttonStrap2.bmp',
-                             c=lambda *args:(r9Setup.red9ContactInfo()),h=22,w=200 )
+                             c=r9Setup.red9ContactInfo,h=22,w=200 )
         cmds.showWindow(window)
         self.__uicb_default(False)
         cmds.radioCollection('mirrorSide',e=True,select='Centre')
@@ -3368,3 +3800,4 @@ class CameraTracker():
     def __runTracker(self,*args):
         self.__storePrefs()  
         self.cameraTrackView(fixed=self.fixed)
+        

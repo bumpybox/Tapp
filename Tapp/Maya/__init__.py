@@ -1,7 +1,3 @@
-'''
-TEST
-'''
-
 import os
 import sys
 
@@ -22,8 +18,8 @@ import utils.framerate as uf
 uf.FrameratePrompt()
 
 #import Red9
-sys.path.append(os.path.dirname(__file__))
-cmds.evalDeferred('import Red9;Red9.start()')
+#sys.path.append(os.path.dirname(__file__))
+cmds.evalDeferred('import Tapp.Maya.Red9;Tapp.Maya.Red9.start()')
 
 #rigging meta
 cmds.evalDeferred('import Tapp.Maya.rigging.meta')

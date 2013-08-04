@@ -15,7 +15,7 @@ THIS SHOULD NOT REQUIRE ANY OF THE RED9.core modules
 '''
 
 __author__ = 'Mark Jackson'
-__buildVersionID__=1.31
+__buildVersionID__ = 1.33
 
 import sys
 import os
@@ -55,6 +55,7 @@ log.setLevel(logging.INFO)
 
 ------------------------------------------------------------------------------------
 ''' 
+
 def mayaVersion():
     #need to manage this better and use the API version, 
     #eg: 2013.5 returns 2013
@@ -121,6 +122,13 @@ def menuSetup():
                   ann="Randomize selected Keys - also available in the GraphEditor>curve menu",
                   p='redNineMenuItemRoot', echoCommand=True,
                   c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.showOptions()")  
+    
+    cmds.menuItem('redNineFilterCurvesItem',l="Interactive Curve Filter",
+                  ann="Interactive Curve Filter - also available in the GraphEditor>curve menu",
+                  p='redNineMenuItemRoot', echoCommand=True,
+                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.FilterCurves.show()")      
+    
+
     cmds.menuItem('redNineMirrorUIItem',l="MirrorSetup",
                   ann="Temp UI to help setup the Mirror Markers on a rig",
                   p='redNineMenuItemRoot', echoCommand=True,
@@ -179,11 +187,12 @@ def addToMayaMenus():
             if not cmds.menu(mainFileMenu,q=True,ni=True):
                 mel.eval('buildFileMenu()')
             cmds.menuItem(divider=True)
-            cmds.menuItem('redNineOpenFolderItem',l="Red9:OpenSceneFolder",ann="Open the folder containing the current Maya Scene",
+            cmds.menuItem('redNineOpenFolderItem',l="Red9: OpenSceneFolder",ann="Open the folder containing the current Maya Scene",
                           p='mainFileMenu', echoCommand=True,
                           c="import maya.cmds as cmds;import Red9.core.Red9_General as r9General;r9General.os_OpenFileDirectory(cmds.file(q=True,sn=True))")
     except:
         log.debug('gMainFileMenu not found >> catch for unitTesting')
+
 
 # General Pack Data --------------------------------------------------------------------  
 
@@ -196,7 +205,7 @@ def red9ButtonBGC(colour):
     if colour==2:
         return [0.5, 0.5, 0.5]
    
-def red9ContactInfo():
+def red9ContactInfo(*args):
     cmds.confirmDialog(title='Red9_StudioPack : build %f' % red9_getVersion(), 
                        message=("Author: Mark Jackson\r\r"+
                                 "Technical Animation Director\r\r"+
@@ -223,7 +232,7 @@ def red9MayaNativePath():
     else:
         log.info('Red9MayaHacked Folder not found for this build of Maya : %s' % path)
   
-def red9_help():
+def red9_help(*args):
     '''
     open up the Red9 help docs
     '''
@@ -231,21 +240,21 @@ def red9_help():
     helpFile=os.path.join(red9ModulePath(),'docs',r'Red9-StudioTools Help.pdf')
     r9General.os_OpenFile(helpFile)
     
-def red9_blog():
+def red9_blog(*args):
     '''
     open up the Red9 Blog
     '''
     import Red9.core.Red9_General as r9General #lazy load
     r9General.os_OpenFile('http://red9-consultancy.blogspot.com/')
 
-def red9_facebook():
+def red9_facebook(*args):
     '''
     open up the Red9 Facebook Page
     '''
     import Red9.core.Red9_General as r9General #lazy load
     r9General.os_OpenFile('http://www.facebook.com/Red9StudioPack/')   
     
-def red9_vimeo():
+def red9_vimeo(*args):
     '''
     open up the Red9 Vimeo Channel
     '''
@@ -322,7 +331,7 @@ def sourceMelFolderContents(path):
     '''
     source all mel files in a given folder
     '''
-    for script in [file for file in os.listdir(path) if file.lower().endswith('.mel')]:
+    for script in [f for f in os.listdir(path) if f.lower().endswith('.mel')]:
         log.info('Sourcing mel script : %s' % script)
         mel.eval('source %s' % script)
 
@@ -332,18 +341,20 @@ def sourceMelFolderContents(path):
 # BOOT CALL ------------------------------------------------------------------------------            
 #========================================================================================= 
     
-def start(Menu=True, MayaUIHooks=True):
+def start(Menu=True, MayaUIHooks=True, MayaOverloads=True):
     '''
     Main entry point for the StudioPack
     @param Menu: Add the Red9 Menu to the Maya Main Menus
     @param MayUIHooks: Add the Red9 hooks to Maya Native UI's
+    @param MayaOverloads: run the Maya native script hacks for Red9 - integrates into native Maya ui's
     '''
+    log.info('Red9 StudioPack v%s : author: %s' % (red9_getVersion(), red9_getAuthor()))
     log.info('Red9 StudioPack Setup Calls :: Booting from >> %s' % red9ModulePath())
     if Menu:
         try:
             menuSetup()
         except:
-            log.debug('Menu Build Failed!')
+            log.debug('Red9 main menu Build Failed!')
         
     #Ensure the Plug-in and Icon paths are up   
     addPluginPath()
@@ -358,7 +369,7 @@ def start(Menu=True, MayaUIHooks=True):
     if MayaUIHooks:
         #Source Maya Hacked Mel files
         hacked=red9MayaNativePath()
-        if hacked:
+        if hacked and MayaOverloads:
             addScriptsPath(os.path.join(red9ModulePath(),'startup','maya_native'))
             addScriptsPath(hacked)
             try:

@@ -38,12 +38,12 @@ global proc red9HackChannelBox(string $parent)
 global proc red9HackGraphCurveMenu(string $parent)
 {
 	 //hack the GraphEditor 'curve' menu
-	 
-	 menuItem -label "Red9:AddNoise"
+	 menuItem -d true;
+	 menuItem -label "Red9: Randomizer"
 		-annotation "Add Noise to Curves"	
 		-p $parent			
-		-c "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.curveMenuFunc()\")"
-		-dragMenuCommand "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.curveMenuFunc()\")"
+		-c "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys().curveMenuFunc()\")"
+		-dragMenuCommand "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys().curveMenuFunc()\")"
 		noiseItem;
 	 menuItem -optionBox true
 		-annotation "Noise Settings" 
@@ -51,6 +51,11 @@ global proc red9HackGraphCurveMenu(string $parent)
 		-c "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.showOptions()\")"
 		-dragMenuCommand "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.showOptions()\")"
 		noiseOptionsItem;
+	 menuItem -label "Red9: Interactive Simplify"
+		-annotation "Interactively simplify and filter animCurves"	
+		-p $parent			
+		-c "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.FilterCurves.show()\")"
+		-dragMenuCommand "python(\"import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.FilterCurves.show()\")";
 }
 
 
@@ -60,7 +65,7 @@ global proc red9HackScriptEditorPopup(string $parent)
 	 
 	 menuItem -radialPosition "SW" 
 		 -parent $parent 
-	 	 -label "Red9:InspectFunction"
+	 	 -label "Red9: InspectFunction"
 	 	 -command "handleScriptEditorAction \"copy\";red9_InspectCode";
 }
 
@@ -71,22 +76,22 @@ global proc red9HackTraxMenu(string $parent)
      menu -label "Red9_Sound" -tearOff true -allowOptionBoxes true "redNineTraxRoot";
  	 menuItem -label ("Delete Selected Audio") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.deleteSelected()\")" red9TraxDeleteItem;
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().deleteSelected()\")" red9TraxDeleteItem;
 	 menuItem -d true;
 	 menuItem -label ("Activate Selected Audio") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.setActiveAudio()\")" red9TraxActiveItem;
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().setActiveAudio()\")" red9TraxActiveItem;
 	 menuItem -label ("Set Timeline to Selected") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.setTimelineToAudio()\")" red9TraxTimelineItem;		
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().setTimelineToAudio()\")" red9TraxTimelineItem;		
 	 menuItem -label ("Mute Selected") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.muteSelected(True)\")" red9TraxMuteSelectedItem;
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().muteSelected(True)\")" red9TraxMuteSelectedItem;
 	 menuItem -label ("UnMute Selected") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.muteSelected(False)\")" red9TraxUnmuteSelectedItem;
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().muteSelected(False)\")" red9TraxUnmuteSelectedItem;
 	 menuItem -label ("Open Audio Path") 
 		-p "redNineTraxRoot"
-		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandlers.openAudioPath()\")" red9TraxOpenPathItem;
+		-c "python(\"import Red9.core.Red9_General as r9General;r9General.AudioHandler().openAudioPath()\")" red9TraxOpenPathItem;
 
 }
