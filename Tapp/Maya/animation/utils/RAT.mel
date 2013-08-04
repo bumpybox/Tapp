@@ -1,0 +1,1612 @@
+//-----UI
+global proc RAT_GUI(int $dockMode,string $RAT_directory)
+{
+    if(`window -ex RAT_mWindow`)
+        deleteUI RAT_mWindow;
+    if(`dockControl -exists RAT_Dock`) 
+        deleteUI RAT_Dock;
+    string $RAT_ui = `loadUI -uiFile $RAT_directory`; //load ui file
+    if (`dockControl -exists RAT_Dock` == 0)
+    {
+        string $RAT_paneLayout = `paneLayout -cn "single" -p $RAT_ui` ;
+        string $RAT_dock = `dockControl -aa "right" -aa "left" -a "right" -fl $dockMode -con $RAT_paneLayout -l "RAT panel" RAT_Dock`;
+        control -e -w 382 -h 760 -visible 1 -p $RAT_paneLayout $RAT_ui ;
+    }
+    RAT_init ;
+    blastPreset("Personal") ;
+}
+
+//-----Retrive Settings
+global proc RAT_init()
+{
+    if (`window -ex RAT_mWindow` || `dockControl -ex RAT_Dock`)
+    {
+        //set timingEdit_tField
+        if (`optionVar -ex "RAT_nudgeKeys"`)
+            textField -e -tx (`optionVar -q "RAT_nudgeKeys"`) timingEdit_tField ;
+        //set weld_range_cBox and fields
+        if (`optionVar -ex "RAT_weldRangeEnabled"`)
+            checkBox -e -v (`optionVar -q "RAT_weldRangeEnabled"`) weld_startEndFrame_cBox ;
+        if(`checkBox -q -v weld_startEndFrame_cBox` == 1)
+        {
+            textField -e -en 1 weld_startFrame_tField ;
+            textField -e -en 1 weld_endFrame_tField ;
+        }
+        //set flipCurves_button
+        if (`optionVar -ex "RAT_flipCurves"`)
+            optionMenu -e -v (`optionVar -q "RAT_flipCurves"`) flipCurves_oMenu ;
+        //set snapAnimation_button
+        if (`optionVar -ex "RAT_snapAnimation"`)
+            optionMenu -e -v (`optionVar -q "RAT_snapAnimation"`) snapAnimPivot_oMenu ;
+        //set curveSoftness_tField and curveSoftness_intSlider
+        if (`optionVar -ex "RAT_ATsoftness"`)
+        {
+            textField -e -tx (`optionVar -q "RAT_ATsoftness"` *100) curveSoftness_tField ;
+            intSlider -e -v (`optionVar -q "RAT_ATsoftness"` *1000) curveSoftness_intSlider ;
+        }
+        //set flatStartEnd_cBox
+        if (`optionVar -ex "RAT_ATflatten"`)
+            checkBox -e -v (`optionVar -q "RAT_ATflatten"`) flatStartEnd_cBox ;
+        //set incremSave_cBox
+        checkBox -e -v (`optionVar -q isIncrementalSaveEnabled`) incremSave_cBox ;
+        //set autoSave_cBox and autoSaveDur_tField
+        checkBox -e -v (`optionVar -q autoSaveEnable`) autoSave_cBox ;
+        textField -e -en (`optionVar -q autoSaveEnable`) -tx (`optionVar -q autoSaveInterval`) autoSaveDur_tField ;
+        textField -e -tx `getenv "USERNAME"` feedback_from_tField ;
+        textField -e -tx `date -format "DD - MM - YYYY"` feedback_date_tField ;
+    }
+}
+
+// --------------------------------------------------------------------------
+
+//--Create Global scene variables
+global proc get_sceneInfo()
+{
+    global string $hhhEpi,$hhhSq,$hhhFr,$hhhSh,$hhhBlastDest,$hhhChar,$hhhType ;
+    string $epiName ;
+    string $currFileName = `file -q -namespace` ;
+    string $buf[] ;
+    int $tokens = `tokenize $currFileName "_" $buf` ;
+    if ($tokens >= 4)  
+    {
+        $hhhEpi = $buf[1] ;
+        python("import sys") ;
+        python("sys.path.append('T:/hhh/cg/scripts')") ;
+        python("import dictionary as dc") ;
+        python("reload(dc)") ;
+        int $catchEpiName = catch(`python("dc.epiName['"+$hhhEpi+"']")`) ;
+        if($catchEpiName == 0)
+            $epiName = `python("dc.epiName['"+$hhhEpi+"']")` ;
+        else
+            $epiName = "N/A" ;
+        if($hhhEpi == "999")
+        {
+            $hhhChar = $buf[2] ;
+            string $typeLtr = `substring $buf[3] 1 1` ;
+            $hhhType = `python("dc.epiType['"+$typeLtr+"']")` ;
+            $hhhBlastDest = "U:/hhh/episodes/ep"+$hhhEpi+"_"+$epiName+"/"+$hhhChar+"/"+$hhhType+"/" ;
+        }
+        else
+        {
+            $hhhSq = $buf[2] ;
+            if(size($buf[3]) == 3)
+            {
+                $hhhSh = $buf[3] ;
+                $hhhFr = "N/A" ;
+            }
+            else if(size($buf[3]) == 4)
+            {
+                $hhhFr = $buf[3] ;
+                $hhhSh = "N/A" ;
+            }
+            $hhhBlastDest = "U:/hhh/episodes/ep"+$hhhEpi+"_"+$epiName+"/playblasts/" ;
+        }
+    }
+    else
+    {
+        $hhhEpi = "N/A" ;
+        $hhhSq = "N/A" ;
+        $hhhFr = "N/A" ;
+        $hhhSh = "N/A" ;
+        $hhhBlastDest = "N/A" ;
+    }
+}
+// --------------------------------------------------------------------------
+//----RAT TweenKey
+global proc RAT_tweenKeySlider()
+{
+    string $nodes[], $biasCtl ;
+	$poseBias = (`intSlider -q -v keyBreakdown_intSlider`) ;
+	float $poseBiasUse = $poseBias ;
+	$poseBiasUse = ($poseBiasUse +100) /200 ;
+	$nodes = `ls -sl` ;
+	RAT_tweenKey($poseBiasUse,$nodes) ;
+}
+global proc RAT_updateSlider()
+{
+    int $keyEditV = `textField -q -text keyBreakdown_tField` ;
+    intSlider -e -v $keyEditV keyBreakdown_intSlider ;
+    RAT_tweenKeyCommand($keyEditV) ;
+}
+global proc RAT_tweenKeyCommand(float $poseBias)
+{
+	string $nodes[] ;
+	float $poseBiasUse = ($poseBias + 100) / 200 ;
+    $nodes = `ls -sl` ;
+	RAT_tweenKey($poseBiasUse,$nodes) ;
+	intSlider -e -v $poseBias keyBreakdown_intSlider ;
+	textField -e -text $poseBias keyBreakdown_tField ;
+}
+//Main function
+global proc RAT_tweenKey(float $poseBias, string $nodes[])
+{
+	string $nodes[], $curves[], $newCurves[], $attrs[], $crv, $attr, $biasCtl ; 
+	clear $curves ;
+	clear $newCurves ;
+	string $pf = `getPanel -wf` ;
+	float $timeRng[] = `timeControl -q -ra timeControl1` ;  // get selected range on timeline (as an array)
+	int $timeC = $timeRng[0] ; // current keyframe, where new key will be added
+	$curves = `keyframe -q -name $nodes` ; // get names of all keyframed curves on all selected objects
+	$attrs = `channelBox -q -sma "mainChannelBox"` ; // get names of selected attributes in channel box
+    // convert short entries in attribute list to long names
+	if (size($attrs) > 0)
+	{
+    	int $i ;
+    	for ($i=0; $i<size($attrs); $i++)
+    	{
+    		switch ($attrs[$i])
+    		{
+    			case "tx": $attrs[$i] = "translateX"; break ;
+    			case "ty": $attrs[$i] = "translateY"; break ;
+    			case "tz": $attrs[$i] = "translateZ"; break ;
+    			case "rx": $attrs[$i] = "rotateX"; break ;
+    			case "ry": $attrs[$i] = "rotateY"; break ;
+    			case "rz": $attrs[$i] = "rotateZ"; break ;
+    			case "sx": $attrs[$i] = "scaleX"; break ;
+    			case "sy": $attrs[$i] = "scaleY"; break ;
+    			case "sz": $attrs[$i] = "scaleZ"; break ;
+    			case "v": $attrs[$i] = "visibility"; break ;
+    		}
+    	}
+    	// compare selected attributes to curves and build new curves array
+    	for ($crv in $curves)
+    		for ($attr in $attrs)
+    			if (endsWith($crv, $attr))
+    			    $newCurves[size($newCurves)] = $crv ;
+    	clear $curves ;
+    	$curves = $newCurves ;
+	}
+	waitCursor -state on ;
+	for ($crv in $curves)
+	{
+		// Find time for next and previous keys...
+		int $timeP = `findKeyframe -which previous $crv` ;
+		int $timeN = `findKeyframe -which next $crv` ;
+		string $tanInPs[] = `keyTangent -time $timeP -q -itt $crv` ;
+		string $tanOutPs[] = `keyTangent -time $timeP -q -ott $crv` ;
+		string $tanInNs[] = `keyTangent -time $timeN -q -itt $crv` ;
+		string $tanOutNs[] = `keyTangent -time $timeN -q -ott $crv` ;
+		string $tanInC = $tanOutPs[0] ;
+		string $tanOutC = $tanInNs[0] ;
+		// However...if any of the types (previous or next) is "fixed", then use the global (default) tangent instead
+		if (($tanInPs[0] == "fixed") || ($tanOutPs[0] == "fixed") || ($tanInNs[0] == "fixed") || ($tanOutNs[0] == "fixed"))
+		{
+    		string $tanInGs[] = `keyTangent -q -g -itt` ;
+    		string $tanOutGs[] = `keyTangent -q -g -ott` ;
+    		$tanInC = $tanInGs[0] ;
+    		$tanOutC = $tanOutGs[0] ;
+		}
+		else
+    		if ($tanOutNs[0] == "step") $tanOutC = $tanOutNs[0] ;
+		// Find previous and next key values
+		float $valPs[] = `keyframe -time $timeP -q -valueChange $crv` ;
+		float $valNs[] = `keyframe -time $timeN -q -valueChange $crv` ;
+		float $valP = $valPs[0] ;
+		float $valN = $valNs[0] ;
+		float $diff = $valN - $valP ;	// Find difference in value between previous and next keys
+		float $diffToUse = $diff * $poseBias ;	// Find percentage of difference to use based on Pose Bias value
+		float $valC = $valP + $diffToUse ;	// Find current key value by adding amount used to previous key
+		setKeyframe -t $timeC -v $valC -ott $tanOutC $crv ;    // Set new keyframe
+		if ($tanInC != "step")
+		    keyTangent -t $timeC -itt $tanInC $crv ;
+	}
+	currentTime -e $timeC ;
+	setFocus $pf ;
+	waitCursor -state off ;
+}
+// --------------------------------------------------------------------------
+//----Nudge Keys
+global proc RAT_keyNudge(float $shift)
+{
+    float $timeRng[] = `timeControl -q -ra timeControl1` ;  // get selected range on timeline (as an array)
+	int $timeC = $timeRng[0] ; // current keyframe, where new key will be added
+    if (`checkBox -q -v selKeyOnly_cBox` == "0")
+        keyframe -edit -time ($timeRng[0]+":") -relative -timeChange $shift ;
+    else if (($timeRng[1]-$timeRng[0]) > 1)
+        keyframe -edit -time ($timeRng[0]+":"+$timeRng[1]) -relative -timeChange $shift ;
+    else
+        keyframe -edit -time ($timeRng[0]) -relative -timeChange $shift ;
+    int $timeJump = ($timeRng[0]+$shift) ;
+    int $timeJumpNext = `findKeyframe -time $timeJump -which next` ;
+    if (`checkBox -q -v moveToNext_cBox` == "1")
+        currentTime $timeJumpNext ;
+    else
+        currentTime $timeJump ;
+}
+// --------------------------------------------------------------------------
+//----Snap Objects
+global proc RAT_snapObjs()
+{
+    if(`window -ex RAT_snapObjects_win`)
+        deleteUI RAT_snapObjects_win ;
+    window -t "Snap Object" -s false RAT_snapObjects_win ;
+    columnLayout -adj true ;
+     text -l "Snap Objects" ;
+     separator -style "in" ;
+     rowLayout -nc 2 ;
+      columnLayout -adj true ;
+       checkBox -l "Translate" -v 1 -onc "checkBoxGrp -e -en 1 snapTransAxis_cBoxGrp" -ofc "checkBoxGrp -e -en 0 snapTransAxis_cBoxGrp" snapTrans_cBox ;
+       checkBoxGrp -numberOfCheckBoxes 3 -cw3 40 40 40 -va3 1 1 1 -vertical -labelArray3 "X" "Y" "Z" snapTransAxis_cBoxGrp ;
+      setParent.. ;
+      columnLayout -adj true ;
+       checkBox -l "Rotate" -v 1 -onc "checkBoxGrp -e -en 1 snapRotAxis_cBoxGrp" -ofc "checkBoxGrp -e -en 0 snapRotAxis_cBoxGrp" snapRot_cBox ;
+       checkBoxGrp -numberOfCheckBoxes 3 -cw3 40 40 40 -va3 1 1 1 -vertical -labelArray3 "X" "Y" "Z" snapRotAxis_cBoxGrp ;
+      setParent.. ;
+     setParent.. ;
+     button -l "Snap" -h 35 -c RAT_snapObjsCmd ;
+    setParent.. ;
+    showWindow RAT_snapObjects_win ;
+}
+// --------------------------------------------------------------------------
+//----Snap Objects
+global proc RAT_snapObjsCmd()
+{
+	string $mySel[] = `ls -sl` ;
+	if (`size ($mySel)` >= 2)
+	{
+		float $pos[] = `xform -q -ws -rp $mySel[0]` ;
+		float $rot[] = `xform -q -ws -ro $mySel[0]` ;
+		for($i=1;$i<`size($mySel)`;$i++)
+		{
+		    select -r $mySel[$i] ;
+			string $objType = `objectType $mySel[$i]` ;
+			if (`checkBox -q -v snapTrans_cBox` == 1)
+			{
+			    if(`checkBoxGrp -q -v1 snapTransAxis_cBoxGrp`)
+                    move -a -ws -rpr -x $pos[0] ;
+			    if(`checkBoxGrp -q -v2 snapTransAxis_cBoxGrp`)
+                    move -a -ws -rpr -y $pos[1] ;
+			    if(`checkBoxGrp -q -v3 snapTransAxis_cBoxGrp`)
+                    move -a -ws -rpr -z $pos[2] ;
+    	    }
+    	    if (`checkBox -q -v snapRot_cBox` == 1)   	
+    	    {        
+	            if(`checkBoxGrp -q -v1 snapRotAxis_cBoxGrp`)
+                    rotate -ws -x $rot[0] ;
+			    if(`checkBoxGrp -q -v2 snapRotAxis_cBoxGrp`)
+                    rotate -ws -y $rot[1];
+			    if(`checkBoxGrp -q -v3 snapRotAxis_cBoxGrp`)
+                    rotate -ws -z $rot[2] ;
+            }
+		}
+		select $mySel ;
+	}
+	else
+	    error ">>> Selected at least 2 Objects" ;
+}
+// --------------------------------------------------------------------------
+//----Selection Sets UI - Creates script based selection sets and adds to shelf, rather than relying on the selectionSets node
+global proc RAT_selectionSets()
+{
+    if(`window -exists RAT_SelSets_win`)
+        deleteUI RAT_SelSets_win ;
+    window -t "Selection Sets" -s false RAT_SelSets_win ;
+     columnLayout main_rLayout ;
+      rowLayout -adj 1 -nc 3 -cw3 50 25 50 ;
+       text -l "Name:" -w 30 name_text ;
+       textField -w 135 -ec RAT_selSetCreate selSetName_tField ;
+       button -l "Clear" -c "textScrollList -e -ra selSetObjs_tsList;" -bgc .6 .6 1 ;
+      setParent ..;
+      rowLayout -adj 1 -nc 1 ;
+       textScrollList -w 225 -ams 1 -sc "select (`textScrollList -q -si selSetObjs_tsList`)" -dkc "for($i in `textScrollList -q -si selSetObjs_tsList`){textScrollList -e -ri $i selSetObjs_tsList;}" selSetObjs_tsList ;
+      setParent ..;
+      rowLayout -adj 1 -nc 3 -cw3 25 25 75 ;
+       button -l "-" -w 30 -h 30 -bgc .6 .6 1 -c "RAT_selSetEdit(0)" remove_button ;
+       button -l "+" -w 30 -h 30 -bgc .6 .6 1 -c "RAT_selSetEdit(1)" add_button ;
+       button -l "Create" -w 160 -h 30 -bgc 1 .6 .6 -c "RAT_selSetCreate" create_button ;
+      setParent ..;
+     setParent ..;
+    showWindow RAT_SelSets_win ;
+    RAT_selSetEdit 1 ;
+}
+
+// Adds selected objects to list
+global proc RAT_selSetEdit(int $mode)
+{
+    if($mode==0)
+        for($i in `textScrollList -q -si selSetObjs_tsList`)
+            textScrollList -e -ri $i selSetObjs_tsList ;
+    else //if($mode==1)
+    {
+        string $compiled=stringArrayToString((`textScrollList -q -ai selSetObjs_tsList`)," ") ;
+        string $mySel[]=`ls -sl` ;
+        for($sel in $mySel)
+            if(match($sel,$compiled)=="")
+                textScrollList -e -a $sel selSetObjs_tsList ;
+    }
+}
+// Creates selection script and adds to shelf
+global proc RAT_selSetCreate()
+{
+    string $setObjs[] = `textScrollList -q -ai selSetObjs_tsList` ;
+    string $selSetName = `textField -q -tx selSetName_tField` ;
+    string $selSetterCmd = "" ;
+    string $obj ;
+    for ($obj in $setObjs)
+        $selSetterCmd = ($selSetterCmd + "\"" + $obj + "\" ") ;
+    if (`size($selSetName)` > 0)
+        textToShelf $selSetName ("string $flag=\"-r\";if(`getModifiers`==4){$flag=\"-tgl\";}select $flag "+$selSetterCmd+";") ;
+}
+// --------------------------------------------------------------------------
+//----Toggle Image Planes
+global proc RAT_toggleImgPlanes()
+{
+    global int $RAT_iPlaneType ;
+    string $allImagePlane[] = `ls -type imagePlane` ;
+    string $image ;
+    for ($image in $allImagePlane)
+    {
+        int $imageTypeVal = `getAttr ($image + ".type")` ;
+        if ($imageTypeVal != 1)
+        {
+            $RAT_iPlaneType = $imageTypeVal ;
+            setAttr ($image + ".type") 1 ;
+        }
+        else if ($RAT_iPlaneType != 1)
+            setAttr ($image + ".type") $RAT_iPlaneType ;
+        else
+            setAttr ($image + ".type") 0 ;
+    }
+}
+// --------------------------------------------------------------------------
+/* ----MODIFIED EXTERNAL SCRIPT
+AnimRange.mel
+Version:  4.0 
+
+Author: Ann Mikulka (Ann@Shaba.com) and Sean Nolan
+Thanks to Jeff Cooperman who had the idea for this script.
+Program: Maya 7.0
+Last mod: 07/07/06
+
+NOTE:
+Modified on 26/07/11 by LEE DUNHAM - leedunham@gmail.com
+
+Details:
+1. Compressed overall size, whilst keeping field sizes same and moved trash button to avoid accidental press.
+2. Added option to colour fields based on input (gray if "no cg", blue if "all", red for EE).
+3. Added Ctrl and Shift mod's (Ctrl pressed ignores min, shift ignores max).
+4. Debugged "Cancel" button, wont create UI or animRange_node.
+*/
+//main proc
+global proc RAT_animRange()
+{
+    //Build main window 
+    if(`window -exists RAT_animRangeWin`)
+        deleteUI RAT_animRangeWin ;
+    window -mb true -title "Animation Shots" -w 298 RAT_animRangeWin ;
+    menu -l "Rows" ;
+    menuItem -l "Add" -c "RAT_addRowRange" ;
+    menuItem -l "Colour" -cb 1 as_colour_cBox ;
+    int $create ;
+    string $attrs[] ;
+    if (!`objExists RAT_animRangeNode`)
+        $create = `RAT_createRanges` ;
+    //it does so see how many attributes we have. There are 3 attributes per line
+    else
+    {
+        $attrs = `listAttr -ud RAT_animRangeNode` ;
+        int $numOfAttrs = `size($attrs)` ;
+        $create = $numOfAttrs /3 ;
+    }
+    if (`window -ex RAT_animRangeWin`)
+    {
+        scrollLayout ;
+        	columnLayout ; 
+        		rowColumnLayout -nc 6 -cw 1 1 -cw 2 100 -cw 3 40 -cw 4 40 -cw 5 65 -cw 6 25 mainCo ;
+    	intField -vis false -h 1 -v $create numOfRows ;	
+      	text -l "" ; text -l "" ; 
+    	text -l "" ; text -l "" ;
+    	text -l "" ;
+    	text -l "" ;
+    	text -l "Name Of Shot" ;
+    	text -l "Start" ;
+    	text -l "End" ;
+    	text -l "Set Shot" ;
+    	text -l "Del" ;
+        setParent.. ;
+    	int $i ;
+    	//first time running so create the node
+    	if (!`objExists RAT_animRangeNode`)
+    		 createNode "unknown" -n "RAT_animRangeNode" ;
+    	select -cl ;
+    	//create the attributes by how many the user said or when it was last created
+        for ($i = 0; $i < $create; $i++)
+    	    if (!`attributeExists $attrs[$i] "RAT_animRangeNode"`)
+    	        RAT_createAttributes $i ;       
+    	//Now for the groovy part. Build a dynamic interface based off of ranges needed or by how many
+      	//attributes were last created. Commands are built dynamically as well so each commnad is represented by
+      	//an index value. Clever eh?
+    	for ($i = 0; $i < $create; $i++)
+    	{
+    		string $col = ("rwCol" + $i) ;
+    		rowColumnLayout -nc 7 -cw 1 1 -cw 2 100 -cw 3 40 -cw 4 40 -cw 5 60 -cw 6 10 -cw 7 30 $col ;
+    		text -l "" ;
+    		string $cmd2 = ("deleteAtt " + $i + " " + $col) ;		
+    		string $ctrl1 = ("IntMin" + $i) ;
+    		string $ctrl2 = ("IntMax" + $i) ;
+    		string $ctrl3 = ("txtFldName" + $i) ;
+    		$fld =`textFieldGrp $ctrl3` ;
+    		string $cmd = ("RAT_setAttrFields " + $i + " " + $fld) ;
+    		//textFieldGrp -e -cc $cmd $ctrl3 ;
+    		string $Min = `intField -width 15 -value 0 -dc $cmd $ctrl1` ;
+    		string $Max = `intField -width 15 -value 0 -dc $cmd $ctrl2` ;
+    		string $buttonNew = `button -height 20 -label "Set" -command $cmd` ;
+    		string $seperator = `text -l "  "` ;
+    		string $buttonDel = `iconTextButton	-height 20 -image "smalltrash.xpm" -command $cmd2 deleteButton` ;
+    		//Pre load all the fields
+    		if (`objExists RAT_animRangeNode`)
+    	    {
+                int $minV = `getAttr ("RAT_animRangeNode.Min" + $i)` ;
+                int $maxV = `getAttr ("RAT_animRangeNode.Max" + $i)` ;
+                string $name = `getAttr ("RAT_animRangeNode.Name" + $i)` ;
+                intField -e -value $minV $Min ;
+                intField -e	-value $maxV $Max ;
+                textFieldGrp -e -text $name $fld ;
+                connectControl $Min  ("RAT_animRangeNode.Min" + $i) ;
+                connectControl $Max  ("RAT_animRangeNode.Max" + $i) ;
+    	    } 
+    		setParent.. ;
+    	}
+    	setParent.. ; 
+    	window -e -h 400 -w 340 RAT_animRangeWin ;
+    	showWindow ;
+    }
+}
+//creates $i number of attributes
+global proc RAT_createAttributes(int $i)
+{
+    string $attr1 = ("Name" + $i) ;
+	string $attr2 = ("Min" + $i) ;
+	string $attr3 = ("Max" + $i) ;
+	addAttr -ln $attr1 -dt "string"  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr1) ;
+	addAttr -ln $attr2 -at long  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr2) ;
+	addAttr -ln $attr3 -at long  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr3) ;
+}
+//delete attribute and column
+global proc deleteAtt(int $attr, string $control)
+{
+    if($attr == 0)
+        error "First Row can NOT be Deleted" ;
+	//From here down, I delete the current attribute get a list of all the attributes, give them a temp
+	//name, and then re-order the index numbers so that it matches the number of current rows
+	int $num = `intField -q -v numOfRows` ;
+	deleteAttr -at ("Min" + $attr) RAT_animRangeNode ;
+	deleteAttr -at ("Max" + $attr) RAT_animRangeNode ;
+	deleteAttr -at ("Name" + $attr) RAT_animRangeNode ;
+	deleteUI $control ;
+	intField -e -v ($num -1) numOfRows ;
+	string $attrs[] = `listAttr -ud RAT_animRangeNode` ;
+	string $names[] ;
+	string $mins[] ;
+	string $maxs[] ;
+	int $i = 0 ;
+	for($atts in $attrs)
+	{
+		int $found = `gmatch $atts "Name*"` ;
+		if($found == 1)
+		{
+    		$names[$i] = $atts ;
+    		$i++ ;
+		}
+	}
+	$i = 0 ;
+	for($atts in $attrs)
+	{
+		int $found = `gmatch $atts "Min*"` ;
+		if($found == 1)
+		{
+    		$mins[$i] = $atts ;
+    		$i++ ;
+		}
+	}
+	$i = 0 ;
+	for($atts in $attrs)
+	{
+		int $found = `gmatch $atts "Max*"` ;
+		if($found == 1)
+		{
+    		$maxs[$i] = $atts ;
+    		$i++ ;
+		}
+	}
+	int $j = 0 ;
+	for ($i = 0; $i<`size($names)`;$i++)
+	{
+	  	renameAttr ("RAT_animRangeNode." + $names[$i]) ("NameTemp" + $i) ;
+    	renameAttr ("RAT_animRangeNode." + $mins[$i]) ("MinTemp" + $i) ;
+    	renameAttr ("RAT_animRangeNode." + $maxs[$i]) ("MaxTemp" + $i) ;
+	}
+	//Rebuild the new attributes
+	string $newAttrs[] = `listAttr -ud RAT_animRangeNode` ;
+	string $newNames[] ;
+	string $newMins[] ;
+	string $newMaxs[] ;
+	$i = 0 ;
+	for($newAtts in $newAttrs)
+	{
+		int $found = `gmatch $newAtts "NameTemp*"` ;
+		if($found == 1)
+		{
+    		$newNames[$i] = $newAtts ;
+    		$i++ ;
+		}
+	}
+	$i = 0 ;
+	for($newAtts in $newAttrs)
+	{
+		int $found = `gmatch $newAtts "MinTemp*"` ;
+		if($found == 1)
+		{
+    		$newMins[$i] = $newAtts ;
+    		$i++ ;
+		}
+	}
+	$i = 0 ;
+	for($newAtts in $newAttrs)
+	{
+		int $found = `gmatch $newAtts "MaxTemp*"` ;
+		if($found == 1)
+		{
+    		$newMaxs[$i] = $newAtts ;
+    		$i++ ;
+		}
+	}
+	for ($i = 0; $i < `size($newNames)`;$i++)
+	{
+    	renameAttr ("RAT_animRangeNode." + $newNames[$i]) ("Name" + $i) ;
+    	renameAttr ("RAT_animRangeNode." + $newMins[$i]) ("Min" + $i) ;
+    	renameAttr ("RAT_animRangeNode." + $newMaxs[$i]) ("Max" + $i) ;
+	}
+	RAT_animRange ;	//Reload the interface so that it redraws all the controls
+}
+
+//dialogue box that pops up the first time you run the script this prompts for how many rows you want
+global proc int RAT_createRanges()
+{
+    string $text ;
+ 	string $result = `promptDialog 
+						-title "Number of Shots"
+						-message "Number of Shots:"
+						-button "OK" -button "Cancel"
+						-defaultButton "OK" -cancelButton "Cancel"
+						-dismissString "Cancel"` ;
+ 	if ($result == "OK")
+ 		$text = `promptDialog -query -text` ;
+    if ($result == "Cancel")
+    {
+        if (`window -ex RAT_animRangeWin`)
+            deleteUI RAT_animRangeWin ;
+        if (`objExists "RAT_animRangeNode"`)
+            delete "RAT_animRangeNode" ;
+ 	}
+ 	if ($text == "")
+ 	    $text = "0" ;
+	return int($text) ;	  //cast the string as an int and return it
+}
+
+//this adds a new row
+global proc RAT_addRowRange()
+{
+	if (!`objExists RAT_animRangeNode`)
+		error "No RAT_animRangeNode" ;
+	//update the row number
+	int $i = `intField -q -v numOfRows` ;
+	//make the new attributes
+	string $attr1 = ("Name" + $i) ;
+	string $attr2 = ("Min" + $i) ;
+	string $attr3 = ("Max" + $i) ;
+	addAttr -ln $attr1 -dt "string"  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr1) ;
+	addAttr -ln $attr2 -at long  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr2) ;
+	addAttr -ln $attr3 -at long  RAT_animRangeNode ;
+	setAttr -e -keyable false ("RAT_animRangeNode." + $attr3) ;
+   	RAT_animRange ;   //redraw the interface
+}
+//sets the values from the interface to the attribute and updates timeline
+global proc RAT_setAttrFields(int $num, string $control)
+{
+    string $ctrlMin = ("IntMin" + $num) ;
+    string $ctrlMax = ("IntMax" + $num) ;
+    string $nameField = ("txtFldName" + $num) ;
+    int $min = `intField -query -value $ctrlMin` ;
+    int $max = `intField -query -value $ctrlMax` ;
+    string $name = `textFieldGrp -q -text $control` ;
+    setAttr -type "string" ("RAT_animRangeNode.Name" + $num) $name ;
+    if (`getModifiers` != 4) //if Ctrl is held, ignore min
+    {
+        setAttr ("RAT_animRangeNode.Min" + $num) $min ;
+        playbackOptions -min $min ;
+    }
+    if (`getModifiers` != 1)  //if Shift is held, ignore max
+    {
+        playbackOptions -max $max ;
+        setAttr ("RAT_animRangeNode.Max" + $num) $max ;
+    }
+    if (`menuItem -q -cb as_colour_cBox` == 1)
+    {
+        if (`match "no cg" (tolower($name))` == "no cg")
+            textFieldGrp -e -bgc .4 .4 .4 $control ;
+        else if (`match "all" (tolower($name))` == "all")
+            textFieldGrp -e -bgc .7 .7 1 $control ;
+        else
+            textFieldGrp -e -bgc 1 .7 .7 $control ;
+    }
+    else
+        textFieldGrp -e -ebg 0 -bgc .17 .17 .17 $control ;
+}
+// --------------------------------------------------------------------------
+//----Convert Tangents
+global proc RAT_tangentConvert()
+{
+    int $tangentConvert_state=`checkBox -q -v toggleTangents_cBox`;
+    if(`checkBox -q -v toggleTangents_cBox`== 1)
+        keyTangent -ott step ;
+    else
+        keyTangent -itt plateau -ott plateau ;
+    checkBox -e -v (!$tangentConvert_state) toggleTangents_cBox ;
+}
+// --------------------------------------------------------------------------
+//----Autosave function
+global proc RAT_autoSave()
+{
+    int $autoSaveInt = int(`textField -q -tx autoSaveDur_tField`) ;
+    if ($autoSaveInt < 5)
+        textField -e -tx "5" autoSaveDur_tField ;
+    optionVar -iv autoSaveInterval $autoSaveInt ;
+    autoSave -interval ($autoSaveInt *60) ;
+}
+// --------------------------------------------------------------------------
+//----Weld Objects
+global proc RAT_weldControls()
+{
+    string $mySel[] = `ls -sl` ;
+    string $parCons2[] ;
+    float $currentTime = `currentTime -q`;
+    float $fStart, $fEnd ;
+    if (`checkBox -q -v weld_startEndFrame_cBox` == 1 && size(`textField -q -tx weld_startFrame_tField`) > 0 && size(`textField -q -tx weld_endFrame_tField`))
+    {
+        $fStart = float(`textField -q -tx weld_startFrame_tField`) ;
+        $fEnd = float(`textField -q -tx weld_endFrame_tField`) ;
+    }
+    else
+    {
+        $fEnd = `currentTime -q`;
+        $fStart = $fEnd -1 ;
+    }
+    print ($fStart+"\n") ;
+    print ($fEnd+"\n") ;
+    string $userChoice = "false" ;
+    string $userConfirmWeld ;
+    $userConfirmWeld = `confirmDialog -t "Confirm Weld Type" -m "Please confirm how you would like to weld?"
+                       -button "Keys" -button "Constraints" -button "Cancel" -defaultButton "Cancel" -cancelButton "Cancel" -dismissString "Cancel"` ;
+    if($userConfirmWeld == "Keys" || $userConfirmWeld == "Constraints") 
+    {
+        for($sel in $mySel)
+        {
+            if($fStart > $fEnd && $userConfirmWeld != "Constraints")
+            {
+                currentTime $fStart ;
+                setKeyframe ($sel+".t") $sel ;
+                setKeyframe ($sel+".r") $sel ;
+                float $RTrans[] = `xform -q -a -ws -t $sel` ;
+                float $RRot[] = `xform -q -a -ws -ro $sel` ;
+                currentTime $fEnd ;
+                move -a -ws $RTrans[0] $RTrans[1] $RTrans[2] $sel ;
+                rotate -a -ws $RRot[0] $RRot[1] $RRot[2] $sel ;
+                setKeyframe ($sel+".t") ;
+                setKeyframe ($sel+".r") ;
+                $fStartTemp = $fEnd ;
+                $fEndTemp = $fStart ;
+                $fStart = $fStartTemp ;
+                $fEnd = $fEndTemp ;
+            }
+            currentTime $fStart ;
+            string $loc1[] = `spaceLocator` ;
+            string $parCons1[] = `parentConstraint $sel $loc1[0]` ;
+            delete $parCons1 ;
+            currentTime $fEnd ;
+            
+            if($userConfirmWeld == "Keys")
+            {
+                string $dupCtrl[] = `duplicate -rr $sel` ;
+                $parCons2 = `parentConstraint $loc1[0] $dupCtrl[0]` ;
+                
+                for($i=$fStart;$i<=$fEnd;$i++)
+                {
+                    currentTime $i ;
+                    float $dupCtrlTrans[] = `getAttr ($dupCtrl[0]+".t")` ;
+                    float $dupCtrlRot[] = `getAttr ($dupCtrl[0]+".r")` ;
+                    setAttr ($sel+".t") $dupCtrlTrans[0] $dupCtrlTrans[1] $dupCtrlTrans[2] ;
+                    setAttr ($sel+".r") $dupCtrlRot[0] $dupCtrlRot[1] $dupCtrlRot[2] ;
+                    setKeyframe ($sel+".t") ;
+                    setKeyframe ($sel+".r") ;
+                }
+                delete $dupCtrl ;
+            }
+            else if($userConfirmWeld == "Constraints")
+            {
+                $parCons2 = `parentConstraint $loc1[0] $sel` ;
+                bakeResults -sm true -t ($fStart+":"+$fEnd) -sampleBy 1 -disableImplicitControl true -preserveOutsideKeys true -sparseAnimCurveBake false -removeBakedAttributeFromLayer false -bakeOnOverrideLayer false -controlPoints false -shape true -at "tx" -at "ty" -at "tz" -at "rx" -at "ry" -at "rz" {$sel} ;
+                delete $parCons2 ;
+            }
+            delete $loc1 ;
+        }
+    }
+    select $mySel ;
+    currentTime $currentTime ;
+}
+
+// --------------------------------------------------------------------------
+
+//----Clean Curves - by removing redundant keys
+global proc RAT_cleanCurves(string $valueToInput)
+{
+    string $sel[] = `ls -sl` ;
+    float $valueTol = (float)`textField -q -tx cleanCurves_tField` ;
+    float $angleTol = 1 ; //tangents with angles below this value will be considered flat.
+	if (size($sel) > 0)
+	{
+	    for ($obj in $sel)
+	    {
+	        selectKey $obj ;
+	        string $aCurvesShown[] = `keyframe -query -name -sl` ;
+        	if (size($aCurvesShown) > 0)
+        	{
+        		string $curve, $aStr[], $evalStr, $plural ;
+        		float $aValue[], $aInAngle[], $aOutAngle[] ;
+        		float $currentTime, $aFlt[], $prevValDif, $nextValDif ;
+        		int $totKeys, $i, $aDelInd[] ;
+        		int $counter = 0 ;
+        		waitCursor -state on ;
+        		for ($curve in $aCurvesShown)
+        		{
+        			//do some clean up
+        			clear($aInAngle) ;
+        			clear($aOutAngle) ;
+        			clear($aDelInd) ;
+        			clear($aValue) ;
+        			$aStr = `listConnections -plugs yes -source no $curve` ;
+        			$curveAtt = $aStr[0] ;
+        			//run through all keyframes on this curve
+        			//make an array of value, inAngle, outAngle
+        			$aInAngle = `keyTangent -query -inAngle $curve` ;
+        			$aOutAngle = `keyTangent -query -outAngle $curve` ;
+        			//make $aInAngle and $aOutAngle absolute values for less work on the comparison
+        			for ($i=0;$i<size($aInAngle);$i++)
+        			    $aInAngle[$i] = abs($aInAngle[$i]) ;
+        			for ($i=0;$i<size($aOutAngle);$i++)
+        			    $aOutAngle[$i] = abs($aOutAngle[$i]) ;
+        			$currentTime = `findKeyframe -which first $curve` ;
+        			$totKeys = `keyframe -query -keyframeCount $curve` ;
+        			for ($i=0;$i<$totKeys;$i++)
+        			{
+        				currentTime -edit $currentTime -update false ;
+        				$aFlt = `keyframe -query -eval $curve` ;
+        				$aValue[$i] = $aFlt[0] ;
+        				clear($aFlt) ;
+        				$currentTime = `findKeyframe -which next $curve` ;
+        			}
+        			//now sort through arrays and find deleteable keys
+        			for ($i=0;$i<$totKeys;$i++)
+    			    {
+        				if ($i == 0 || $i == ($totKeys-1))
+        				    continue ;
+        				if ($aOutAngle[$i-1] < $angleTol && $aInAngle[$i] < $angleTol && $aOutAngle[$i] < $angleTol && $aInAngle[$i+1] < $angleTol)
+    				    {	
+        					$prevValDif = abs($aValue[$i-1] - $aValue[$i]) ;
+        					$nextValDif = abs($aValue[$i+1] - $aValue[$i]) ;
+        					if ($prevValDif < $valueTol && $nextValDif < $valueTol)
+    						    $aDelInd[size($aDelInd)] = $i ;
+    				    }
+    			    }
+        			//make cutKey string
+        			if (size($aDelInd) > 0)
+        			{
+        				$evalStr = "cutKey -clear" ;
+        				for ($i in $aDelInd) $evalStr += " -index "+$i ;
+        				$evalStr += " "+$curve ;
+        				eval($evalStr) ;
+        				$counter += size($aDelInd) ;
+        			}
+        		}
+        		waitCursor -state off ;
+        		$plural = ($counter > 1 || $counter == 0) ? "s" : "" ;
+        		print ($counter+" keyframe"+$plural+" cleaned up.\n") ;
+        	}
+        }
+    }
+    else
+	    warning "Select an object/curve to clean." ;
+}
+
+// --------------------------------------------------------------------------
+
+//----FlipCurves - Flips currently selected keys over the specified axis.
+global proc RAT_flipCurves()
+{
+	string $RAT_SetupPivot = `optionMenu -q -v flipCurves_oMenu` ;
+	int $i ;
+	$keyCount = `keyframe -an keys -q -keyframeCount` ;
+	if ($keyCount != 0)
+    {
+		float $pivotTime;
+		float $pivotValue[];
+	    if ($RAT_SetupPivot == "last")
+	        $pivotValue = `keyframe -lastSelected -q -valueChange` ;	
+		//loop over selected curves and process independently
+		string $selectedCurves[] = `keyframe -selected -q -name` ;
+		
+		for ($c = 0; $c < size($selectedCurves); $c++)
+	    {
+			$channel = $selectedCurves[$c] ; //channel to use for this pass
+			$timeArray = `keyframe -selected -q -timeChange $channel` ; //get array of key times in selection (to find closest match key)
+			//find first frame time
+			$lastkey = `keyframe -q -lastSelected $channel` ;
+			$firstKey = $lastkey[0] ;
+			for ($j = 0; $j < size($timeArray); $j++)
+				if ($timeArray[$j] < $firstKey)
+					$firstKey = $timeArray[$j] ;
+			switch ($RAT_SetupPivot)
+			{
+				case "left":
+					$pivotTime = `findKeyframe -which "previous" -time $timeArray[0] $channel` ;
+					$pivotValue = `keyframe -time $pivotTime -q -valueChange $channel` ;
+					break ;
+				case "right":
+					int $lastKey = size($timeArray) -1 ;
+					$pivotTime = `findKeyframe -which "next" -time $timeArray[$lastKey] $channel` ;
+					$pivotValue = `keyframe -time $pivotTime -q -valueChange $channel` ;
+					break ;
+				case "on 0":
+					$pivotTime = 0 ;
+					$pivotValue = `keyframe -time 0 -q -valueChange $channel` ;
+					break ;
+				case "selected key":
+					$pivotTimeTemp = `keyframe -selected -q -timeChange $channel` ;
+					$pivotTime = $pivotTimeTemp[0] ;
+					$pivotValue = `keyframe -time $pivotTime -q -valueChange $channel` ;
+					break ;
+			}
+			int $selected[] ;
+			if ($RAT_SetupPivot != "selected key")
+			    $selected = `keyframe -selected -q -indexValue $channel` ;
+			if ($RAT_SetupPivot == "selected key")
+			    $selected = `keyframe -q -indexValue $channel` ;
+            for ($i = 0; $i < size($selected); $i++)
+                scaleKey -index $selected[$i] -valuePivot $pivotValue[0] -valueScale -1 $channel ;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------
+
+/* ----MODIFIED EXTERNAL SCRIPT
+ackSnapAnimation 1.1			
+10/19/07
+Aaron Koressel	
+www.aaronkoressel.com
+
+NOTE:
+
+Modified on 27/07/11 by LEE DUNHAM - leedunham@gmail.com
+*/
+global proc RAT_snapAnim()
+{
+    string $ackSetup_pivot = `optionMenu -q -v snapAnimPivot_oMenu` ;
+	//set default value if variable doesn't exist
+	if ($ackSetup_pivot == "")
+		$ackSetup_pivot = "left" ;
+	//only run if at least one key is selected
+	$keyCount = `keyframe -an keys -q -keyframeCount` ;
+	if ($keyCount != 0)
+	{	
+		//loop over selected curves and process independently
+		string $selectedCurves[] = `keyframe -selected -q -name` ;
+		for ($c = 0; $c<size($selectedCurves); $c++)
+		{
+			//channel to use for this pass
+			$channel = $selectedCurves[$c] ;
+			//get array of key times in selection (to find closest match key)
+			$timeArray = `keyframe -selected -q -timeChange $channel` ;
+			//find first frame time
+			$lastkey = `keyframe -q -lastSelected $channel` ;
+			$firstKey = $lastkey[0] ;
+			for ($j = 0; $j<size($timeArray); $j++)
+				if ($timeArray[$j] < $firstKey)
+					$firstKey = $timeArray[$j] ;
+			//find closest key
+			switch ($ackSetup_pivot)
+			{
+				case "left":
+				case "last":
+					$endKey = $timeArray[0] ;
+					$matchKey = `findKeyframe -time $endKey -which previous $channel` ;
+					break ;
+				case "right":
+					$endKey = $timeArray[size($timeArray)-1] ;
+					$matchKey = `findKeyframe -time $endKey -which next $channel` ;
+					break ;		
+			}
+			//get difference in values between firstKey and matchKey
+			$matchKey_val = `keyframe -time $matchKey -q -valueChange $channel` ;
+			$endKey_val = `keyframe -time $endKey -q -valueChange $channel` ;
+			$delta = $matchKey_val[0] - $endKey_val[0] ;
+			//offset values with delta
+			$selected = `keyframe -selected -q -indexValue $channel` ;
+			for ($i = 0; $i<size($selected); $i++)
+				keyframe -relative -index $selected[$i] -valueChange $delta $channel ;
+		}
+	}
+}
+
+// --------------------------------------------------------------------------
+
+// EXTERNAL SCRIPT
+// Cycle Animation Curves
+//
+global proc cycleAnimCurves()
+{
+	int $tangentMode ;
+	int $valueMode ;
+	if (`radioButton -q -select cac_v_01_button`)
+	    $valueMode = 1 ;
+	else if (`radioButton -q -select cac_v_02_button`)
+	    $valueMode = 2 ;
+	else
+	    $valueMode = 3 ;
+	if (`radioButton -q -select cac_t_01_button`)
+	    $tangentMode = 1 ;
+	else if (`radioButton -q -select cac_t_02_button`)
+	    $tangentMode = 2 ;
+	else
+	    $tangentMode = 3 ;
+	int $modifyTangent =	`checkBox -q -v cac_modifyTangent`;
+	int $modifyValue =	`checkBox -q -v cac_modifyValue`;
+
+	// get selected animation curve nodes
+	string $curveList[] = `keyframe -q -name`;
+
+	// iterate through list of animation curves
+	for( $cnt = 0; $cnt < size( $curveList ); $cnt++ )
+	{
+		if( `keyframe -q -kc $curveList[$cnt]` < 2 )
+		{
+			warning ( "Anim curve " + $curveList[$cnt] + " has less than 2 keys." );
+			continue;
+		}
+
+		// copy tangent
+		if( $modifyTangent )
+		{
+			// query in-tangents of all keys
+			float $keyInTangents[] = `keyTangent -q -ia $curveList[$cnt]`;
+			float $keyOutTangents[] = `keyTangent -q -oa $curveList[$cnt]`;
+			// copy start to end
+			if( $tangentMode == 1 )
+				keyTangent -e -in ( size( $keyInTangents ) - 1 ) -oa $keyInTangents[0] $curveList[$cnt];
+			// copy end to start
+			if( $tangentMode == 2 )
+				keyTangent -e -in 0 -ia $keyOutTangents[size( $keyOutTangents ) - 1] $curveList[$cnt];
+			// average
+			if( $tangentMode == 3 )
+			{
+				float $average = ( $keyInTangents[0] + $keyOutTangents[size( $keyOutTangents ) - 1] ) / 2;
+				keyTangent -e -in 0 -ia $average $curveList[$cnt];
+				keyTangent -e -in ( size( $keyInTangents ) - 1 ) -oa $average $curveList[$cnt];
+			}
+		}
+
+		// copy value
+		if( $modifyValue )
+		{
+			// query in-tangents of all keys
+			float $keyValues[] = `keyframe -q -vc $curveList[$cnt]`;
+			if( $valueMode == 1 )
+				keyframe -e -in ( size( $keyValues ) - 1 ) -vc $keyValues[0] $curveList[$cnt];
+			// copy end to start
+			if($valueMode == 2 )
+				keyframe -e -in 0 -vc $keyValues[size( $keyValues ) - 1] $curveList[$cnt];
+			// average
+			if( $valueMode == 3 )
+			{
+				float $average = ( $keyValues[0] + $keyValues[size( $keyValues ) - 1] ) / 2;
+				keyframe -e -in ( size( $keyValues ) - 1 ) -vc $average $curveList[$cnt];
+				keyframe -e -in 0 -vc $average $curveList[$cnt];
+			}
+		}
+	}
+}
+
+// --------------------------------------------------------------------------
+
+//----autoTangent - smooths the tangents on selected keys
+global proc RAT_autoTangent()
+{
+    float $soft = `intSlider -q -v curveSoftness_intSlider` /1000.0 ;
+    int $bFlatten = `checkBox -q -v flatStartEnd_cBox` ;
+	textField -e -text ($soft *100) curveSoftness_tField ;
+    // Store in option var too!
+    optionVar -fv "RAT_ATsoftness" $soft ;
+    optionVar -iv "RAT_ATflatten" $bFlatten ;
+    // Make it so!
+    RAT_ATsmoothKeys($soft, $bFlatten) ;    
+}
+
+//Does actual smooth work
+global proc RAT_ATsmoothKeys(float $softness, int $bFlatten)
+{
+    string $curves[] = `keyframe -q -name -sl` ; // get all selected animCurve Nodes
+    string $crv ;
+    waitCursor -state on ;
+    // For each curve...
+    for ($crv in $curves)
+    {
+    	// What key indexes 0..1..2..n for that curve are chosen?
+        int $idxs[] = `keyframe -q -indexValue -sl $crv` ;
+        int $idx ;
+        for ($idx in $idxs)
+        {
+			int $total = `keyframe -q -keyframeCount $crv` ;    // How many keys on this curve?
+			// Figure current Time and Value
+			float $valCs[] = `keyframe -index $idx -q -valueChange $crv` ;
+			float $timeCs[] = `keyframe -index $idx -q -timeChange $crv` ;
+			float $valPs[] = $valCs ;
+			float $valNs[] = $valCs ;
+			float $timePs[] = $timeCs ;
+			float $timeNs[] = $timeCs ;
+			// Figure prev Time and Value
+			if ($idx > 0)
+			{
+    			$valPs = `keyframe -index ($idx-1) -q -valueChange $crv` ;
+    			$timePs = `keyframe -index ($idx-1) -q -timeChange $crv` ;
+			}
+			// Figure next Time and Value
+			if ($idx < $total-1)
+			{
+			    $valNs = `keyframe -index ($idx+1) -q -valueChange $crv` ;
+			    $timeNs = `keyframe -index ($idx+1) -q -timeChange $crv` ;
+			}
+			float $valC = $valCs[0] ;
+			float $valP = $valPs[0] ;
+			float $valN = $valNs[0] ;
+			float $timeC = $timeCs[0] ;
+			float $timeP = $timePs[0] ;
+			float $timeN = $timeNs[0] ;
+			// Make start/end keys nice and not flat
+			if ($idx == 0 && !$bFlatten)
+			{
+				$timeP = $timeC - ($timeN - $timeC) ;
+				$valP = $valC - ($valN - $valC) ;
+			}
+			else if ($idx == ($total-1) && !$bFlatten)
+			{
+				$timeN = $timeC + ($timeC - $timeP) ;
+				$valN = $valC + ($valC - $valP) ;
+			}
+			// Compare changes in value
+			float $valIn = $valC - $valP ;
+			float $valOut = $valN - $valC ;
+			// Compare changes in time
+			float $timeIn = $timeC - $timeP ;
+			float $timeOut = $timeN - $timeC ;
+			// Figure slopes
+			float $slopeIn = 0 ;
+			float $slopeOut = 0 ;
+			if ($timeIn != 0)
+				$slopeIn = $valIn / $timeIn ;
+			if ($timeOut != 0)
+				$slopeOut = $valOut / $timeOut ;
+			// Now set power to be more of whichever one has LESS slope
+			float $powIn = 0.5, $powOut = 0.5;
+			if ($slopeIn + $slopeOut != 0)
+				$powIn = 1.0 - ( abs($slopeIn) / ( abs($slopeIn) + abs($slopeOut) ) ) ;
+			$powOut = 1.0 - $powIn ;
+			// Now use softness value so that as it goes to 1, we reset the weight power evenly to 0.5... so that it becomes more like smooth.
+			$powIn = ((1.0 - $softness) * $powIn ) + ($softness * 0.5) ;
+			$powOut = ((1.0 - $softness) * $powOut ) + ($softness * 0.5) ;
+			float $newSlope = ( $powIn * $slopeIn ) + ( $powOut * $slopeOut ) ;
+			float $ang = atan( $newSlope ) * 180.0 / 3.14159 ;
+			// Update the tangents
+			keyTangent -itt spline -ott spline -time $timeC $crv ;
+			keyTangent -ia $ang -oa $ang -time $timeC $crv ;
+			// Also does this use weighted tangents?
+			int $wts[] = `keyTangent -q -wt $crv` ;
+			if ($wts[0] == 1)
+			{
+				float $inWt = abs($timeIn) / 3.0 ;
+				float $outWt = abs($timeOut) / 3.0 ;
+				keyTangent -iw $inWt -ow $outWt -time $timeC $crv ;
+			}
+		}
+    }
+    waitCursor -state off ;
+    print ("// autoTangent Done. //\n") ;
+}
+
+// --------------------------------------------------------------------------
+
+//----Reset camera position and zoom
+global proc RAT_zoomResetCam()
+{
+	string $viewcam = `lookThru -q` ; 
+	setAttr ($viewcam+".overscan") 1 ;
+	setAttr ($viewcam+".horizontalFilmOffset") 0 ; 
+	setAttr ($viewcam+".verticalFilmOffset") 0 ;
+	intSlider -e -v 100 camZoom_intSlider ;  
+	intSlider -e -v 0 camVerShift_intSlider ;
+	intSlider -e -v 0 camHorShift_intSlider ;
+}
+
+// --------------------------------------------------------------------------
+
+global proc RAT_blastCreateHandles()
+{
+    string $txtHandleIn[], $txtHandleOut[], $handles[], $handleGrp, $mySel[], $selCam, $currPanel, $parCon[], $inStartTime, $inEndTime, $outStartTime, $outEndTime, $children1[], $children2[], $polys[] ;
+    
+    $inStartTime = `textField -q -tx handles_inStart_tField` ;
+    $inEndTime = `textField -q -tx handles_inEnd_tField` ;
+    $outStartTime = `textField -q -tx handles_outStart_tField` ;
+    $outEndTime = `textField -q -tx handles_outEnd_tField` ;
+    if($inStartTime == "" || $inEndTime == "" || $outStartTime == "" || $outEndTime == "")
+        error ">>> Enter handles information" ;
+    $mySel = `ls -sl` ;
+    $currPanel = `getPanel -wf` ;
+    $selCam = `modelPanel -q -camera $currPanel` ;
+    $txtHandleIn = `textCurves -ch 0 -f "Miriam|w400|h-11" -t "Handle IN"` ;
+    $txtHandleOut = `textCurves -ch 0 -f "Miriam|w400|h-11" -t "Handle OUT"` ;
+    $handles = {$txtHandleIn[0],$txtHandleOut[0]} ;
+    for($handle in $handles)
+    {
+        $children1 = `listRelatives -c $txtHandleIn` ;
+        $children2 = `listRelatives -c $children1` ;
+        select -cl ;
+        select $handle ;
+        $handleGrp = `group -n ($handle+"_grp")` ;
+        CenterPivot ;
+        scale .2 .2 .2 $handle ;
+        $parCon = `parentConstraint $selCam $handleGrp` ;
+        setAttr ($handleGrp+".overrideEnabled") 1 ;
+        setAttr ($handleGrp+".overrideDisplayType") 2 ;
+        planarSrf -n ($handle+"_POLYS") -ch 1 -d 3 -ko 0 -tol 0.01 -rn 0 -po 1 $handle ;
+        DeleteHistory ;
+        parent ($handle+"_POLYS") $handle ;
+    }
+    setAttr ($handles[0]+".t") 2.3 3 -10 ;
+    setAttr ($handles[1]+".t") 4 3 -10 ;
+    setKeyframe -v 0 -t (float($inStartTime)-1) -at "visibility" $handles[0] ;
+    setKeyframe -v 1 -t (float($inStartTime)) -at "visibility" $handles[0] ;
+    setKeyframe -v 1 -t (float($inEndTime)) -at "visibility" $handles[0] ;
+    setKeyframe -v 0 -t (float($inEndTime)+1) -at "visibility" $handles[0] ;
+    setKeyframe -v 0 -t (float($outStartTime)-1) -at "visibility" $handles[1] ;
+    setKeyframe -v 1 -t (float($outStartTime)) -at "visibility" $handles[1] ;
+    setKeyframe -v 1 -t (float($outEndTime)) -at "visibility" $handles[1] ;
+    setKeyframe -v 0 -t (float($outEndTime)+1) -at "visibility" $handles[1] ;  
+    select -cl ; 
+    select $mySel ;
+}
+//----Blast
+global proc blastPreset(string $preset)
+{
+    get_sceneInfo ;
+    global string $hhhBlastDest ;
+    if ($preset == "Personal")
+    {
+    	textField -e -text `file -q -namespace` scene_tField ;
+    	checkBox -e -value 1 scene_cBox ;
+    	checkBox -e -value 0 shot_cBox ;
+    	checkBox -e -value 0 version_cBox ;
+    	textField -e -text `getenv "USERNAME"` animator_tField ;
+    	textField -e -text `date -format "DD - MM - YYYY"` -enable off date_tField ;
+    	textField -e -text "960" resWidth_tField ;
+	    textField -e -text "540" resHeight_tField ;
+    	checkBox -e -value 1 status_cBox ; 
+    	checkBox -e -value 1 hideNonGeo_cBox ;
+    	checkBox -e -value 1 -enable 1 displayShotMask_cBox ;
+    	//checkBox -e -value 0 -enable 0 updateShotgun_cBox ;
+    	textField -e -tx "100" blastQuality_tField ;
+    	textField -e -text (`internalVar -uwd` + "playblasts/") destination_tField;
+    }
+    if ($preset == "Red Wire Media Standard")
+    {
+    	textField -e -text `file -q -namespace` scene_tField ;
+    	checkBox -e -value 1 scene_cBox ;
+    	//checkBox -e -value 1 shot_cBox ;
+    	checkBox -e -value 1 version_cBox ;
+    	textField -e -text `getenv "USERNAME"` animator_tField ;
+    	textField -e -text `date -format "DD - MM - YYYY"` -enable off date_tField ;
+    	textField -e -text "960" resWidth_tField ;
+	    textField -e -text "540" resHeight_tField ;
+    	checkBox -e -value 1 status_cBox ; 
+    	checkBox -e -value 1 hideNonGeo_cBox ;
+    	checkBox -e -value 1 -enable 1 displayShotMask_cBox ;
+    	//checkBox -e -value 1 -enable 1 updateShotgun_cBox ;
+    	textField -e -tx "100" blastQuality_tField ;
+    	if ($hhhBlastDest == "N/A")
+    	    textField -e -text (`internalVar -uwd` + "playblasts/") destination_tField;
+    	else
+    	    textField -e -text $hhhBlastDest destination_tField ;
+    }
+}
+
+//--Browse Destination Folder
+global proc browseBlastDestination()
+{    
+    string $blastDestinationDir  = `internalVar -uwd` ;
+    string $destinationName[] = `fileDialog2 -fileMode 3 -startingDirectory $blastDestinationDir -caption "Select Destination Folder" -okCaption "Ok"`;
+    string $browsePath =`fromNativePath ($destinationName[0])` ;
+    if (size($destinationName) != 0)
+        textField -e -text ($browsePath + "/") destination_tField ;
+}
+
+//--Global String
+global proc string RAT_string(string $string)
+{
+    return $string ;
+}
+//--System Date without Time
+global proc string get_sysDate()
+{
+	 string $cmd = "date /t"; 
+	 string $time = `system $cmd`;
+	 int $dateLen = size($time);
+	 int $dateStart = $dateLen -12;
+	 $time = `substring $time $dateStart $dateLen`;
+	 return $time;
+}
+//--Create HUD
+global proc createHUD()
+{
+    string $currSel[] = `ls -sl` ;
+    if (`objExists "shotHUDUpdate*"` == 1 ) 
+		delete "shotHUDUpdate*";
+    string $buf[] = `headsUpDisplay -lh` ;
+	for ($headsUpDisplay in $buf)
+	    headsUpDisplay -rem  $headsUpDisplay ;	
+    displayColor -dormant headsUpDisplayLabels 18 ;
+    displayColor -dormant headsUpDisplayValues 17 ;
+    string $animator = `textField -q -text animator_tField` ;
+    string $sceneInfo = `textField -q -text scene_tField` ;
+    string $version = `textField -q -text version_tField` ;
+    string $shotNum = `textField -q -text shot_tField` ;
+    string $date = `textField -q -text date_tField` ;
+    string $status = `optionMenu -q -v status_oMenu` ;
+	if ($version == "" && `checkBox -q -value version_cBox` == 1)
+	    error ">>> Enter Version" ;
+
+    //--HUD INFO
+    // ViewAxis
+	headsUpDisplay -s 5
+			       -b 2
+			       -vis 0
+			       -pre "viewAxis"
+	               HUDViewAxis ;
+    // Animator
+	headsUpDisplay	-l "Animator     "
+				-allowOverlap 0
+				-section 5
+	            -block 1
+				-labelFontSize "small"
+	            -dataFontSize "small"
+				-command ("RAT_string" + " " + $animator)
+				animatorNameHUD ;
+    // Date	
+	headsUpDisplay -section 5
+		            -block 0
+		            -blockSize "small"
+		            -labelFontSize "small"
+	            	-dataFontSize "small"            
+		            -label "Date             "
+	            	-command "get_sysDate"
+                   	dateHUD ;
+    // Scene Info
+ 	if (`checkBox -q -value scene_cBox` == 1)
+    {                   
+        headsUpDisplay	-l "Scene Title  "
+					-allowOverlap 1
+				    -b 1
+				    -s 0
+				    -dataFontSize large
+				    -command ("RAT_string" + " " + $sceneInfo)
+			    	sceneNameHUD ;
+    }
+    // Version	
+ 	if (`checkBox -q -value version_cBox` == 1)
+	{
+    	headsUpDisplay	-l "Version  "
+    					-allowOverlap 1
+    					-b 1
+    					-s 4
+    					-dataFontSize large
+    					-command ("RAT_string" +  "\"" + "v" + $version  + "\"")
+    					VersionHUD ;
+	}
+    // Status
+ 	if (`checkBox -q -value status_cBox` == 1)
+	{
+		headsUpDisplay	-l "Status   "
+					-allowOverlap 1
+					-b 1
+					-s 7
+					-dataFontSize large
+					-command ("RAT_string" + " \"" + $status + "\"")
+					statusHUD ;
+	}
+    // Frame counter	
+	headsUpDisplay	-section 9
+	                -block 1
+	                -blockSize "small"
+	                -labelFontSize "small"
+	                -label "frame     "
+			    	-dataFontSize large
+			    	-preset "currentFrame"
+			    	frameCounterHUD ;   
+
+    //--RED WIRE MEDIA--//	
+    headsUpDisplay  -section 7
+                    -block 0
+                    -blockSize "small"
+	                -labelFontSize "small"
+                    -dataFontSize large
+                    -label "R E D   W I R E    M E D I A"
+                    redwireHUD ;
+	                    
+    postModelEditorSelectCamera modelPanel4 modelPanel4 0 ;
+	string $currCamera[] = `ls -sl` ;
+	select -cl ;
+    select $currCamera[0];
+    string $currCamShape[] = `pickWalk -d down`;
+    camera -e -displayFilmGate off -displayResolution on -overscan 1.2 $currCamera[0] ;
+	setAttr ($currCamShape[0] + ".displayGateMask") 1 ;
+    setAttr ($currCamShape[0] + ".displayGateMaskColor") -type double3 0 0 0 ;
+    setAttr ($currCamShape[0] + ".displayGateMaskOpacity") 1 ;
+    setAttr ($currCamShape[0] + ".verticalPan") 0 ;
+    setAttr ($currCamShape[0] + ".horizontalPan") 0 ;
+    setAttr ($currCamShape[0] + ".zoom") 1 ;
+    select $currSel ;
+}
+
+//--Remove HUD
+global proc removeHUD()
+{
+	string $buf[] = `headsUpDisplay -lh` ;
+	postModelEditorSelectCamera modelPanel4 modelPanel4 0 ;
+    string $currCamera[] = `ls -sl` ;
+    camera -e -displayFilmGate off -displayResolution off -overscan 1.0 $currCamera[0] ;
+	for ($headsUpDisplay in $buf)headsUpDisplay -rem $headsUpDisplay ;	
+    if (`objExists "shotHUDUpdate*"` == 1 ) 
+		delete "shotHUDUpdate*";
+    headsUpDisplay -s 4 -b 0 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleBackfaces")) -lw 135 -dw 75 -c "objectDetailsBackfaces()" -ev "SelectionChanged" -nc "attributeChange" HUDObjDetBackfaces ;
+	headsUpDisplay -s 4 -b 1 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleSmoothness")) -lw 135 -dw 75 -c "objectDetailsSmoothness()" -ev "SelectionChanged" -nc "attributeChange" HUDObjDetSmoothness ;
+	headsUpDisplay -s 4 -b 2 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleInstance")) -lw 135 -dw 75 -c "objectDetailsInstance()" -ev "SelectionChanged" -nc "instanceChange" HUDObjDetInstance ;
+	headsUpDisplay -s 4 -b 3 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleDisplayLayer")) -lw 135 -dw 75 -c "objectDetailsDisplayLayer()" -ev "SelectionChanged" -nc "connectionChange" HUDObjDetDispLayer ;
+	headsUpDisplay -s 4 -b 4 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleDistanceFromCamera")) -lw 135 -dw 75 -pre "distanceFromCamera" HUDObjDetDistFromCam ;
+	headsUpDisplay -s 4 -b 5 -vis (`optionVar -q objectDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleSelectedObjects")) -lw 135 -dw 75 -c "objectDetailsNumberOfSelectedObjects()" -ev "SelectionChanged" HUDObjDetNumSelObjs ;
+    // Poly Count
+	headsUpDisplay -s 0 -b 0 -vis (`optionVar -q polyCountVisibility`) -l (uiRes("m_initAfter.kHUDTitleVerts")) -lw 50 -dw 50 -pre "polyVerts" HUDPolyCountVerts ;
+	headsUpDisplay -s 0 -b 1 -vis (`optionVar -q polyCountVisibility`) -l (uiRes("m_initAfter.kHUDTitleEdges"))  -lw 50 -dw 50 -pre "polyEdges" HUDPolyCountEdges ;
+	headsUpDisplay -s 0 -b 2 -vis (`optionVar -q polyCountVisibility`) -l (uiRes("m_initAfter.kHUDTitleFaces")) -lw 50 -dw 50 -pre "polyFaces" HUDPolyCountFaces ;
+	headsUpDisplay -s 0 -b 3 -vis (`optionVar -q polyCountVisibility`) -l (uiRes("m_initAfter.kHUDTitleTris")) -lw 50 -dw 50 -pre "polyTriangles" HUDPolyCountTriangles ;
+	headsUpDisplay -s 0 -b 4 -vis (`optionVar -q polyCountVisibility`) -l (uiRes("m_initAfter.kHUDTitleUVs")) -lw 50 -dw 50 -pre "polyUVs" HUDPolyCountUVs ;
+    // Subd details
+	headsUpDisplay -s 0 -b 5 -vis (`optionVar -q subdDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleSubdivCurrentLevel")) -lw 135 -dw 30 -c "subdDetailsCurrentLevel()" -ev "SelectionChanged" -nc "attributeChange" HUDSubdLevel ;
+	headsUpDisplay -s 0 -b 6 -vis (`optionVar -q subdDetailsVisibility`) -l (uiRes("m_initAfter.kHUDTitleSubdivMode")) -lw 135 -dw 30 -c "subdDetailsCurrentMode()" -ev "SelectionChanged" HUDSubdMode ;
+    // Camera Names
+	headsUpDisplay -s 7 -b 0 -vis (`optionVar -q cameraNamesVisibility`) -ao true -ba center -pre "cameraNames" HUDCameraNames ;
+
+    // This HUD is used to display the string.
+    // Its visibility is toggled in toggleHWRendererModelPanel() and the setCameraNamesVisibility()
+	headsUpDisplay -s 2 -b 1 -vis (`optionVar -q cameraNamesVisibility`) -ba center -label (uiRes("m_initAfter.kHUDTitleCameraName")) -pre "renderQuality" HUDHQCameraNames ;
+	
+	string $titleIKBlend = (uiRes("m_initAfter.kHUDTitleIKBlend")) ;
+	string $titleCurrentCharacter = (uiRes("m_initAfter.kHUDTitleCurrentCharacter")) ;
+	string $titlePlaybackSpeed =  (uiRes("m_initAfter.kHUDTitlePlaybackSpeed")) ;
+	string $titleFbikKeyingMode = (uiRes("m_initAfter.kHUDFbikKeyingMode")) ;
+	string $titleFbikKeyType = (uiRes("m_initAfter.kHUDFbikKeyType")) ;	
+	string $titleCurrentFrame = (uiRes("m_initAfter.kHUDCurrentFrameLabel")) ;
+	int $section = 9 ;
+	int $lblWidth = 115 ;
+	if(`about -ev`) 
+    {
+		$section = 3 ;
+		$lblWidth = 135 ;
+    }
+    // Frame Rate
+	headsUpDisplay -s $section -b 0 -vis (`optionVar -q frameRateVisibility`) -ba right -dfs large -da right -dp 1 -pre "frameRate" HUDFrameRate ;
+    // Current Frame
+	headsUpDisplay -s $section -block 1 -blockSize "small" -label $titleCurrentFrame -labelWidth $lblWidth -dataWidth 75 -labelFontSize "small" -dataFontSize "small" -allowOverlap true -blockAlignment "center" -preset	"currentFrame" -vis (`optionVar -q currentFrameVisibility`) HUDCurrentFrame ;
+    // Animation Stuff
+	headsUpDisplay -s $section -b 2 -label $titleIKBlend -dp 1 -dfs "small" -lw $lblWidth -dw 75 -c "animationDetailsIKFK()" -ev "SelectionChanged" -nc "attributeChange" HUDIKSolverState ;
+	headsUpDisplay -s $section -b 3 -label $titleCurrentCharacter -dp 1 -dfs "small" -lw $lblWidth -dw 75 -c "animationDetailsCurrentCharacter()" -ev "NewSceneOpened" HUDCurrentCharacter ;
+	headsUpDisplay -s $section -b 4 -label $titlePlaybackSpeed -dp 1 -dfs "small" -lw $lblWidth -dw 75 -c "animationDetailsPlaybackSpeed()" -ev "timeUnitChanged" HUDPlaybackSpeed ;
+    headsUpDisplay -s $section -b 5 -label $titleFbikKeyingMode -dp 1 -dfs "small" -lw $lblWidth -dw 75 -c "fbikDetailsKeyingMode()" -ev "SelectionChanged" HUDFbikKeyingMode ;
+    headsUpDisplay -s $section -b 6 -label $titleFbikKeyType -dp 1 -dfs "small" -lw $lblWidth -dw 75 -c "fbikDetailsKeyType()" -ev "SelectionChanged" HUDFbikKeyType ;
+	headsUpDisplay -s $section -block 7 -vis (`optionVar -q selectDetailsVisibility`) -lw $lblWidth -preset "softSelect" HUDSoftSelectState ;
+	headsUpDisplay -s $section -block 8 -vis (`optionVar -q selectDetailsVisibility`) -preset "reflection" -lw $lblWidth HUDReflectionState ;
+	string $titleCurrentContainer = (uiRes("m_initAfter.kHUDCurrentContainerLabel")) ;
+    // Current container
+	headsUpDisplay -s $section -block 9 -blockSize "small" -label $titleCurrentContainer -labelWidth $lblWidth -labelFontSize "small" -dataFontSize "small" -command "getCurrentContainer" -event "currentContainerChange" -vis (`optionVar -q currentContainerVisibility`) HUDCurrentContainer;
+    // None of the above animation HUDs had their visibility set according to the option var.  Do that now...
+	setAnimationDetailsVisibility(`optionVar -q animationDetailsVisibility`) ;
+	setFbikDetailsVisibility(`optionVar -q fbikDetailsVisibility`) ;
+	headsUpDisplay -s $section -block 10 -vis (`optionVar -q focalLengthVisibility`) -preset "focalLength" -lw $lblWidth HUDFocalLength ;
+    // View Axis
+	headsUpDisplay -s 5 -b 0 -vis (`optionVar -q viewAxisVisibility`) -pre "viewAxis" HUDViewAxis ;
+	select -cl ;
+}
+
+//--blast Playblast
+global proc blast()
+{   
+    global string $hhhEpi,$hhhSq,$hhhFr,$hhhBlastDest ;
+    global string $gPlayBackSlider ;
+    int $renderFormat = `getAttr defaultRenderGlobals.imageFormat`;
+    setAttr defaultRenderGlobals.imageFormat 32;  
+    string $audio = `timeControl -q -s $gPlayBackSlider` ;
+    string $sceneName = `textField -q -text scene_tField` ;
+    string $blastDestName = `textField -q -text destination_tField`;
+    string $widthTemp = `textField -q -tx resWidth_tField` ;
+    string $heightTemp = `textField -q -tx resHeight_tField` ;
+    string $version = `textField -q -tx version_tField` ;
+    int $versionArchTemp = 0 ;
+	if ($version == "" && `checkBox -q -value version_cBox` == 1)
+	    error ">>> Enter Version" ;
+    int $wid = (int)$widthTemp ;
+    int $hei = (int)$heightTemp ;
+    if($version != "" && `checkBox -q -value version_cBox` == 1)
+        $versionArchTemp = (int)$version -1;
+    string $padding;	
+    if (`size ($version)` == 1)
+        $padding = "0";
+    else
+        $padding = "";            
+    $version=($padding+$version); 
+    if (size ((string)$versionArchTemp) == 1)
+        $padding = "0";
+    else
+        $padding = "";            
+    string $versionArch = ($padding + (string)$versionArchTemp);
+    string $blastFileName = $sceneName ;
+    string $blastDir = $blastDestName ;
+    string $blastFullPath ;
+    if($version != "" && `checkBox -q -value version_cBox` == 1)
+        $blastFullPath = ($blastDir + $blastFileName + "_v" + $version);
+    else
+        $blastFullPath = ($blastDir + $blastFileName) ;
+    $result = `confirmDialog -title "Please Confirm Information." 
+                    -message ("Scene: " + $sceneName + "\nVersion: " + $version + "\nDestination: " + $blastDir ) 
+                    -button "Ok" -button "Cancel" -defaultButton "Ok"
+                    -cancelButton "Cancel" -dismissString "Cancel"                         
+                    -icon "information"`;
+    if ($result == "Ok")
+    {        
+        //Check for destination folder and create it if it doesn't exist
+        string $result = "Continue";
+        if(`filetest -d $blastDir` == "0")
+            sysFile -makeDir $blastDir ;           
+        if(`filetest -w $blastFullPath` == "1")
+            $result = `confirmDialog -title "Warning: version already exists." 
+                            -message "version you are trying to create already exists in the chosen location. Do you want to overwrite?"  
+                            -button "Continue" -button "Cancel" -defaultButton "Continue" 
+                            -cancelButton "Cancel" -dismissString "Cancel"                         
+                            -icon "information"`;
+        if ($result == "Continue")
+        {
+            if (`checkBox -q -value displayShotMask_cBox` == 1)
+                createHUD ;
+            RAT_zoomResetCam ;
+            // Gates
+            postModelEditorSelectCamera modelPanel4 modelPanel4 0 ;
+        	string $currCamera[] = `ls -sl` ;
+            string $allCamShapes[] = `ls -type "camera"` ;
+            string $allCams[] = `listRelatives -p $allCamShapes`;
+        	select -clear;
+            for ($cam in $allCams)
+                camera -e -displayFilmGate off -displayResolution on -overscan 1.2 $cam ;
+	        for ($camShape in $allCamShapes)
+	        {
+                setAttr ($camShape + ".displayGateMask") 1 ;
+                setAttr ($camShape + ".displayGateMaskColor") -type double3 0 0 0 ;
+                setAttr ($camShape + ".displayGateMaskOpacity") 1 ; 
+            }
+            select $currCamera[0];
+            string $currCamShape[] = `pickWalk -d down` ;
+            string $activePanel = `getPanel -wf`;
+            modelEditor -e -grid false $activePanel ;
+            if(`checkBox -q -value hideNonGeo_cBox` == 1)
+            {
+                modelEditor -e -allObjects 0 $activePanel ;
+                modelEditor -e -cameras 1 $activePanel ;
+                modelEditor -e -polymeshes true $activePanel ;
+            }
+            int $quality = int(`textField -q -tx blastQuality_tField`) ;
+            //make playblast     
+            playblast -format avi -sound $audio -filename $blastFullPath -clearCache 1 -viewer 1 -showOrnaments 1 -fp 4 -percent $quality -quality $quality -compression "MS-CRAM" -w $wid -h $hei ;
+            select -clear ;
+            modelEditor -e -nurbsCurves true $activePanel ;
+            setAttr defaultRenderGlobals.imageFormat $renderFormat ;
+            removeHUD ;
+            modelEditor -e -grid true $activePanel ;
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+
+global proc RAT_connectToShotgun()
+{
+    waitCursor -state on ;
+    button -e -l "...CONNECTING..." connectToShotgun_button ;
+    python("from shotgun_api3 import Shotgun") ;
+    python("import dictionary as dc") ;
+    python("reload(dc)") ;
+    python("sg = Shotgun(dc.domainName,'hhh_sn_001',dc.appKey['hhh_sn_001'])") ;
+    button -e -l "CONNECTED" -bgc 0.3 0.7 0.3 connectToShotgun_button ;
+    waitCursor -state off ;
+    print "Connected to Shotgun\n" ;
+}
+
+// --------------------------------------------------------------------------
+
+global proc RAT_updateShotgun()
+{
+    string $scene = `textField -q -text scene_tField` ;
+    string $animator = `textField -q -text animator_tField` ;
+    string $version = `textField -q -text version_tField` ;
+    string $destPath = `textField -q -text destination_tField` ;
+    string $sceneName = $scene+"_v"+$version ;
+    python("import rw_shotgun as rw_shotgun \nreload(rw_shotgun) \nrws = rw_shotgun.rw_shotgun() \nrws.playblast_update('"+$sceneName+"','"+$animator+"','"+$version+"','"+$destPath+"')") ;
+    print "Shotgun updated.\n" ;
+}
+
+// --------------------------------------------------------------------------
+
+global proc RAT_feedbackCmd()
+{
+    //string $fback_to=`optionMenu -q -v feedback_to_oMenu` ;
+    string $to="lee.dunham@clothcatanimation.co.uk" ;
+    string $fback_from=`textField -q -tx feedback_from_tField`+"@clothcatanimation.co.uk" ;
+    string $fback_date=`textField -q -tx feedback_date_tField` ;
+    string $fback_subject=`optionMenu -q -v feedback_subject_oMenu` ;
+    string $fback_subjectOther=`textField -q -tx feedback_subject_tField` ;
+    string $fback_info=`scrollField -q -tx feedback_body_scrollField` ;
+    
+    string $subject,$subjectExtra,$data ;
+    
+    
+    if(size($fback_info)==0)
+        error ">>> No Information on Subject given!" ;   
+    if(size($fback_subjectOther)>0)
+        $subjectExtra=": "+$fback_subjectOther ;
+    
+    
+    $subject=$fback_subject+$subjectExtra ;
+    $data="Date - "+$fback_date+"\\n \\nSubject - "+$subject+"\\n \\nInfo -\\n"+(substituteAllString($fback_info, "\n", "\\n")) ;
+    
+    python("import rw_pythonMail as pm\nreload(pm)") ;
+    python("pm.pythonMail(sender='"+$fback_from+"', to='"+$to+"', subject='"+$subject+"', text='"+$data+"')") ;
+    print "Feedback sent.\n" ;
+}
