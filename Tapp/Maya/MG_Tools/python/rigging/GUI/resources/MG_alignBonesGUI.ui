@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>278</width>
+    <height>409</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MG_alignBones V1.00</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupUI">
+     <property name="title">
+      <string/>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QListWidget" name="bonesLW"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="loadPB">
+        <property name="text">
+         <string>LOAD BONES</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="hierCB">
+        <property name="text">
+         <string>Hierarchy</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="reverseCB">
+        <property name="text">
+         <string>Reverse Normal</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QToolBox" name="modeTB">
+        <property name="minimumSize">
+         <size>
+          <width>140</width>
+          <height>140</height>
+         </size>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <widget class="QWidget" name="virtualP">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>240</width>
+           <height>86</height>
+          </rect>
+         </property>
+         <attribute name="label">
+          <string>Virtual Plane</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QPushButton" name="orientVirtualPB">
+            <property name="text">
+             <string>ORIENT BONES</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="geometryP">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>240</width>
+           <height>86</height>
+          </rect>
+         </property>
+         <attribute name="label">
+          <string>Geometry Plane</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QPushButton" name="initPB">
+            <property name="text">
+             <string>INIT GEOMETRY</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="orientGeoPB">
+            <property name="text">
+             <string>ORIENT BONES</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

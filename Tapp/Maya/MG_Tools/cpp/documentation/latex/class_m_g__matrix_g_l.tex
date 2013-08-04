@@ -1,0 +1,144 @@
+\hypertarget{class_m_g__matrix_g_l}{\section{M\-G\-\_\-matrix\-G\-L Class Reference}
+\label{class_m_g__matrix_g_l}\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}}
+}
+
+
+lets you draw a matrix and its component in maya viewport  
+
+
+
+
+{\ttfamily \#include $<$M\-G\-\_\-matrix\-G\-L.\-h$>$}
+
+Inheritance diagram for M\-G\-\_\-matrix\-G\-L\-:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{class_m_g__matrix_g_l}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{class_m_g__matrix_g_l_ac995256ef4a535232fa6788b7fe1189f}{virtual M\-Status {\bfseries compute} (const M\-Plug \&plug, M\-Data\-Block \&data)}\label{class_m_g__matrix_g_l_ac995256ef4a535232fa6788b7fe1189f}
+
+\item 
+\hypertarget{class_m_g__matrix_g_l_a75e45bee0da671dad1d512e7d7dd9d3a}{virtual void {\bfseries draw} (M3d\-View \&, const M\-Dag\-Path \&, M3d\-View\-::\-Display\-Style, M3d\-View\-::\-Display\-Status)}\label{class_m_g__matrix_g_l_a75e45bee0da671dad1d512e7d7dd9d3a}
+
+\item 
+\hypertarget{class_m_g__matrix_g_l_a242cc3e4b56142522d4480069d67c57b}{virtual bool {\bfseries is\-Bounded} () const }\label{class_m_g__matrix_g_l_a242cc3e4b56142522d4480069d67c57b}
+
+\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{class_m_g__matrix_g_l_a5993a93a0856c270e1b46a31afc1d599}{static void $\ast$ {\bfseries creator} ()}\label{class_m_g__matrix_g_l_a5993a93a0856c270e1b46a31afc1d599}
+
+\item 
+\hypertarget{class_m_g__matrix_g_l_adbdd2fb4a340382c56397cbd99c3d9f2}{static M\-Status {\bfseries initialize} ()}\label{class_m_g__matrix_g_l_adbdd2fb4a340382c56397cbd99c3d9f2}
+
+\end{DoxyCompactItemize}
+\subsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+static M\-Type\-Id \hyperlink{class_m_g__matrix_g_l_a75dbb68a56bba1adac39fb0ba441b9db}{type\-Id}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a87088f365313b8f54aff381bb775a362}{up\-Vec\-X}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a744964298d0a1ea37d1f1ea6942d9f41}{up\-Vec\-Y}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a06ff38ae5efea2c74a4090cca49c4691}{up\-Vec\-Z}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a484c3621def1530581ceaf161accedc4}{up\-Vec}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_ab52c9ead5ed04f77cecf150494a4da79}{ball\-Size}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_aa022ca409a739f2da5c80b29abd6f6dd}{fake\-Out}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_af55678e43c32e023ed89249bc7c852cd}{input\-Matrix}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a632284a9caf3b739eb410610b884bd6f}{draw\-It}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_aac3b7859f05b724dd4183bc429053c70}{arrow\-Size}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a2fba3030eb5babc2f98467d75177bf09}{draw\-Text}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_aebfa4a8cfd4b7e50f16d8687adc82750}{draw\-Text\-Vec}
+\item 
+static M\-Object \hyperlink{class_m_g__matrix_g_l_a480b4cbf60606b4cf9310d7daa2c3765}{draw\-Text\-Pos}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+lets you draw a matrix and its component in maya viewport 
+
+\begin{DoxyAuthor}{Author}
+Marco Giordano 
+\end{DoxyAuthor}
+\begin{DoxyDate}{Date}
+02/11/2013 
+\end{DoxyDate}
+\begin{DoxyVersion}{Version}
+latest version \-: V1 
+
+changeload versions \-: \par
+ V1 \-: \par
+
+\begin{DoxyItemize}
+\item initial release \par
+ V1.\-5 \-: \par
+
+\item Added drawing text attributes \par
+
+\end{DoxyItemize}
+\end{DoxyVersion}
+node name \-: \hyperlink{class_m_g__matrix_g_l}{M\-G\-\_\-matrix\-G\-L}.
+
+details \-: This node lets you draw a matrix and its component in maya viewport, usefull when you need to debug transformations , just plug a matrix in the input\-Matrix attribute ,if you have refresh problem , connect something to the fake output attributr
+
+example create node \-: (M\-E\-L) create\-Node \hyperlink{class_m_g__matrix_g_l}{M\-G\-\_\-matrix\-G\-L}. 
+
+\subsection{Member Data Documentation}
+\hypertarget{class_m_g__matrix_g_l_aac3b7859f05b724dd4183bc429053c70}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!arrow\-Size@{arrow\-Size}}
+\index{arrow\-Size@{arrow\-Size}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{arrow\-Size}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::arrow\-Size\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_aac3b7859f05b724dd4183bc429053c70}
+This attribute sets the arrow size \hypertarget{class_m_g__matrix_g_l_ab52c9ead5ed04f77cecf150494a4da79}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!ball\-Size@{ball\-Size}}
+\index{ball\-Size@{ball\-Size}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{ball\-Size}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::ball\-Size\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_ab52c9ead5ed04f77cecf150494a4da79}
+This attribute sets the size of the ball showing the point \hypertarget{class_m_g__matrix_g_l_a632284a9caf3b739eb410610b884bd6f}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!draw\-It@{draw\-It}}
+\index{draw\-It@{draw\-It}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{draw\-It}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::draw\-It\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a632284a9caf3b739eb410610b884bd6f}
+This attribute sets whether or not to draw the arrows \hypertarget{class_m_g__matrix_g_l_a2fba3030eb5babc2f98467d75177bf09}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!draw\-Text@{draw\-Text}}
+\index{draw\-Text@{draw\-Text}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{draw\-Text}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::draw\-Text\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a2fba3030eb5babc2f98467d75177bf09}
+This attribute sets if to draw the debug text or not \hypertarget{class_m_g__matrix_g_l_a480b4cbf60606b4cf9310d7daa2c3765}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!draw\-Text\-Pos@{draw\-Text\-Pos}}
+\index{draw\-Text\-Pos@{draw\-Text\-Pos}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{draw\-Text\-Pos}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::draw\-Text\-Pos\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a480b4cbf60606b4cf9310d7daa2c3765}
+This attribute sets if to draw the debug text relative to the position , works only if draw\-Text is on \hypertarget{class_m_g__matrix_g_l_aebfa4a8cfd4b7e50f16d8687adc82750}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!draw\-Text\-Vec@{draw\-Text\-Vec}}
+\index{draw\-Text\-Vec@{draw\-Text\-Vec}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{draw\-Text\-Vec}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::draw\-Text\-Vec\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_aebfa4a8cfd4b7e50f16d8687adc82750}
+This attribute sets if to draw the debug text relative to the vectors , works only if draw\-Text is on \hypertarget{class_m_g__matrix_g_l_aa022ca409a739f2da5c80b29abd6f6dd}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!fake\-Out@{fake\-Out}}
+\index{fake\-Out@{fake\-Out}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{fake\-Out}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::fake\-Out\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_aa022ca409a739f2da5c80b29abd6f6dd}
+This attribute is used to force the recompute \hypertarget{class_m_g__matrix_g_l_af55678e43c32e023ed89249bc7c852cd}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!input\-Matrix@{input\-Matrix}}
+\index{input\-Matrix@{input\-Matrix}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{input\-Matrix}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::input\-Matrix\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_af55678e43c32e023ed89249bc7c852cd}
+This attribute holds the matrix that has to be drawn \hypertarget{class_m_g__matrix_g_l_a75dbb68a56bba1adac39fb0ba441b9db}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!type\-Id@{type\-Id}}
+\index{type\-Id@{type\-Id}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{type\-Id}]{\setlength{\rightskip}{0pt plus 5cm}M\-Type\-Id M\-G\-\_\-matrix\-G\-L\-::type\-Id\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a75dbb68a56bba1adac39fb0ba441b9db}
+The node id \hypertarget{class_m_g__matrix_g_l_a484c3621def1530581ceaf161accedc4}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!up\-Vec@{up\-Vec}}
+\index{up\-Vec@{up\-Vec}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{up\-Vec}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::up\-Vec\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a484c3621def1530581ceaf161accedc4}
+The up\-Vec used to draw the arrows \hypertarget{class_m_g__matrix_g_l_a87088f365313b8f54aff381bb775a362}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!up\-Vec\-X@{up\-Vec\-X}}
+\index{up\-Vec\-X@{up\-Vec\-X}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{up\-Vec\-X}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::up\-Vec\-X\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a87088f365313b8f54aff381bb775a362}
+The X component of the up\-Vec used to draw the arrows \hypertarget{class_m_g__matrix_g_l_a744964298d0a1ea37d1f1ea6942d9f41}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!up\-Vec\-Y@{up\-Vec\-Y}}
+\index{up\-Vec\-Y@{up\-Vec\-Y}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{up\-Vec\-Y}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::up\-Vec\-Y\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a744964298d0a1ea37d1f1ea6942d9f41}
+The Y component of the up\-Vec used to draw the arrows \hypertarget{class_m_g__matrix_g_l_a06ff38ae5efea2c74a4090cca49c4691}{\index{M\-G\-\_\-matrix\-G\-L@{M\-G\-\_\-matrix\-G\-L}!up\-Vec\-Z@{up\-Vec\-Z}}
+\index{up\-Vec\-Z@{up\-Vec\-Z}!MG_matrixGL@{M\-G\-\_\-matrix\-G\-L}}
+\subsubsection[{up\-Vec\-Z}]{\setlength{\rightskip}{0pt plus 5cm}M\-Object M\-G\-\_\-matrix\-G\-L\-::up\-Vec\-Z\hspace{0.3cm}{\ttfamily [static]}}}\label{class_m_g__matrix_g_l_a06ff38ae5efea2c74a4090cca49c4691}
+The Z component of the up\-Vec used to draw the arrows 
+
+The documentation for this class was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+C\-:/\-Users/giordi/\-Desktop/\-P\-R\-O\-G\-E\-T\-T\-I\-\_\-\-I\-N\-\_\-\-C\-O\-R\-S\-O/\-C/\-M\-G\-\_\-\-Tools/cpp/\-M\-G\-\_\-matrix\-G\-L/src/M\-G\-\_\-matrix\-G\-L.\-h\end{DoxyCompactItemize}
