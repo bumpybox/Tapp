@@ -40,7 +40,7 @@ import sys
 import os
 
 import Red9_General as r9General
-import Red9.startup.setup as r9Setup
+import Tapp.Maya.Red9.startup.setup as r9Setup
 
 
 '''
@@ -1798,7 +1798,7 @@ class MetaRig(MetaClass):
         on this object instance only.
         @param attr: attr to store the cached pose to
         '''
-        import Red9.core.Red9_PoseSaver as r9Pose
+        import Tapp.Maya.Red9.core.Red9_PoseSaver as r9Pose
         self.poseCache=r9Pose.PoseData()
         self.poseCache.metaPose=True
         self.poseCache.poseSave(self.mNode, filepath=None, useFilter=True)
@@ -1817,7 +1817,7 @@ class MetaRig(MetaClass):
         @param nodes: if given load only the cached pose to the given nodes
         @param attr: attr in which a pose has been stored internally on the mRig
         '''
-        import Red9.core.Red9_PoseSaver as r9Pose
+        import Tapp.Maya.Red9.core.Red9_PoseSaver as r9Pose
         if attr:
             self.poseCache=r9Pose.PoseData()
             self.poseCache.metaPose=True

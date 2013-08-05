@@ -9,7 +9,7 @@ import Tapp.Maya.rigging.meta as meta
 reload(meta)
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
-import Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 
 class base(object):
     
@@ -40,17 +40,19 @@ class system(base):
         
         self.chain.addSystem(self.system)
         
-        #storing guide data
-        data=mrs.chainToDict(self.chain)
-        self.system.addAttr('guideData', data)
-        
         #create points
         self.createPoints(self.chain)
     
     def createPoints(self,node):
         
-        node.point=self.system.addPoint(name=node.name.split('|')[-1])
+        #creating and assigning meta point
+        node.point=self.system.addPoint(name=node.name)
         
+        #storing guide data on meta point
+        data=mrs.pointToDict(node)
+        node.point.addAttr('guideData',data)
+        
+        #recurse into children
         if node.children:
             
             for child in node.children:
@@ -207,12 +209,34 @@ class ik(base):
             
             count=chain.index(node)
             
-            prefix=node.name.split('|')[-1]+'_ik_'
+            prefix=node.name+'_ik_'
             
             #building root control, polevector and end control
             if 'IK_control' in node.data:
+                
+                #create control plug
+                plug=cmds.spaceLocator(name=prefix+'plug')[0]
+                
+                chain[0].plug['ik_control']=plug
+                
+                #setup control plug
+                mru.Snap(None,plug,
+                         translation=node.translation,
+                         rotation=node.rotation)
+                
+                phgrp=cmds.group(empty=True,n=(plug+'_PH'))
+                sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+                
+                mru.Snap(plug,phgrp)
+                mru.Snap(plug,sngrp)
+                
+                cmds.parent(phgrp,rootgrp)
+                cmds.parent(sngrp,phgrp)
+                cmds.parent(plug,sngrp)
+                
+                #creating control
                 cnt=mru.Sphere(prefix+'cnt',size=node.scale[0])
-            
+                
                 #setup control
                 mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
                 node.control['ik']=cnt
@@ -223,23 +247,14 @@ class ik(base):
                 mru.Snap(cnt,phgrp)
                 mru.Snap(cnt,sngrp)
                 
+                cmds.parent(phgrp,plug)
                 cmds.parent(sngrp,phgrp)
+                cmds.parent(cnt,sngrp)
                 
-                plug=cmds.spaceLocator(name=prefix+'plug')[0]
+                #adding plug and cnt to meta system
+                node.point.addPlug(plug,plugType='control')
                 
-                chain[0].plug['ik_control']=plug
-                
-                mru.Snap(None,plug,
-                         translation=node.translation,
-                         rotation=node.rotation)
-                
-                cmds.parent(plug,sngrp)
-                cmds.parent(cnt,plug)
-                
-                self.chains[0][0].point.addPlug(plug,plugType='control')
-                
-                if node.point:
-                    node.point.addControl(cnt,controlSystem='ik')
+                node.point.addControl(cnt,controlSystem='ik')
                 
                 #root control
                 if node==chain[0]:
@@ -248,8 +263,6 @@ class ik(base):
                     cmds.parent(startStretch,cnt)
                     
                     cmds.parent(node.socket['ik'],cnt)
-                    
-                    cmds.parent(phgrp,rootgrp)
                 
                 #polevector control
                 if node.children and node!=chain[0]:
@@ -289,7 +302,6 @@ class ik(base):
                     cmds.poleVectorConstraint(cnt,ikResult['ikHandle'])
                     
                     cmds.parent(polevectorSHP,rootgrp)
-                    cmds.parent(phgrp,rootgrp)
                 
                 #end control
                 if not node.children:
@@ -297,9 +309,6 @@ class ik(base):
                     cmds.pointConstraint(cnt,endStretch)
                     
                     cmds.orientConstraint(cnt,node.socket['ik'])
-                    #cmds.parent(node.socket['ik'],cnt)
-                    
-                    cmds.parent(phgrp,rootgrp)
 
 class fk(base):
     

@@ -27,7 +27,7 @@ There's also now the resulting markered rig in the tests\testFiles folder!
 '''
 
 #base imports
-import Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 import maya.cmds as cmds
 reload(r9Meta)
 

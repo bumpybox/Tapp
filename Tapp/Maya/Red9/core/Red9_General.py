@@ -127,7 +127,7 @@ def getScriptEditorSelection():
         ScriptEditorHistory scroll. We need to copy the selected text to the
         clipboard then pull it back afterwards.
         '''
-        import Red9.packages.pyperclip as pyperclip
+        import Tapp.Maya.Red9.packages.pyperclip as pyperclip
         control=mel.eval("$v=$gLastFocusedCommandControl")
         executer=mel.eval("$v=$gLastFocusedCommandExecuter")
         reporter=mel.eval("$v=$gLastFocusedCommandReporter")

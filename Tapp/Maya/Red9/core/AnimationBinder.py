@@ -34,7 +34,7 @@ import maya.mel as mel
 import maya.cmds as cmds
 import pymel.core as pm
 import Red9_AnimationUtils as r9Anim
-import Red9.startup.setup as r9Setup
+import Tapp.Maya.Red9.startup.setup as r9Setup
 
 import logging
 logging.basicConfig()

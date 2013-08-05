@@ -1,4 +1,4 @@
-import Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 
 class MetaRoot(r9Meta.MetaRig):
     '''
@@ -21,7 +21,7 @@ class MetaRoot(r9Meta.MetaRig):
         @param mirrorSide: Side to designate the system. This is an enum: Centre,Left,Right
         @param nodeName: Name of the MetaClass network node created
         '''
-        import Red9.core.Red9_AnimationUtils as r9Anim
+        import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim
         r9Anim.MirrorHierarchy()._validateMirrorEnum(side) #??? do we just let the enum __setattr__ handle this?
         
         subSystem=MetaSystem(name='meta_%s_%s' % (side.lower()[0],systemType.lower()))
@@ -129,7 +129,7 @@ class MetaPoint(MetaSystem):
     
     def __bindData__(self):
         
-        self.addAttr('name','')
+        pass
 
 class MetaSocket(r9Meta.MetaRig):
     '''
@@ -143,7 +143,7 @@ class MetaSocket(r9Meta.MetaRig):
         '''
         Overload call to wipe MetaRig bind data
         '''
-        self.addAttr('system','')
+        pass
 
 class MetaControl(r9Meta.MetaRig):
     '''
@@ -178,4 +178,3 @@ class MetaPlug(r9Meta.MetaRig):
 # picks up all inherited subclasses when Red9.core is imported
 #========================================================================   
 r9Meta.registerMClassInheritanceMapping()
-r9Meta.registerMClassNodeMapping()

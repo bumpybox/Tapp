@@ -17,7 +17,7 @@ ALL NODES must have unique names or you may get unexpected  results!
 ================================================================
 '''
 
-import Red9.startup.setup as r9Setup
+import Tapp.Maya.Red9.startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_AnimationUtils as r9Anim
@@ -25,7 +25,7 @@ import Red9_Meta as r9Meta
 
 import maya.cmds as cmds
 import os
-import Red9.packages.configobj as configobj
+import Tapp.Maya.Red9.packages.configobj as configobj
 import time
 import getpass
 import sys

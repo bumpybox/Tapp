@@ -67,10 +67,10 @@ import startup.setup as setup
 def start(Menu=True):
     import maya.cmds as cmds
     #Run the main setups. If you DON'T want the Red9Menu set 'Menu=False'
-    cmds.evalDeferred("Red9.setup.start(Menu=%s)" % Menu)
+    cmds.evalDeferred("Tapp.Maya.Red9.setup.start(Menu=%s)" % Menu)
     #Import the core, not this is on LowPriority to make sure it 
     #happens after the main setups have finished above
-    cmds.evalDeferred("import Red9.core",lp=True)
+    cmds.evalDeferred("import Tapp.Maya.Red9.core",lp=True)
 
 
 

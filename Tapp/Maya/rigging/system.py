@@ -103,9 +103,6 @@ system('|clavicle').build()
 #system('MetaSystem').build()
 
 '''
-troubleshoot:
-    why are ik plugs hooking to the wrong point?
-
 need to restructure meta system
     have metaPoint that stores guideData
     metaPoints are for local referencing of nodes

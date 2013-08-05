@@ -60,7 +60,7 @@ from __future__ import with_statement #required only for Maya2009/8
 import maya.cmds as cmds
 import maya.mel as mel
 
-import Red9.startup.setup as r9Setup
+import Tapp.Maya.Red9.startup.setup as r9Setup
 import Red9_CoreUtils as r9Core
 import Red9_General as r9General
 import Red9_PoseSaver as r9Pose
@@ -71,7 +71,7 @@ import os
 import random
 import sys
 
-import Red9.packages.configobj as configobj
+import Tapp.Maya.Red9.packages.configobj as configobj
 #import configobj
 
 import logging

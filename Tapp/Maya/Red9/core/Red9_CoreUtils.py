@@ -23,8 +23,8 @@ from functools import partial
 import re
 import random
 
-import Red9.packages.configobj as configobj
-import Red9.startup.setup as r9Setup
+import Tapp.Maya.Red9.packages.configobj as configobj
+import Tapp.Maya.Red9.startup.setup as r9Setup
 
 import Red9_General as r9General
 import Red9_AnimationUtils as r9Anim

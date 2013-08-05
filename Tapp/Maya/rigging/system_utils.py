@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-import Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 import Tapp.Maya.rigging.meta as meta
 import Tapp.Maya.rigging.utils as mru
 reload(mru)
@@ -22,6 +22,22 @@ def chainToDict(node):
             children.append(chainToDict(child))
         
         result['children']=children
+    
+    return result
+
+def pointToDict(node):
+    
+    #copy node data
+    copy=node.__dict__.copy()
+    
+    #filter data
+    result={}
+    
+    result['translation']=copy['translation']
+    result['rotation']=copy['rotation']
+    result['scale']=copy['scale']
+    result['name']=copy['name']
+    result['data']=copy['data']
     
     return result
 

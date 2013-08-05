@@ -99,86 +99,86 @@ def menuSetup():
     cmds.menuItem('redNineAnimItem',l="AnimationToolkit",
                   ann="Main Red9 Animation Toolkit - Note: CTRL+click opens this non-docked",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.AnimationUI.show()")
+                  c="import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.AnimationUI.show()")
     cmds.menuItem('redNineSnapItem',l="Simple Snap",ann="Simple Snap transforms",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.AnimFunctions.snap()")
+                  c="import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.AnimFunctions.snap()")
     cmds.menuItem('redNineSearchItem',l="SearchUI",ann="Main Red9 Search toolkit",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_CoreUtils as r9Core;r9Core.FilterNode_UI.show()")
+                  c="import Tapp.Maya.Red9.core.Red9_CoreUtils as r9Core;r9Core.FilterNode_UI.show()")
     cmds.menuItem('redNineLockChnsItem',l="LockChannels",ann="Manage Channel States",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_CoreUtils as r9Core;r9Core.LockChannels.UI.show()") 
+                  c="import Tapp.Maya.Red9.core.Red9_CoreUtils as r9Core;r9Core.LockChannels.UI.show()") 
     cmds.menuItem('redNineMetaUIItem',l="MetaNodeUI",ann="MetaNode Scene Searcher",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_Meta as r9Meta;r9Meta.MClassNodeUI.show()") 
+                  c="import Tapp.Maya.Red9.core.Red9_Meta as r9Meta;r9Meta.MClassNodeUI.show()") 
     cmds.menuItem('redNineReporterUIItem',l="Scene Reviewer",ann="Launch the Scene Review Reporter",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_Tools as r9Tools;r9Tools.SceneReviewerUI.show()") 
+                  c="import Tapp.Maya.Red9.core.Red9_Tools as r9Tools;r9Tools.SceneReviewerUI.show()") 
     cmds.menuItem('redNineMoCapItem',l="MouseMoCap",ann="Record the Mouse Input to selected object",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_Tools as r9Tools;r9Tools.RecordAttrs.show()")  
+                  c="import Tapp.Maya.Red9.core.Red9_Tools as r9Tools;r9Tools.RecordAttrs.show()")  
     cmds.menuItem('redNineRandomizerItem',l="Randomize Keyframes",
                   ann="Randomize selected Keys - also available in the GraphEditor>curve menu",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.showOptions()")  
+                  c="import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.RandomizeKeys.showOptions()")  
     
     cmds.menuItem('redNineFilterCurvesItem',l="Interactive Curve Filter",
                   ann="Interactive Curve Filter - also available in the GraphEditor>curve menu",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.FilterCurves.show()")      
+                  c="import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.FilterCurves.show()")      
     
 
     cmds.menuItem('redNineMirrorUIItem',l="MirrorSetup",
                   ann="Temp UI to help setup the Mirror Markers on a rig",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.MirrorSetup().show()")
+                  c="import Tapp.Maya.Red9.core.Red9_AnimationUtils as r9Anim;r9Anim.MirrorSetup().show()")
     
     cmds.menuItem('redNineCameraTrackItem',l='CameraTracker',sm=True,p='redNineMenuItemRoot')  
     cmds.menuItem('redNineCamerTrackFixedItem',l="CameraTracker > panning",
                   ann="Panning Camera : CameraTrack the current view with the current camera",
                   p='redNineCameraTrackItem', echoCommand=True, 
-                  c="from Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack.cameraTrackView(fixed=True)") 
+                  c="from Tapp.Maya.Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack.cameraTrackView(fixed=True)") 
     if not mayaVersion()<=2009:
         cmds.menuItem(optionBox=True,
                   ann="setup the tracker step and tightness",
                   p='redNineCameraTrackItem', echoCommand=True, 
-                  c="from Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack(fixed=True)._showUI()")      
+                  c="from Tapp.Maya.Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack(fixed=True)._showUI()")      
     cmds.menuItem('redNineCamerTrackFreeItem',l="CameraTracker > tracking",
                   ann="Tracking Camera : CameraTrack the current view with the current camera",
                   p='redNineCameraTrackItem', echoCommand=True,
-                  c="from Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack.cameraTrackView(fixed=False)") 
+                  c="from Tapp.Maya.Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack.cameraTrackView(fixed=False)") 
     if not mayaVersion()<=2009:
         cmds.menuItem(optionBox=True,
                   ann="setup the tracker step and tightness",
                   p='redNineCameraTrackItem', echoCommand=True, 
-                  c="from Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack(fixed=False)._showUI()")    
+                  c="from Tapp.Maya.Red9.core.Red9_AnimationUtils import CameraTracker as camTrack;camTrack(fixed=False)._showUI()")    
     
     cmds.menuItem(divider=True,p='redNineMenuItemRoot')
     cmds.menuItem('redNineAnimBndItem',l="Animation Binder",ann="My Autodesk MasterClass toolset",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="import Red9.core.AnimationBinder as animBnd;animBnd.AnimBinderUI()._UI()")  
+                  c="import Tapp.Maya.Red9.core.AnimationBinder as animBnd;animBnd.AnimBinderUI()._UI()")  
     cmds.menuItem(divider=True,p='redNineMenuItemRoot')
     cmds.menuItem('redNineBlogItem',l="Red9_Blog",ann="Open Red9Blog",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="Red9.setup.red9_blog()")
+                  c="Tapp.Maya.Red9.setup.red9_blog()")
     cmds.menuItem('redNineVimeoItem',l="Red9_Vimeo Channel",ann="Open Red9Vimeo Channel",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="Red9.setup.red9_vimeo()")
+                  c="Tapp.Maya.Red9.setup.red9_vimeo()")
     cmds.menuItem('redNineFacebookItem',l="Red9_Facebook",ann="Open Red9Facebook page",
                   p='redNineMenuItemRoot', echoCommand=True,
-                  c="Red9.setup.red9_facebook()")
-    cmds.menuItem(l="Red9_Details",c='Red9.setup.red9ContactInfo()',p='redNineMenuItemRoot')    
+                  c="Tapp.Maya.Red9.setup.red9_facebook()")
+    cmds.menuItem(l="Red9_Details",c='Tapp.Maya.Red9.setup.red9ContactInfo()',p='redNineMenuItemRoot')    
     cmds.menuItem(divider=True,p='redNineMenuItemRoot') 
     
     cmds.menuItem('redNineDebuggerItem',l='Red9 Debugger',sm=True,p='redNineMenuItemRoot')
     cmds.menuItem('redNineDebugItem',l="systems: DEBUG",ann="Turn all the logging to Debug",
-                  echoCommand=True, c="Red9.core._setlogginglevel_debug()")
+                  echoCommand=True, c="Tapp.Maya.Red9.core._setlogginglevel_debug()")
     cmds.menuItem('redNineInfoItem',l="systems: INFO",ann="Turn all the logging to Info only",
-                  echoCommand=True, c="Red9.core._setlogginglevel_info()")
+                  echoCommand=True, c="Tapp.Maya.Red9.core._setlogginglevel_info()")
     cmds.menuItem(divider=True,p='redNineDebuggerItem')
     cmds.menuItem('redNineReloadItem',l="systems: reload()",ann="Force a complete reload on the core of Red9",
-                  echoCommand=True, c="Red9.core._reload()")
+                  echoCommand=True, c="Tapp.Maya.Red9.core._reload()")
     
 def addToMayaMenus():
     try:
@@ -189,7 +189,7 @@ def addToMayaMenus():
             cmds.menuItem(divider=True)
             cmds.menuItem('redNineOpenFolderItem',l="Red9: OpenSceneFolder",ann="Open the folder containing the current Maya Scene",
                           p='mainFileMenu', echoCommand=True,
-                          c="import maya.cmds as cmds;import Red9.core.Red9_General as r9General;r9General.os_OpenFileDirectory(cmds.file(q=True,sn=True))")
+                          c="import maya.cmds as cmds;import Tapp.Maya.Red9.core.Red9_General as r9General;r9General.os_OpenFileDirectory(cmds.file(q=True,sn=True))")
     except:
         log.debug('gMainFileMenu not found >> catch for unitTesting')
 
@@ -236,7 +236,7 @@ def red9_help(*args):
     '''
     open up the Red9 help docs
     '''
-    import Red9.core.Red9_General as r9General #lazy load
+    import Tapp.Maya.Red9.core.Red9_General as r9General #lazy load
     helpFile=os.path.join(red9ModulePath(),'docs',r'Red9-StudioTools Help.pdf')
     r9General.os_OpenFile(helpFile)
     
@@ -244,21 +244,21 @@ def red9_blog(*args):
     '''
     open up the Red9 Blog
     '''
-    import Red9.core.Red9_General as r9General #lazy load
+    import Tapp.Maya.Red9.core.Red9_General as r9General #lazy load
     r9General.os_OpenFile('http://red9-consultancy.blogspot.com/')
 
 def red9_facebook(*args):
     '''
     open up the Red9 Facebook Page
     '''
-    import Red9.core.Red9_General as r9General #lazy load
+    import Tapp.Maya.Red9.core.Red9_General as r9General #lazy load
     r9General.os_OpenFile('http://www.facebook.com/Red9StudioPack/')   
     
 def red9_vimeo(*args):
     '''
     open up the Red9 Vimeo Channel
     '''
-    import Red9.core.Red9_General as r9General #lazy load
+    import Tapp.Maya.Red9.core.Red9_General as r9General #lazy load
     r9General.os_OpenFile('https://vimeo.com/user9491246')
       
 def red9_getVersion():

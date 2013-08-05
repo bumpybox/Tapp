@@ -70,7 +70,7 @@ and return that!
 ================================================================
 '''
 
-import Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 import maya.cmds as cmds
 
 	
