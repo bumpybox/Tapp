@@ -66,6 +66,8 @@ class Form(base,form):
         self.importAlembic_pushButton.released.connect(self.on_importAlembic_pushButton_released)
         self.swapAlembic_pushButton.released.connect(self.on_swapAlembic_pushButton_released)
         
+        self.arnold_addSubdivision_pushButton.released.connect(self.on_arnold_addSubdivision_pushButton_released)
+        
         self.addSubdivision_pushButton.released.connect(self.on_addSubdivision_pushButton_released)
         self.setSubdivision_pushButton.released.connect(self.on_setSubdivision_pushButton_released)
         self.addDomeLight_pushButton.released.connect(self.on_addDomeLight_pushButton_released)
@@ -168,6 +170,11 @@ class Form(base,form):
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         mel.eval('FileTextureManager')
+    
+    def on_arnold_addSubdivision_pushButton_released(self):
+        
+        import Tapp.Maya.lighting.arnold as mla
+        mla.addSubdivision()
         
 def show():
     #closing previous dialog

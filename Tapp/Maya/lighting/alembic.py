@@ -92,7 +92,7 @@ def swapAlembic(alembic):
             
             cmds.connectAttr(sourceAttr,target+'.'+attr)
         
-        cmds.delete(node)
+        #cmds.delete(node)
     
     #undo end
     cmds.undoInfo(closeChunk=True)
