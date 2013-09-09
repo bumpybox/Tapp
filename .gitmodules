@@ -1,4 +1,0 @@
-[submodule "Tapp/Maya/MG_Tools"]
-	path = Tapp/Maya/MG_Tools
-	url = https://github.com/tokejepsen/MG_Tools.git
-	branch = update1.2
