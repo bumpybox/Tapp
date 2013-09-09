@@ -103,10 +103,6 @@ system('|clavicle').build()
 #system('MetaSystem').build()
 
 '''
-need to restructure meta system
-    have metaPoint that stores guideData
-    metaPoints are for local referencing of nodes
-
 need two methods:
     adding socket to controller
     parent control or system plug to something
@@ -115,6 +111,9 @@ need to have a method for adding controls/sockets to systems
     so I can add fk clavicle to ik system
 
 revise system to guide
+
+by default have extra control on start, if not specified
+used parent constraints to build static parenting
 
 hook up controls visibility to blend control
 build spline

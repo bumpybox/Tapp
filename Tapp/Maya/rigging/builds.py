@@ -9,7 +9,7 @@ import Tapp.Maya.rigging.meta as meta
 reload(meta)
 import Tapp.Maya.rigging.system_utils as mrs
 reload(mrs)
-import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
+import Tapp.Maya.utils.ZvParentMaster as muz
 
 class base(object):
     
@@ -215,24 +215,24 @@ class ik(base):
             if 'IK_control' in node.data:
                 
                 #create control plug
-                plug=cmds.spaceLocator(name=prefix+'plug')[0]
+                cntplug=cmds.spaceLocator(name=prefix+'plug')[0]
                 
-                chain[0].plug['ik_control']=plug
+                chain[0].plug['ik_control']=cntplug
                 
                 #setup control plug
-                mru.Snap(None,plug,
+                mru.Snap(None,cntplug,
                          translation=node.translation,
                          rotation=node.rotation)
                 
-                phgrp=cmds.group(empty=True,n=(plug+'_PH'))
-                sngrp=cmds.group(empty=True,n=(plug+'_SN'))
+                phgrp=cmds.group(empty=True,n=(cntplug+'_PH'))
+                sngrp=cmds.group(empty=True,n=(cntplug+'_SN'))
                 
-                mru.Snap(plug,phgrp)
-                mru.Snap(plug,sngrp)
+                mru.Snap(cntplug,phgrp)
+                mru.Snap(cntplug,sngrp)
                 
-                cmds.parent(phgrp,rootgrp)
+                cmds.parent(phgrp,plug)
                 cmds.parent(sngrp,phgrp)
-                cmds.parent(plug,sngrp)
+                cmds.parent(cntplug,sngrp)
                 
                 #creating control
                 cnt=mru.Sphere(prefix+'cnt',size=node.scale[0])
@@ -247,12 +247,12 @@ class ik(base):
                 mru.Snap(cnt,phgrp)
                 mru.Snap(cnt,sngrp)
                 
-                cmds.parent(phgrp,plug)
+                cmds.parent(phgrp,cntplug)
                 cmds.parent(sngrp,phgrp)
                 cmds.parent(cnt,sngrp)
                 
-                #adding plug and cnt to meta system
-                node.point.addPlug(plug,plugType='control')
+                #adding cntplug and cnt to meta system
+                node.point.addPlug(cntplug,plugType='control')
                 
                 node.point.addControl(cnt,controlSystem='ik')
                 
@@ -447,7 +447,7 @@ class blend(base):
         #building blends
         self.rootgrp=cmds.group(empty=True,name='blend_grp')
         
-        self.__build(self.chain)
+        self._build(self.chain)
         
         #setup extra control
         mru.Snap(None,cnt,translation=self.chain.translation,rotation=self.chain.rotation)
@@ -468,7 +468,7 @@ class blend(base):
             
         for system in node.control:
             
-            mNode=r9Meta.MetaClass(node.control[system])
+            mNode=meta.r9Meta.MetaClass(node.control[system])
             mNode=mNode.getParentMetaNode()
             
             sockets=[]
@@ -483,7 +483,7 @@ class blend(base):
             for child in node.children:
                 self.switch(child)
     
-    def __build(self,node):
+    def _build(self,node):
         
         prefix=node.name.split('|')[-1]+'_bld_'
         
@@ -514,12 +514,28 @@ class blend(base):
                 if ('_'+s+'_') in target:
                     
                     cmds.connectAttr(self.control+'.'+s,con+'.'+target)
+            
+            
+            if node.parent:
+                
+                if s not in node.parent.socket:
+                    
+                    print 'needs a parent:'
+                    print node.point
+                    print node.__dict__
+                    print 'plug:'
+                    print node.plug[s]
+                    print 'socket:'
+                    print node.parent.socket['blend']
+                    
+                    cmds.select(node.plug[s],node.parent.socket['blend'])
+                    muz.attach()
         
         node.socket['blend']=socket
         
         if node.children:
             for child in node.children:
-                self.__build(child)
+                self._build(child)
 
 
 class guide(base):

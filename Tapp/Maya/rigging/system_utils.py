@@ -1,7 +1,7 @@
 import maya.cmds as cmds
 
-import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 import Tapp.Maya.rigging.meta as meta
+import Tapp.Maya.Red9.core.Red9_Meta as r9Meta
 import Tapp.Maya.rigging.utils as mru
 reload(mru)
 import Tapp.Maya.rigging.chain as mrc
