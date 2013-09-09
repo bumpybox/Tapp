@@ -1,26 +1,57 @@
 import os
+import webbrowser
+import xml.etree.ElementTree as xml
+from cStringIO import StringIO
 
-from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omu
-import sip
+
+import shiboken
+import pysideuic
+from PySide import QtGui, QtCore
 
 import Tapp.Maya.settings as ms
 import Tapp.Maya.utils as mu
 
-uiPath=os.path.dirname(__file__)+'/resources/settings_gui.ui'
-uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\settings\gui\resources/settings_gui.ui'
-form,base=uic.loadUiType(uiPath)
-
-# MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
+    """
+    Get the main Maya window as a QtGui.QMainWindow instance
+    @return: QtGui.QMainWindow instance of the top level Maya windows
+    """
     ptr = omu.MQtUtil.mainWindow()
-    return sip.wrapinstance(long(ptr), QtCore.QObject)
+    if ptr is not None:
+        return shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+
+
+def loadUiType(uiFile):
+    """
+    Pyside lacks the "loadUiType" command, so we have to convert the ui file to py code in-memory first
+    and then execute it in a special frame to retrieve the form_class.
+    """
+    parsed = xml.parse(uiFile)
+    widget_class = parsed.find('widget').get('class')
+    form_class = parsed.find('class').text
+
+    with open(uiFile, 'r') as f:
+        o = StringIO()
+        frame = {}
+
+        pysideuic.compileUi(f, o, indent=0)
+        pyc = compile(o.getvalue(), '<string>', 'exec')
+        exec pyc in frame
+
+        #Fetch the base_class and form class based on their type in the xml from designer
+        form_class = frame['Ui_%s'%form_class]
+        base_class = eval('QtGui.%s'%widget_class)
+    return form_class, base_class
+
+uiPath=os.path.dirname(__file__)+'/resources/settings_gui.ui'
+form,base=loadUiType(uiPath)
 
 class Form(base,form):
     def __init__(self, parent=maya_main_window()):
-        super(base,self).__init__(parent)
+        super(Form,self).__init__(parent)
         self.setupUi(self)
         
         self.setObjectName('tapp_settings')
@@ -29,6 +60,8 @@ class Form(base,form):
         self.launchWin=False
         
         self.readSettings()
+        
+        self.create_connections()
     
     def readSettings(self):
         
@@ -41,8 +74,16 @@ class Form(base,form):
         
         #reading launch at startup
         launchWin=settings['launchWindowAtStartup']
-        self.launchWindowAtStartup_checkBox.setCheckState(launchWin)
-        self.launchWin=launchWin
+        if launchWin==True:
+            self.launchWindowAtStartup_checkBox.setCheckState(QtCore.Qt.CheckState(True))
+            self.launchWin=True
+        else:
+            self.launchWindowAtStartup_checkBox.setCheckState(QtCore.Qt.CheckState(False))
+    
+    def create_connections(self):
+        
+        self.setRepository_pushButton.released.connect(self.on_setRepository_pushButton_released)
+        self.saveSettings_pushButton.released.connect(self.on_saveSettings_pushButton_released)
     
     def on_setRepository_pushButton_released(self):
         
@@ -79,7 +120,7 @@ class Form(base,form):
             launchWin=True
                 
         #collecting data
-        data={'repositoryPath':self.repoPath,'launchWindowAtStartup':launchWin}
+        data={'repositoryPath':str(self.repoPath),'launchWindowAtStartup':launchWin}
         
         ms.setSettings(data)
         
@@ -95,4 +136,4 @@ def show():
     win=Form()
     win.show()
 
-show()
+#show()

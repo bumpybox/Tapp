@@ -1,67 +1,187 @@
 import os
 import webbrowser
+import xml.etree.ElementTree as xml
+from cStringIO import StringIO
 
-from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omu
-import sip
+
+import shiboken
+import pysideuic
+from PySide import QtGui, QtCore
 
 import Tapp.Maya.animation.character as character
+reload(character)
 import Tapp.Maya.animation.tools as tools
+reload(tools)
 import Tapp.Maya.utils.ZvParentMaster as muz
+reload(muz)
 import Tapp.Maya.animation.utils as mau
+reload(mau)
 import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
+reload(maumlb)
 import Tapp.Maya.animation.utils.ml_hold as maumlh
+reload(maumlh)
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
+reload(maumlk)
+import Tapp.Maya.utils.paie as paie
+reload(paie)
+
+def maya_main_window():
+    """
+    Get the main Maya window as a QtGui.QMainWindow instance
+    @return: QtGui.QMainWindow instance of the top level Maya windows
+    """
+    ptr = omu.MQtUtil.mainWindow()
+    if ptr is not None:
+        return shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+
+
+def loadUiType(uiFile):
+    """
+    Pyside lacks the "loadUiType" command, so we have to convert the ui file to py code in-memory first
+    and then execute it in a special frame to retrieve the form_class.
+    """
+    parsed = xml.parse(uiFile)
+    widget_class = parsed.find('widget').get('class')
+    form_class = parsed.find('class').text
+
+    with open(uiFile, 'r') as f:
+        o = StringIO()
+        frame = {}
+
+        pysideuic.compileUi(f, o, indent=0)
+        pyc = compile(o.getvalue(), '<string>', 'exec')
+        exec pyc in frame
+
+        #Fetch the base_class and form class based on their type in the xml from designer
+        form_class = frame['Ui_%s'%form_class]
+        base_class = eval('QtGui.%s'%widget_class)
+    return form_class, base_class
 
 uiPath=os.path.dirname(__file__)+'/resources/animation.ui'
-form,base=uic.loadUiType(uiPath)
-
-# MQtUtil class exists in Maya 2011 and up
-def maya_main_window():
-    ptr = omu.MQtUtil.mainWindow()
-    return sip.wrapinstance(long(ptr), QtCore.QObject)
+form,base=loadUiType(uiPath)
 
 class Form(base,form):
     def __init__(self, parent=maya_main_window()):
-        super(base,self).__init__(parent)
+        super(Form,self).__init__(parent)
         self.setupUi(self)
         
         self.setObjectName('tatDialog')
+        
+        self.create_connections()
+        
+        self.character_start_pushButton.setEnabled(False)
+        self.character_end_pushButton.setEnabled(False)
+        
+        self.character_start_lineEdit.setReadOnly(False)
+        self.character_start_lineEdit.setReadOnly(False)
+        
+        self.character_start_lineEdit.setEnabled(False)
+        self.character_end_lineEdit.setEnabled(False)
     
     def create_connections(self):
-        #///character connections///
-        self.connect(self.ik_button, QtCore.SIGNAL('clicked()'),character.IkSwitch)
-        self.connect(self.fk_button, QtCore.SIGNAL('clicked()'),character.FkSwitch)
-        self.connect(self.zeroControl_button, QtCore.SIGNAL('clicked()'),character.ZeroControl)
-        self.connect(self.zeroLimb_button, QtCore.SIGNAL('clicked()'),character.ZeroLimb)
-        self.connect(self.zeroCharacter_button, QtCore.SIGNAL('clicked()'),character.ZeroCharacter)
-        self.connect(self.keyLimb_button, QtCore.SIGNAL('clicked()'),character.KeyLimb)
-        self.connect(self.keyCharacter_button, QtCore.SIGNAL('clicked()'),character.KeyCharacter)
-        self.connect(self.selectLimb_button, QtCore.SIGNAL('clicked()'),character.SelectLimb)
-        self.connect(self.selectCharacter_button, QtCore.SIGNAL('clicked()'),character.SelectCharacter)
         
-        #///tools connections///
-        self.connect(self.tools_zvParentMaster, QtCore.SIGNAL('clicked()'),muz.ZvParentMaster)
-        self.connect(self.tools_zvParentMasterHelp, QtCore.SIGNAL('clicked()'),self.zvParentMasterHelp)
-        self.connect(self.tools_breakdownDragger, QtCore.SIGNAL('clicked()'),maumlb.drag)
-        self.connect(self.tools_breakdownDraggerHelp, QtCore.SIGNAL('clicked()'),self.breakdownDraggerHelp)
-        self.connect(self.tools_holdKey, QtCore.SIGNAL('clicked()'),maumlh.ui)
-        self.connect(self.tools_holdKeyHelp, QtCore.SIGNAL('clicked()'),self.holdKeyHelp)
-        self.connect(self.tools_keyValueDragger, QtCore.SIGNAL('clicked()'),maumlk.drag)
-        self.connect(self.tools_keyValueDraggerHelp, QtCore.SIGNAL('clicked()'),self.keyValueDraggerHelp)
-        self.connect(self.tools_keyCleanUp, QtCore.SIGNAL('clicked()'),self.keyCleanUp_click)
-        self.connect(self.tools_exportAnim, QtCore.SIGNAL('clicked()'),tools.ExportAnim)
-        self.connect(self.tools_importAnim, QtCore.SIGNAL('clicked()'),tools.ImportAnim)
+        #character---
+        self.character_ik_pushButton.released.connect(self.on_character_ik_pushButton_released)
+        self.character_fk_pushButton.released.connect(self.on_character_fk_pushButton_released)
+        self.character_zerocontrol_pushButton.released.connect(self.on_character_zerocontrol_pushButton_released)
+        self.character_zerolimb_pushButton.released.connect(self.on_character_zerolimb_pushButton_released)
+        self.character_zerocharacter_pushButton.released.connect(self.on_character_zerocharacter_pushButton_released)
+        self.character_keylimb_pushButton.released.connect(self.on_character_keylimb_pushButton_released)
+        self.character_keycharacter_pushButton.released.connect(self.on_character_keycharacter_pushButton_released)
+        self.character_selectlimb_pushButton.released.connect(self.on_character_selectlimb_pushButton_released)
+        self.character_selectcharacter_pushButton.released.connect(self.on_character_selectcharacter_pushButton_released)
+        
+        self.character_range_checkBox.stateChanged.connect(self.character_range)
+        self.character_start_pushButton.released.connect(self.character_start)
+        self.character_getTimeline_pushButton.released.connect(self.character_timeline)
+        
+        #tools---
+        self.tools_zvparentmaster_pushButton.released.connect(self.on_tools_zvparentmaster_pushButton_released)
+        self.tools_zvparentmasterhelp_pushButton.released.connect(self.on_tools_zvparentmasterhelp_pushButton_released)
+        self.tools_breakdowndragger_pushButton.released.connect(self.on_tools_breakdowndragger_pushButton_released)
+        self.tools_breakdowndraggerhelp_pushButton.released.connect(self.on_tools_breakdowndraggerhelp_pushButton_released)
+        self.tools_holdkey_pushButton.released.connect(self.on_tools_holdkey_pushButton_released)
+        self.tools_holdkeyhelp_pushButton.released.connect(self.on_tools_holdkeyhelp_pushButton_released)
+        self.tools_keyvaluedragger_pushButton.released.connect(self.on_tools_keyvaluedragger_pushButton_released)
+        self.tools_keyvaluedraggerhelp_pushButton.released.connect(self.on_tools_keyvaluedraggerhelp_pushButton_released)
+        self.tools_keycleanup_pushButton.released.connect(self.on_tools_keycleanup_pushButton_released)
+        self.tools_keycleanuphelp_pushButton.released.connect(self.on_tools_keycleanuphelp_pushButton_released)
+        self.tools_changeRotationOrder_pushButton.released.connect(self.on_tools_changeRotationOrder_pushButton_released)
+        self.tools_changeRotationOrderHelp_pushButton.released.connect(self.on_tools_changeRotationOrderHelp_pushButton_released)
+        self.tools_ghosting_pushButton.released.connect(self.on_tools_ghosting_pushButton_released)
+        self.tools_ghostingHelp_pushButton.released.connect(self.on_tools_ghostingHelp_pushButton_released)
+        self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
+        self.tools_importMayaFile_pushButton.released.connect(self.on_tools_importMayaFile_pushButton_released)
+        
+        self.tools_paie_pushButton.released.connect(self.tools_paie)
+    
+    def tools_paie(self):
+        
+        paie.GUI()
+    
+    def character_range(self):
+        
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            self.character_start_pushButton.setEnabled(True)
+            self.character_end_pushButton.setEnabled(True)
+            
+            self.character_start_lineEdit.setEnabled(True)
+            self.character_end_lineEdit.setEnabled(True)
+        
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Unchecked:
+            self.character_start_pushButton.setEnabled(False)
+            self.character_end_pushButton.setEnabled(False)
+            
+            self.character_start_lineEdit.setEnabled(False)
+            self.character_end_lineEdit.setEnabled(False)
+            
+            self.character_start_lineEdit.clear()
+            self.character_end_lineEdit.clear()
+    
+    def character_start(self):
+        
+        t=cmds.currentTime(q=True)
+        self.character_start_lineEdit.setText(str(t))
+    
+    def character_end(self):
+        
+        t=cmds.currentTime(q=True)
+        self.character_end_lineEdit.setText(str(t))
+    
+    def character_timeline(self):
+        
+        minT=cmds.playbackOptions(q=True,min=True)
+        maxT=cmds.playbackOptions(q=True,max=True)
+        
+        self.character_start_lineEdit.setText(str(minT))
+        self.character_end_lineEdit.setText(str(maxT))
     
     def on_character_ik_pushButton_released(self):
         
-        character.IkSwitch()
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            
+            start=int(float(self.character_start_lineEdit.text()))
+            end=int(float(self.character_end_lineEdit.text()))
+            
+            character.switch('ik',timeRange=True, start=start, end=end)
+            
+        else:
+            character.switch('ik')
     
     def on_character_fk_pushButton_released(self):
         
-        character.FkSwitch()
+        if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
+            
+            start=int(float(self.character_start_lineEdit.text()))
+            end=int(float(self.character_end_lineEdit.text()))
+            
+            character.switch('fk',timeRange=True, start=start, end=end)
+            
+        else:
+            character.switch('fk')
     
     def on_character_zerocontrol_pushButton_released(self):
         
@@ -202,6 +322,52 @@ class Form(base,form):
     def on_tools_ghostingHelp_pushButton_released(self):
         
         webbrowser.open('https://vimeo.com/50029607')
+    
+    def on_tools_rat_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing rat util
+        melPath=parentDir+'/utils/RAT.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #launching rat gui
+        uiPath=parentDir+'/utils/RAT_ui.ui'
+        uiPath=uiPath.replace('\\','/')
+        mel.eval('RAT_GUI(1,"%s")' % uiPath)
+    
+    def on_tools_importMayaFile_pushButton_released(self):
+        
+        workspace=cmds.workspace(q=True,fullName=True)
+        workspace=os.path.abspath(os.path.join(workspace, os.pardir))
+        workspace=os.path.abspath(os.path.join(workspace, os.pardir))
+        workspace=os.path.join(workspace,'publish')
+        
+        #getting file path and name
+        basicFilter = "MAYA (*.ma)"
+        filePath=cmds.fileDialog2(fileFilter=basicFilter, dialogStyle=1,
+                                  fileMode=1,startingDirectory=workspace,
+                                  caption='Import Maya File')
+        
+        if filePath!=None:
+            
+            #replace reference
+            cmds.file(filePath,i=True,namespace=':')
+            
+            #setting timeline
+            lastKey=int(cmds.findKeyframe( 'grandpa:c_spine1_master_cnt', which="last" ))
+            firstKey=cmds.findKeyframe( 'grandpa:c_spine1_master_cnt', which="first" )
+            
+            cmds.playbackOptions(min=firstKey)
+            cmds.playbackOptions(max=lastKey)
+            
+            cmds.playbackOptions(ast=firstKey)
+            cmds.playbackOptions(aet=lastKey)
+            
+            #final notification
+            cmds.confirmDialog( title='FINISHED', message='mocap imported')
 
 def show():
     #closing previous dialog

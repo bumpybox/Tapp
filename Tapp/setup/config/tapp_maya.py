@@ -43,7 +43,7 @@ def TappInstall_browse(*args):
             path=cmds.internalVar(upd=True)+'Tapp.yml'
             
             f=open(path,'w')
-            data='{\'repositoryPath\':\''+repoPath+'\',\'launchWindowAtStartup\':False}'
+            data='{launchWindowAtStartup: False, repositoryPath: \''+repoPath+'\'}'
             f.write(data)
             f.close()
     
@@ -69,13 +69,14 @@ def Tapp():
         
         settings=f.read()
         
-        #a bit of brute force to get yaml data
-        settings=settings.replace('repositoryPath','\'repositoryPath\'')
-        settings=settings.replace('launchWindowAtStartup','\'launchWindowAtStartup\'')
-        settings=settings.replace('!!python/unicode','')
-        settings=settings.replace(' ','')
-        settings=settings.replace('false','False')
+        #brute force from yaml to ast
+        settings=settings.replace('{','{\'').replace(':','\':').replace(', ',', \'')
+        settings=settings.replace('\n','')
         settings=settings.replace('true','True')
+        settings=settings.replace('false','False')
+        
+        #compensate for drive letter
+        settings=settings.replace('\':/',':/')
         
         settings=ast.literal_eval(settings)
              

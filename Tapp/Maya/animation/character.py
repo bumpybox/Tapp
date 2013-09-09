@@ -3,15 +3,34 @@ import maya.cmds as cmds
 import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.rigging.utils as mru
 
-def FkSwitch():
-    __switch__('fk')
-
-def IkSwitch():
-    __switch__('ik')
-
-def __switch__(mode):
+def switch(mode,timeRange=False,start=0,end=0):
+    
     #undo enable
     cmds.undoInfo(openChunk=True)
+    
+    #error checking for selection count
+    nodeSelection=cmds.ls(selection=True)
+    
+    if len(nodeSelection)>=1:
+    
+        if timeRange:
+            
+            for count in xrange(start,end):
+                
+                cmds.currentTime(count)
+                
+                __switch__(mode)
+            
+        else:
+            
+            __switch__(mode)
+    
+    else:
+        cmds.warning('Nothing is selected!')
+    
+    cmds.undoInfo(closeChunk=True)
+
+def __switch__(mode):
     
     #error checking for selection count
     nodeSelection=cmds.ls(selection=True)
@@ -70,10 +89,10 @@ def __switch__(mode):
                         scl[count]=switchscl[count]/transscl[count]
                 
                 cmds.xform(transformNode,r=True,scale=scl)
+                
+                cmds.setKeyframe(transformNode)
     else:
         cmds.warning('Nothing is selected!')
-    
-    cmds.undoInfo(closeChunk=True)
 
 def __zeroNode__(node):
     if (cmds.getAttr('%s.tx' % node,lock=True))!=True:

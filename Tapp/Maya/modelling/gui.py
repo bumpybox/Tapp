@@ -1,25 +1,56 @@
 import os
 import webbrowser
+import xml.etree.ElementTree as xml
+from cStringIO import StringIO
 
-from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omu
-import sip
+
+import shiboken
+import pysideuic
+from PySide import QtGui
 
 import Tapp.Maya.modelling.utils as mmu
 
-uiPath=os.path.dirname(__file__)+'/resources/modelling.ui'
-form,base=uic.loadUiType(uiPath)
-
-# MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
+    """
+    Get the main Maya window as a QtGui.QMainWindow instance
+    @return: QtGui.QMainWindow instance of the top level Maya windows
+    """
     ptr = omu.MQtUtil.mainWindow()
-    return sip.wrapinstance(long(ptr), QtCore.QObject)
+    if ptr is not None:
+        return shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+
+
+def loadUiType(uiFile):
+    """
+    Pyside lacks the "loadUiType" command, so we have to convert the ui file to py code in-memory first
+    and then execute it in a special frame to retrieve the form_class.
+    """
+    parsed = xml.parse(uiFile)
+    widget_class = parsed.find('widget').get('class')
+    form_class = parsed.find('class').text
+
+    with open(uiFile, 'r') as f:
+        o = StringIO()
+        frame = {}
+
+        pysideuic.compileUi(f, o, indent=0)
+        pyc = compile(o.getvalue(), '<string>', 'exec')
+        exec pyc in frame
+
+        #Fetch the base_class and form class based on their type in the xml from designer
+        form_class = frame['Ui_%s'%form_class]
+        base_class = eval('QtGui.%s'%widget_class)
+    return form_class, base_class
+
+uiPath=os.path.dirname(__file__)+'/resources/modelling.ui'
+form,base=loadUiType(uiPath)
 
 class Form(base,form):
     def __init__(self, parent=maya_main_window()):
-        super(base,self).__init__(parent)
+        super(Form,self).__init__(parent)
         self.setupUi(self)
         
         self.setObjectName('tapp_modelling')
@@ -28,6 +59,19 @@ class Form(base,form):
         
         self.posVerts=None
         self.upVert=None
+    
+        self.create_connections()
+    
+    def create_connections(self):
+        
+        self.loadPositionVerts_pushButton.released.connect(self.on_loadPositionVerts_pushButton_released)
+        self.loadUpVert_pushButton.released.connect(self.on_loadUpVert_pushButton_released)
+        self.create_pushButton.released.connect(self.on_create_pushButton_released)
+        self.scatter_pushButton.released.connect(self.on_scatter_pushButton_released)
+        self.scatterInfo_pushButton.released.connect(self.on_scatterInfo_pushButton_released)
+        self.symmetry_pushButton.released.connect(self.on_symmetry_pushButton_released)
+        self.detachSeparate_pushButton.released.connect(self.on_detachSeparate_pushButton_released)
+        self.roadKill_pushButton.released.connect(self.on_roadKill_pushButton_released)
     
     def on_loadPositionVerts_pushButton_released(self):
         

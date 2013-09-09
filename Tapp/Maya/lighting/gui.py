@@ -1,27 +1,78 @@
 import os
+import webbrowser
+import xml.etree.ElementTree as xml
+from cStringIO import StringIO
 
-from PyQt4 import QtCore, QtGui,uic
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omu
-import sip
+
+import shiboken
+import pysideuic
+from PySide import QtGui, QtCore
 
 import Tapp.Maya.lighting.alembic as alembic
 
-uiPath=os.path.dirname(__file__)+'/resources/lighting_gui.ui'
-form,base=uic.loadUiType(uiPath)
-
-# MQtUtil class exists in Maya 2011 and up
 def maya_main_window():
+    """
+    Get the main Maya window as a QtGui.QMainWindow instance
+    @return: QtGui.QMainWindow instance of the top level Maya windows
+    """
     ptr = omu.MQtUtil.mainWindow()
-    return sip.wrapinstance(long(ptr), QtCore.QObject)
+    if ptr is not None:
+        return shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+
+
+def loadUiType(uiFile):
+    """
+    Pyside lacks the "loadUiType" command, so we have to convert the ui file to py code in-memory first
+    and then execute it in a special frame to retrieve the form_class.
+    """
+    parsed = xml.parse(uiFile)
+    widget_class = parsed.find('widget').get('class')
+    form_class = parsed.find('class').text
+
+    with open(uiFile, 'r') as f:
+        o = StringIO()
+        frame = {}
+
+        pysideuic.compileUi(f, o, indent=0)
+        pyc = compile(o.getvalue(), '<string>', 'exec')
+        exec pyc in frame
+
+        #Fetch the base_class and form class based on their type in the xml from designer
+        form_class = frame['Ui_%s'%form_class]
+        base_class = eval('QtGui.%s'%widget_class)
+    return form_class, base_class
+
+uiPath=os.path.dirname(__file__)+'/resources/lighting.ui'
+form,base=loadUiType(uiPath)
 
 class Form(base,form):
     def __init__(self, parent=maya_main_window()):
-        super(base,self).__init__(parent)
+        super(Form,self).__init__(parent)
         self.setupUi(self)
         
         self.setObjectName('tapp_lighting')
+        
+        self.create_connections()
+    
+    def create_connections(self):
+        
+        self.fileTextureManager_pushButton.released.connect(self.on_fileTextureManager_pushButton_released)
+        self.addRimLight_pushButton.released.connect(self.on_addRimLight_pushButton_released)
+        
+        self.exportAlembic_pushButton.released.connect(self.on_exportAlembic_pushButton_released)
+        self.importAlembic_pushButton.released.connect(self.on_importAlembic_pushButton_released)
+        self.swapAlembic_pushButton.released.connect(self.on_swapAlembic_pushButton_released)
+        
+        self.arnold_addSubdivision_pushButton.released.connect(self.on_arnold_addSubdivision_pushButton_released)
+        
+        self.addSubdivision_pushButton.released.connect(self.on_addSubdivision_pushButton_released)
+        self.setSubdivision_pushButton.released.connect(self.on_setSubdivision_pushButton_released)
+        self.addDomeLight_pushButton.released.connect(self.on_addDomeLight_pushButton_released)
+        self.createTechPasses_pushButton.released.connect(self.on_createTechPasses_pushButton_released)
+        self.addObjectID_pushButton.released.connect(self.on_addObjectID_pushButton_released)
     
     def on_exportAlembic_pushButton_released(self):
         
@@ -119,6 +170,11 @@ class Form(base,form):
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         mel.eval('FileTextureManager')
+    
+    def on_arnold_addSubdivision_pushButton_released(self):
+        
+        import Tapp.Maya.lighting.arnold as mla
+        mla.addSubdivision()
         
 def show():
     #closing previous dialog
