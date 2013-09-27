@@ -154,7 +154,7 @@ def implicitSphere(name,group=False,size=1.0):
     #return
     return node
 
-def Square(name,group=False,size=1.0):
+def Square(name='square_cnt',group=False,size=1.0):
     ''' Creates a square shape.
         If group is True, will group control and
         return a list [group,control].
@@ -183,7 +183,7 @@ def Square(name,group=False,size=1.0):
     #return
     return node
 
-def FourWay(name,group=False,size=1.0):
+def FourWay(name='fourway_cnt',group=False,size=1.0):
     ''' Creates a four leg arrow shape.
         If group is True, will group control and
         return a list [group,control].
@@ -225,7 +225,7 @@ def FourWay(name,group=False,size=1.0):
     #return
     return node
 
-def Circle(name,group=False,size=1.0):
+def Circle(name='circle_cnt',group=False,size=1.0):
     ''' Creates a circle shape.
         If group is True, will group control and
         return a list [group,control].
@@ -255,7 +255,7 @@ def Circle(name,group=False,size=1.0):
     #return
     return node
 
-def Box(name,group=False,size=1.0):
+def Box(name='box_cnt',group=False,size=1.0):
     ''' Creates a box shape.
         If group is True, will group control and
         return a list [group,control].
@@ -286,7 +286,7 @@ def Box(name,group=False,size=1.0):
     #return
     return node
 
-def Pin(name,group=False,size=1.0):
+def Pin(name='pin_cnt',group=False,size=1.0):
     ''' Creates a pin shape.
         If group is True, will group control and
         return a list [group,control].
@@ -323,7 +323,7 @@ def Pin(name,group=False,size=1.0):
     #return
     return node
 
-def Sphere(name,group=False,size=1.0):
+def Sphere(name='sphere_cnt',group=False,size=1.0):
     ''' Creates a sphere shape.
         If group is True, will group control and
         return a list [group,control].
