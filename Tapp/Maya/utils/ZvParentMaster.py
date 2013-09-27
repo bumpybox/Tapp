@@ -391,39 +391,43 @@ def _bakeObj(obj):
 	cmds.currentTime(currentFrame)
 
 def _applyBakedAnimation(obj):
-	'''Connetti l'animazione del bake locator all'oggetto.'''
+	'' 'Connect bake the animation of the locator object.'''
 	
-	# se il locator non e' stato creato (niente da bakare) esci
+	# If the locator is not 'created (nothing to Bakare) exit
 	locatorName = obj + _locSfx
 	locExists = cmds.ls(locatorName)
 	if not locExists:
 		return
 	
-	# se esiste cancella il nodo rigidBody e il solver
+	# If this exists deletes the node rigidBody and the solver
 	try:
 		rb = _getRigidBody(obj)
 		if rb:
 			solver = cmds.listConnections(rb + '.generalForce', s=False)[0]
 			cmds.delete(rb)
-			# se il rigid solver non e' usato cancellalo
+			# If a non-rigid solver and 'delete used
 			if not cmds.listConnections(solver + '.generalForce', d=False):
 				cmds.delete(solver)
-	# se il nodo rigidBody e' referenziato allora disconnetti solamente i choice dagli attributi dell'oggetto
+	# If the node rigidBody and 'referenced only then disconnect the choice by the attributes of the object
 	except:
 		for choice in cmds.listConnections(obj, d=False, s=True, t='choice'):
 			cmds.disconnectAttr(choice + '.output', cmds.listConnections(choice + '.output', p=True)[0])
 	
-	# cancella eventuali chiavi nel nodo di trasformazione dell'oggetto
+	# Delete any keys in the node object's transformation
 	cmds.cutKey(obj, at=['t', 'r'])
 	
-	# trova le curve d'animazione del locator
+	# Find the animation curves of the locator
 	animCurves = cmds.listConnections(locatorName, d=False, type='animCurve')
 	
 	# rinominale
-	renAnimCurves = [cmds.rename(s, obj + s[len(locatorName):]) for s in animCurves]
+	for crv in animCurves:
+
+		newName=obj+'_'+crv.split('_')[-1]
+		cmds.rename(crv,newName)
 	
-	# connetti le curve d'animazione all'oggetto
+	# Connect the animation curves of the object
 	attrs = cmds.listAttr([obj + '.t', obj + '.r'], u=True, s=True)
+	
 	if not attrs:
 		return
 	
@@ -517,7 +521,7 @@ def attach():
 	# carica la selezione
 	sel = cmds.ls(sl=True)
 	if sel == None: sel = []
-	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint' or cmds.nodeType(s) == 'hikIKEffector']		# nota: ls con filtro transforms non funziona bene (include i constraint)
+	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint' or cmds.nodeType(s) == 'hikFKJoint']		# nota: ls con filtro transforms non funziona bene (include i constraint)
 	
 	ctrls = []
 	# elimina gli elementi che hanno un suffisso di ZVPM
@@ -659,45 +663,45 @@ def detach():
 	sys.stdout.write(' '.join(ctrls) + ' detached\n')
 
 def destroy():
-	'''Cancella i parent constraint.'''
+	'' 'I Cancella constraint parent.'''
 	
 	sel, ctrls = _getCtrlsFromSelection(PARENT_HANDLE_SUFFIX)
 	
-	# se non ho selezionato nessun controllo provvisto di ph esci
+	# If you have not selected any control equipped with ph exit
 	if not ctrls:
 		raise Exception, 'No valid objects selected'
 	
-	# chiedi se fare bake o no
+	# Ask whether to bake or not
 	result = cmds.confirmDialog(title='Destroy constraints', message='The constraints will be deleted.\nDo you want to revert to previous state or bake and keep animation?', button=['Revert', 'Bake', 'Cancel'], defaultButton='Revert', cancelButton='Cancel', dismissString='Cancel')
 	if result == 'Cancel':
 		return
 	bake = result == 'Bake'
 	
 	for ctrl in ctrls:
-		# nome del constrain
+		# Nome of Constraint
 		constrName = _getParentConstraint(ctrl)
 		
 		temp = cmds.ls(_getSnapGroup(ctrl))
-		## se il gruppo snap esiste
+		# # If the group exists snap
 		if temp:
 			temp = cmds.ls(constrName)
-			## se il parent constr esiste (lo snap group puo' esistere anche senza parent constr... vedi la feature Create parent groups)
+			# # If the parent constr exists (snap group can 'exist without parent constr ... see the feature Create parent groups)
 			if temp:
-				# se necessario crea il locator e fai il bake
+				# If needed creates the locator please bake
 				if bake:
 					_bakeObj(ctrl)
 				targetList = cmds.parentConstraint(constrName, q=True, tl=True)
-				# azzera tutti i target e cancella il constraint
+				# Clears all targets and delete the constraint
 				for i in range(len(targetList)):
 					cmds.setAttr('%s.w%d' % (constrName, i), 0.0)
 				cmds.delete(constrName)
 				
-			# cancella le chiavi del controllo snap
+			# Delete the keys of the control snap
 			cmds.cutKey(_getSnapGroup(ctrl), at=['translate', 'rotate'])
-			# ripristino gli attributi del controllo snap a 0
+			# Restore the attributes of the control snap to 0
 			[cmds.setAttr('%s.%s' % (_getSnapGroup(ctrl), s), 0.0) for s in ['tx', 'ty', 'tz', 'rx', 'ry', 'rz']]
 			
-			# se possibile (cioe' se non referenziato) parento l'oggetto al genitore originario
+			# If possible (ie 'if unreferenced) parento the object to the original parent
 			try:
 				ctrlParent = cmds.pickWalk(_getParentHandle(ctrl), d='up')[0]
 				if ctrlParent == _getParentHandle(ctrl):
@@ -709,15 +713,15 @@ def destroy():
 			except:
 				pass
 			
-			# resetta il rigid body
+			# Reset the rigid body
 			_resetRigidBody(ctrl)
 			if bake:
 				_applyBakedAnimation(ctrl)
 			
-			# aggiorna la timeline window
+			# Update the timeline window
 			pmScriptJobCmd(ctrl)
 	
-	# seleziona i controlli
+	# Select controls
 	cmds.select(ctrls)
 	
 	# output
