@@ -21,6 +21,9 @@ uf.FrameratePrompt()
 cmds.evalDeferred('import sys;sys.path.append("%s")' % os.path.dirname(__file__))
 cmds.evalDeferred('import Tapp.Maya.Red9;Tapp.Maya.Red9.start()')
 
+#import custom Red9 meta
+cmds.evalDeferred('import Tapp.Maya.rigging.meta')
+
 #opening command port for Eclipse
 try:
     if cmds.commandPort(':7720', q=True) !=1:

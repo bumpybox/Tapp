@@ -7,7 +7,7 @@ reload(mrs)
 
 import logging
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.ERROR)
 handler=logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(levelname)s - %(name)s - %(funcName)s - LINE: %(lineno)d - %(message)s'))
 log.addHandler(handler)
@@ -99,21 +99,16 @@ class system(object):
 #chain=mrs.buildChain('MetaSystem',log)
 #print mrs.dictToChain(chain)
 
-system('|clavicle').build()
+system('|clavicle',methods='ik').build()
 #system('MetaSystem').build()
 
 '''
-need two methods:
-    adding socket to controller
-    parent control or system plug to something
-
-need to have a method for adding controls/sockets to systems
-    so I can add fk clavicle to ik system
-
-revise system to guide
+parent constraints mess with the hierarchy, fix it!
 
 by default have extra control on start, if not specified
 used parent constraints to build static parenting
+
+revise system to guide
 
 hook up controls visibility to blend control
 build spline

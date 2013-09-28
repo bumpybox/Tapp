@@ -69,6 +69,10 @@ class ik(base):
         
         self.chains=self.setChains()
         
+        for node in self.chains[0]:
+            
+            print node.name
+        
         self.dependencies=[system]
     
     def __str__(self):
@@ -439,6 +443,8 @@ class blend(base):
         
         self.log.debug('building blend')
         
+        print self.chain.breakdown('extraControl','extraControl',result=[])
+        
         #create extra control
         cnt=mru.Pin('extra_cnt')
         
@@ -506,27 +512,23 @@ class blend(base):
                 
                 cmds.addAttr(self.control,ln=s,at='float',min=0,max=1,k=True)
             
-            #connecting extra to target weights - using string search, which probably needs improvement ---
-            targets=cmds.parentConstraint(con,q=True,weightAliasList=True)
-            
-            for target in targets:
+            #only connecting extra controller if there are more than one system present
+            if len(node.socket)>1:
                 
-                if ('_'+s+'_') in target:
+                #connecting extra to target weights - using string search, which probably needs improvement ---
+                targets=cmds.parentConstraint(con,q=True,weightAliasList=True)
+                
+                for target in targets:
                     
-                    cmds.connectAttr(self.control+'.'+s,con+'.'+target)
+                    if ('_'+s+'_') in target:
+                        
+                        cmds.connectAttr(self.control+'.'+s,con+'.'+target)
             
-            
+            #parenting up the chain
             if node.parent:
                 
+                #making sure the chain has ended
                 if s not in node.parent.socket:
-                    
-                    print 'needs a parent:'
-                    print node.point
-                    print node.__dict__
-                    print 'plug:'
-                    print node.plug[s]
-                    print 'socket:'
-                    print node.parent.socket['blend']
                     
                     cmds.select(node.plug[s],node.parent.socket['blend'])
                     muz.attach()

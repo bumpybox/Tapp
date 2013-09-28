@@ -139,34 +139,37 @@ def buildChain(obj,log):
 
 def chainFromGuide(obj,parent=None):
     
-    node=mrc.chain(obj)
+    #we only want transforms
+    if cmds.nodeType(obj)=='transform':
     
-    #getting name
-    node.name=obj.split('|')[-1]
-    
-    #getting attr data
-    data={}
-    for attr in cmds.listAttr(obj,userDefined=True):
-        data[attr]=cmds.getAttr(obj+'.'+attr)
-    node.data=data
-    
-    #transforms
-    node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
-    node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
-    node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
-    
-    #parent and children
-    node.parent=parent
-    
-    children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
-    
-    if children:
-        for child in children:
-            node.addChild(chainFromGuide(child,parent=node))
+        node=mrc.chain(obj)
         
-        return node
-    else:
-        return node
+        #getting name
+        node.name=obj.split('|')[-1]
+        
+        #getting attr data
+        data={}
+        for attr in cmds.listAttr(obj,userDefined=True):
+            data[attr]=cmds.getAttr(obj+'.'+attr)
+        node.data=data
+        
+        #transforms
+        node.translation=cmds.xform(obj,q=True,ws=True,translation=True)
+        node.rotation=cmds.xform(obj,q=True,ws=True,rotation=True)
+        node.scale=cmds.xform(obj,q=True,relative=True,scale=True)
+        
+        #parent and children
+        node.parent=parent
+        
+        children=cmds.listRelatives(obj,children=True,fullPath=True,type='transform')
+        
+        if children:
+            for child in children:
+                node.addChild(chainFromGuide(child,parent=node))
+            
+            return node
+        else:
+            return node
 
 #---
 
