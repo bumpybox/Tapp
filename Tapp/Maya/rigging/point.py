@@ -13,15 +13,20 @@ class point():
         self.rotation=self.transform()
         self.scale=self.transform()
         
-        #guide attributes
-        self.solverData={}
-        self.controlData={}
-        self.staticParent=None
+        self.translation.set(0,0,0)
+        self.rotation.set(0,0,0)
+        self.scale.set(1,1,1)
         
-        #builds attributes
-        self.socket={}
-        self.control={}
-        self.plug={}
+        #guide attributes
+        self.solverData=None
+        self.controlData=None
+        self.parentData=None
+    
+    def addChild(self,node):
+        '''
+        Will add the passed in node to the children list.
+        '''
+        self.children.append(node)
     
     class transform(list):
         '''
@@ -44,8 +49,6 @@ class point():
             
             #iter through args
             for arg in args:
-                
-                print type(arg)
                 
                 #if passed in a list
                 if isinstance(arg,list):
@@ -72,5 +75,3 @@ class point():
                     self.append(args[2])
                     
                     return
-
-p=point()

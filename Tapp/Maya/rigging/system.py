@@ -99,7 +99,7 @@ class system(object):
 #chain=mrs.buildChain('MetaSystem',log)
 #print mrs.dictToChain(chain)
 
-system('|clavicle',methods='ik').build()
+system('|clavicle').build()
 #system('MetaSystem').build()
 
 '''
