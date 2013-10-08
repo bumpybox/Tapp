@@ -1,6 +1,6 @@
 class point():
     '''
-    classdocs
+    base data handler
     '''
 
     def __init__(self):

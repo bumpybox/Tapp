@@ -1,21 +1,21 @@
+import pymel.core as pc
 import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 import Tapp.Maya.MG_Tools.python.rigging.script.MG_softIk as mmpsi
 
-def ik(chain):
+def ik(chain,namespace=''):
     
     #build rig---       
     #create root grp
-    rootgrp=cmds.group(empty=True,name='ik_grp')
-    
-    #fail safe
-    if chain[0].plug['master']:
-        cmds.parent(rootgrp,chain[0].plug['master'])
+    rootgrp=cmds.group(empty=True,name=namespace+'grp')
     
     #create plug object
-    plug=cmds.spaceLocator(name='ik_plug')[0]
+    plug=cmds.spaceLocator(name=namespace+'plug')[0]
+    
+    if not hasattr(chain[0],'plug'):
+        chain[0].plug={}
     
     chain[0].plug['ik']=plug
     
@@ -31,7 +31,7 @@ def ik(chain):
              rotation=chain[0].rotation)
     cmds.parent(phgrp,rootgrp)
     
-    self.chains[0][0].point.addPlug(plug,plugType='system')
+    chain[0].meta.addPlug(plug,plugType='system')
     
     #finding upvector
     crs=mru.CrossProduct(chain[0].translation,
@@ -43,7 +43,7 @@ def ik(chain):
     for node in chain:
         count=chain.index(node)
         
-        prefix=node.name.split('|')[-1]+'_ik_'
+        prefix=namespace+node.name.split('|')[-1]+'_'
         
         #creating joint
         cmds.select(cl=True)
@@ -86,21 +86,24 @@ def ik(chain):
         #setup socket
         mru.Snap(None,socket, translation=node.translation, rotation=node.rotation)
         cmds.parent(socket,jnt)
+        
+        if not hasattr(node,'socket'):
+            node.socket={}
         node.socket['ik']=socket
     
     #plug parent
     cmds.parent(jnts[0],plug)
     
     #create ik
-    startStretch=cmds.group(empty=True,n='startStretch')
-    endStretch=cmds.group(empty=True,n='endStretch')
+    startStretch=cmds.group(empty=True,n=namespace+'startStretch')
+    endStretch=cmds.group(empty=True,n=namespace+'endStretch')
     
     mru.Snap(jnts[0],startStretch)
     mru.Snap(jnts[-1],endStretch)
     
     ikResult=mmpsi.MG_softIk(jnts,startMatrix=startStretch,endMatrix=endStretch,root=rootgrp)
     
-    ikResult['ikHandle']=cmds.rename(ikResult['ikHandle'],'ikHandle')
+    ikResult['ikHandle']=cmds.rename(ikResult['ikHandle'],namespace+'ikHandle')
     
     cmds.parent(startStretch,plug)
     
@@ -110,16 +113,15 @@ def ik(chain):
     cmds.connectAttr(plug+'.ik_stretch',ikResult['softIk']+'.stretch')
     
     #build controls---
-    self.log.debug('building ik controls')
     
     for node in chain:
         
         count=chain.index(node)
         
-        prefix=node.name+'_ik_'
+        prefix=namespace+node.name+'_'
         
         #building root control, polevector and end control
-        if 'IK_control' in node.data:
+        if 'IK_control' in node.controlData:
             
             #create control plug
             cntplug=cmds.spaceLocator(name=prefix+'plug')[0]
@@ -146,6 +148,9 @@ def ik(chain):
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
+            
+            if not hasattr(node,'control'):
+                node.control={}
             node.control['ik']=cnt
             
             phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
@@ -159,9 +164,9 @@ def ik(chain):
             cmds.parent(cnt,sngrp)
             
             #adding cntplug and cnt to meta system
-            node.point.addPlug(cntplug,plugType='control')
+            node.meta.addPlug(cntplug,plugType='control')
             
-            node.point.addControl(cnt,controlSystem='ik')
+            node.meta.addControl(cnt,controlSystem='ik')
             
             #root control
             if node==chain[0]:
@@ -217,17 +222,18 @@ def ik(chain):
                 
                 cmds.orientConstraint(cnt,node.socket['ik'])
 
-def fk(chain):
+def fk(chain,namespace=''):
     
     #build rig---
     #create root grp
-    rootgrp=cmds.group(empty=True,name='fk_grp')
+    rootgrp=cmds.group(empty=True,n=namespace+'grp')
     
-    if chain[0].plug['master']:
-        cmds.parent(rootgrp,chain.plug['master'])
+    #failsafe
+    if not hasattr(chain[0],'plug'):
+        chain[0].plug={}
     
     #create plug object
-    plug=cmds.spaceLocator(name='fk_plug')[0]
+    plug=cmds.spaceLocator(n=namespace+'plug')[0]
     
     #setup plug
     phgrp=cmds.group(empty=True,n=(plug+'_PH'))
@@ -236,22 +242,25 @@ def fk(chain):
     cmds.parent(sngrp,phgrp)
     cmds.parent(plug,sngrp)
     
-    mru.Snap(None,phgrp,
-             translation=chain[0].translation,
+    mru.Snap(None, phgrp, translation=chain[0].translation,
              rotation=chain[0].rotation)
+    
     cmds.parent(phgrp,rootgrp)
     
-    self.chain.point.addPlug(plug,plugType='system')
+    chain[0].meta.addPlug(plug,plugType='system')
     
     for node in chain:
         
-        prefix=node.name.split('|')[-1]+'_fk_'
+        prefix=namespace+node.name.split('|')[-1]+'_'
         
         #create sockets
         socket=cmds.spaceLocator(name=prefix+'socket')[0]
         
         #setup socket
         mru.Snap(None,socket, translation=node.translation, rotation=node.rotation)
+        
+        if not hasattr(node,'socket'):
+            node.socket={}
         node.socket['fk']=socket
         
         if node.parent:
@@ -260,18 +269,19 @@ def fk(chain):
             cmds.parent(socket,plug)
     
     #build controls---
-    self.log.debug('building fk controls')
-    
     for node in chain:
         
-        prefix=node.name.split('|')[-1]+'_fk_'
+        prefix=namespace+node.name.split('|')[-1]+'_'
         
         #create control
-        if 'FK_control' in node.data:
+        if 'FK_control' in node.controlData:
             cnt=mru.Box(prefix+'cnt',size=node.scale[0])
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
+            
+            if not hasattr(node,'control'):
+                node.control={}
             node.control['fk']=cnt
             
             cmds.parent(node.socket['fk'],cnt)
@@ -290,5 +300,5 @@ def fk(chain):
             else:
                 cmds.parent(phgrp,plug)
             
-            if node.point:
-                node.point.addControl(cnt,controlSystem='fk')
+            if node.meta:
+                node.meta.addControl(cnt,controlSystem='fk')

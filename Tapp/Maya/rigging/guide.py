@@ -1,9 +1,3 @@
-'''
-
-- change constructor input to points which are always a list
-
-'''
-
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.point as mrp
@@ -11,9 +5,8 @@ reload(mrp)
 
 controlValues=['None','Square','FourWay','Circle',
                'Box','Pin','Sphere']
-solverValues=['None','Start','End']
 
-def constructor(data=None):
+def constructor(points=[]):
     
     def createGuide(point):
         #build
@@ -33,17 +26,20 @@ def constructor(data=None):
             for attr in point.controlData:
                 cmds.setAttr(node+'.'+attr,controlValues.index(point.controlData[attr]))
         
-        cmds.addAttr(node,ln='IK_solver',at='enum',k=True,enumName=':'.join(solverValues))
-        cmds.addAttr(node,ln='FK_solver',at='enum',k=True,enumName=':'.join(solverValues))
+        cmds.addAttr(node,ln='IK_solver',at='bool',k=True)
+        cmds.addAttr(node,ln='FK_solver',at='bool',k=True)
         if point.solverData:
             for attr in point.solverData:
-                cmds.setAttr(node+'.'+attr,solverValues.index(point.solverData[attr]))
+                cmds.setAttr(node+'.'+attr,point.solverData[attr])
         
         if point.parentData:
             if isinstance(point.parentData,mrp.point):
-                cmds.addAttr(node,ln='parent',at='enum',k=True,enumName=point.parentData.name)
+                cmds.addAttr(node,ln='parent',at='enum',k=True,
+                             enumName=':'.join(['None',point.parentData.name]),defaultValue=1)
+            #presuming parentData is 'None' if not a point class
             else:
-                cmds.addAttr(node,ln='parent',at='enum',k=True,enumName=point.parentData)
+                cmds.addAttr(node,ln='parent',at='enum',k=True,
+                             enumName=point.parentData)
         else:
             cmds.addAttr(node,ln='parent',at='enum',k=True,enumName='None')
         
@@ -65,20 +61,19 @@ def constructor(data=None):
                 constructor(data=child)
     
     #if no points are passed in
-    if not data:
+    if not points:
         point=mrp.point()
         
         return [createGuide(point)]
     
-    if isinstance(data,list):
+    #if a list is passed in
+    if isinstance(points,list):
         
         result=[]
-        for p in data:
+        for p in points:
             result.append(createGuide(p))
         
         return result
-    elif isinstance(data,mrp.point):
-        createGuide(data)
 
 def destructor(obj=None):
     
@@ -110,7 +105,7 @@ def destructor(obj=None):
                     
                     if attr.split('_')[-1]=='solver':
                         
-                        solverData[attr]=solverValues[cmds.getAttr(obj+'.'+attr)]
+                        solverData[attr]=cmds.getAttr(obj+'.'+attr)
                 
                 p.controlData=controlData
                 p.solverData=solverData
@@ -169,8 +164,12 @@ def destructor(obj=None):
         for node in roots:
             result.append(createPoint(node))
         
+        cmds.delete(roots)
+        
     else:
         result.append(createPoint(obj))
+        
+        cmds.delete(obj)
     
     for point in result:
         replaceParent(point,result)
