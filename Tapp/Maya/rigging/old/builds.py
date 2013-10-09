@@ -518,6 +518,8 @@ class blend(base):
                 #connecting extra to target weights - using string search, which probably needs improvement ---
                 targets=cmds.parentConstraint(con,q=True,weightAliasList=True)
                 
+                print node.socket[s]
+                
                 for target in targets:
                     
                     if ('_'+s+'_') in target:

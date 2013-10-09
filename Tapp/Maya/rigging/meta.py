@@ -40,12 +40,11 @@ class MetaSystem(MetaRoot):
     
     def __bindData__(self):
         self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
-        #self.addAttr('root',attrType='messageSimple')
     
     def addPoint(self,name=None, boundData=None):
         
         if name:
-            metaNode=MetaPoint(name='meta_%s' % name)
+            metaNode=MetaPoint(name=name)
             
             metaNode.name=name
         else:
@@ -131,7 +130,28 @@ class MetaPoint(MetaSystem):
         
         pass
 
-class MetaSocket(r9Meta.MetaRig):
+class MetaTransform(r9Meta.MetaRig):
+    '''
+    Example Export base class inheriting from MetaClass
+    '''
+    def __init__(self,*args,**kws):
+        super(MetaTransform, self).__init__(*args,**kws) 
+        self.lockState=True
+    
+    def __bindData__(self):
+        '''
+        Overload call to wipe MetaRig bind data
+        '''
+        pass
+    
+    def getNode(self):
+        '''
+        Returns node attached to meta node.
+        '''
+        
+        return self.getChildren(cAttrs='node')[0]
+
+class MetaSocket(MetaTransform):
     '''
     Example Export base class inheriting from MetaClass
     '''
@@ -145,7 +165,7 @@ class MetaSocket(r9Meta.MetaRig):
         '''
         pass
 
-class MetaControl(r9Meta.MetaRig):
+class MetaControl(MetaTransform):
     '''
     Example Export base class inheriting from MetaClass
     '''
@@ -159,7 +179,7 @@ class MetaControl(r9Meta.MetaRig):
         '''
         self.addAttr('system','')
 
-class MetaPlug(r9Meta.MetaRig):
+class MetaPlug(MetaTransform):
     '''
     Example Export base class inheriting from MetaClass
     '''

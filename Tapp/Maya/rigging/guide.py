@@ -56,9 +56,8 @@ def constructor(points=[]):
         
         #children
         if point.children:
-            print point
             for child in point.children:
-                constructor(data=child)
+                constructor(points=[child])
     
     #if no points are passed in
     if not points:
@@ -131,6 +130,9 @@ def destructor(obj=None):
     
     def findName(point,name):
         
+        if not isinstance(name,mrp.point) and '|' in name:
+            name=name[1:]
+        
         if point.name==name:
             
             return point
@@ -147,6 +149,8 @@ def destructor(obj=None):
                 result=findName(node,point.parentData)
                 if result:
                     point.parentData=result
+        else:
+            point.parentData=None
         
         if point.children:
             for child in point.children:

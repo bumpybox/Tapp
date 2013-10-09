@@ -1,11 +1,142 @@
-import pymel.core as pc
 import maya.cmds as cmds
 import maya.mel as mel
 
 import Tapp.Maya.rigging.utils as mru
 import Tapp.Maya.MG_Tools.python.rigging.script.MG_softIk as mmpsi
+import Tapp.Maya.utils.ZvParentMaster as muz
+import Tapp.Maya.rigging.meta as meta
 
-def ik(chain,namespace=''):
+def system(point,parent=None):
+    if parent:
+        metaNode=parent.addPoint(name=point.name)
+    else:
+        metaNode=meta.MetaPoint(name=point.name)
+    
+    metaNode.rename('meta_'+point.name)
+    
+    point.meta=metaNode
+    
+    if point.children:
+        for child in point.children:
+            system(child,parent=metaNode)
+
+def parent(point):
+    
+    #if a static parent is specified
+    if point.parentData:
+        
+        #setup ik static parenting
+        if 'IK' in point.control:
+            cmds.select(point.control['IK'],point.parentData.socket['blend'])
+            muz.attach()
+        
+        #front of chain
+        if not point.parent:
+            for plug in point.plug:
+                cmds.select(point.plug[plug],point.parentData.socket['blend'])
+                muz.attach()
+    
+    #continuing to children
+    if point.children:
+        for child in point.children:
+            parent(child)
+
+def blend(points,namespace=''):
+    
+    #create extra control
+    control=mru.Pin(namespace+'cnt')
+    
+    #building blends
+    rootgrp=cmds.group(empty=True,name=namespace+'grp')
+    
+    def _build(node):
+        
+        prefix=namespace+node.name.split('|')[-1]+'_'
+        
+        #create socket
+        socket=cmds.spaceLocator(name=prefix+'socket')[0]
+        
+        #setup socket
+        mru.Snap(None, socket,translation=node.translation,rotation=node.rotation)
+        
+        cmds.parent(socket,rootgrp)
+        
+        node.meta.addSocket(socket)
+        
+        for s in node.socket:
+            
+            con=cmds.parentConstraint(node.socket[s],socket)[0]
+            
+            #ensuring extra control has the attribute
+            if not cmds.objExists(control+'.'+s):
+                
+                cmds.addAttr(control,ln=s,at='float',min=0,max=1,k=True)
+            
+            #only connecting extra controller if there are more than one system present
+            if len(node.socket)>1:
+                
+                #connecting extra to target weights - using string search, which probably needs improvement ---
+                targets=cmds.parentConstraint(con,q=True,weightAliasList=True)
+                
+                for target in targets:
+                    
+                    if node.socket[s] in target:
+                        
+                        cmds.connectAttr(control+'.'+s,con+'.'+target)
+            
+            #parenting up the points
+            if node.parent:
+                
+                #making sure the points has ended
+                if s not in node.parent.socket:
+                    
+                    cmds.select(node.plug[s],node.parent.socket['blend'])
+                    muz.attach()
+        
+        node.socket['blend']=socket
+        
+        if node.children:
+            for child in node.children:
+                _build(child)
+    
+    _build(points[0])
+    
+    #setup extra control
+    mru.Snap(None,control,translation=points[0].translation,rotation=points[0].rotation)
+    
+    cmds.parent(control,points[0].socket['blend'])
+    cmds.rotate(0,90,0,control,r=True,os=True)
+    
+    attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
+    mru.ChannelboxClean(control, attrs)
+    
+    points[0].meta.addControl(control,'extra')
+    
+    def switch(node):
+            
+        for system in node.control:
+            
+            mNode=meta.r9Meta.MetaClass(node.control[system])
+            mNode=mNode.getParentMetaNode()
+            
+            sockets=[]
+            for s in node.socket:
+                if s!=system and s!='blend':
+                    
+                    sockets.append(node.socket[s])
+            
+            mNode.connectChildren(sockets,'switch')
+
+        if node.children:
+            for child in node.children:
+                switch(child)
+    
+    switch(points[0])
+    
+    if len(points)==1:
+        cmds.delete(control)
+
+def IK(points,namespace=''):
     
     #build rig---       
     #create root grp
@@ -14,10 +145,10 @@ def ik(chain,namespace=''):
     #create plug object
     plug=cmds.spaceLocator(name=namespace+'plug')[0]
     
-    if not hasattr(chain[0],'plug'):
-        chain[0].plug={}
+    if not hasattr(points[0],'plug'):
+        points[0].plug={}
     
-    chain[0].plug['ik']=plug
+    points[0].plug['IK']=plug
     
     #setup plug
     phgrp=cmds.group(empty=True,n=(plug+'_PH'))
@@ -27,21 +158,21 @@ def ik(chain,namespace=''):
     cmds.parent(plug,sngrp)
     
     mru.Snap(None,phgrp,
-             translation=chain[0].translation,
-             rotation=chain[0].rotation)
+             translation=points[0].translation,
+             rotation=points[0].rotation)
     cmds.parent(phgrp,rootgrp)
     
-    chain[0].meta.addPlug(plug,plugType='system')
+    points[0].meta.addPlug(plug,plugType='system')
     
     #finding upvector
-    crs=mru.CrossProduct(chain[0].translation,
-                         chain[1].translation,
-                         chain[2].translation)
+    crs=mru.CrossProduct(points[0].translation,
+                         points[1].translation,
+                         points[2].translation)
     
     #creating joints and sockets
     jnts=[]
-    for node in chain:
-        count=chain.index(node)
+    for node in points:
+        count=points.index(node)
         
         prefix=namespace+node.name.split('|')[-1]+'_'
         
@@ -55,9 +186,9 @@ def ik(chain,namespace=''):
         grp=cmds.group(empty=True)
         cmds.xform(grp,ws=True,translation=node.translation)
         
-        if chain[count]!=chain[-1]:
+        if points[count]!=points[-1]:
             temp=cmds.group(empty=True)
-            mru.Snap(None,temp,translation=chain[count+1].translation)
+            mru.Snap(None,temp,translation=points[count+1].translation)
             
             cmds.delete(cmds.aimConstraint(temp,grp,worldUpType='vector',
                                            worldUpVector=crs))
@@ -72,7 +203,7 @@ def ik(chain,namespace=''):
         
         cmds.delete(grp)
         
-        if chain[count]!=chain[0]:
+        if points[count]!=points[0]:
             cmds.parent(jnt,jnts[-1])
         
         if len(jnts)==0:
@@ -89,7 +220,7 @@ def ik(chain,namespace=''):
         
         if not hasattr(node,'socket'):
             node.socket={}
-        node.socket['ik']=socket
+        node.socket['IK']=socket
     
     #plug parent
     cmds.parent(jnts[0],plug)
@@ -114,9 +245,9 @@ def ik(chain,namespace=''):
     
     #build controls---
     
-    for node in chain:
+    for node in points:
         
-        count=chain.index(node)
+        count=points.index(node)
         
         prefix=namespace+node.name+'_'
         
@@ -126,7 +257,7 @@ def ik(chain,namespace=''):
             #create control plug
             cntplug=cmds.spaceLocator(name=prefix+'plug')[0]
             
-            chain[0].plug['ik_control']=cntplug
+            points[0].plug['IK_control']=cntplug
             
             #setup control plug
             mru.Snap(None,cntplug,
@@ -151,7 +282,7 @@ def ik(chain,namespace=''):
             
             if not hasattr(node,'control'):
                 node.control={}
-            node.control['ik']=cnt
+            node.control['IK']=cnt
             
             phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
             sngrp=cmds.group(empty=True,n=(cnt+'_SN'))
@@ -166,18 +297,18 @@ def ik(chain,namespace=''):
             #adding cntplug and cnt to meta system
             node.meta.addPlug(cntplug,plugType='control')
             
-            node.meta.addControl(cnt,controlSystem='ik')
+            node.meta.addControl(cnt,controlSystem='IK')
             
             #root control
-            if node==chain[0]:
+            if node==points[0]:
                 
                 cmds.parent(jnts[0],cnt)
                 cmds.parent(startStretch,cnt)
                 
-                cmds.parent(node.socket['ik'],cnt)
+                cmds.parent(node.socket['IK'],cnt)
             
             #polevector control
-            if node.children and node!=chain[0]:
+            if node.children and node!=points[0]:
                 
                 mru.Snap(jnts[count],phgrp)
                 
@@ -220,20 +351,21 @@ def ik(chain,namespace=''):
             
                 cmds.pointConstraint(cnt,endStretch)
                 
-                cmds.orientConstraint(cnt,node.socket['ik'])
+                cmds.orientConstraint(cnt,node.socket['IK'])
 
-def fk(chain,namespace=''):
+def FK(points,namespace=''):
     
     #build rig---
     #create root grp
     rootgrp=cmds.group(empty=True,n=namespace+'grp')
     
-    #failsafe
-    if not hasattr(chain[0],'plug'):
-        chain[0].plug={}
-    
     #create plug object
     plug=cmds.spaceLocator(n=namespace+'plug')[0]
+    
+    if not hasattr(points[0],'plug'):
+        points[0].plug={}
+    
+    points[0].plug['FK']=plug
     
     #setup plug
     phgrp=cmds.group(empty=True,n=(plug+'_PH'))
@@ -242,14 +374,14 @@ def fk(chain,namespace=''):
     cmds.parent(sngrp,phgrp)
     cmds.parent(plug,sngrp)
     
-    mru.Snap(None, phgrp, translation=chain[0].translation,
-             rotation=chain[0].rotation)
+    mru.Snap(None, phgrp, translation=points[0].translation,
+             rotation=points[0].rotation)
     
     cmds.parent(phgrp,rootgrp)
     
-    chain[0].meta.addPlug(plug,plugType='system')
+    points[0].meta.addPlug(plug,plugType='system')
     
-    for node in chain:
+    for node in points:
         
         prefix=namespace+node.name.split('|')[-1]+'_'
         
@@ -261,15 +393,15 @@ def fk(chain,namespace=''):
         
         if not hasattr(node,'socket'):
             node.socket={}
-        node.socket['fk']=socket
+        node.socket['FK']=socket
         
         if node.parent:
-            cmds.parent(socket,node.parent.socket['fk'])
+            cmds.parent(socket,node.parent.socket['FK'])
         else:
             cmds.parent(socket,plug)
     
     #build controls---
-    for node in chain:
+    for node in points:
         
         prefix=namespace+node.name.split('|')[-1]+'_'
         
@@ -282,9 +414,9 @@ def fk(chain,namespace=''):
             
             if not hasattr(node,'control'):
                 node.control={}
-            node.control['fk']=cnt
+            node.control['FK']=cnt
             
-            cmds.parent(node.socket['fk'],cnt)
+            cmds.parent(node.socket['FK'],cnt)
             
             phgrp=cmds.group(empty=True,n=(cnt+'_PH'))
             sngrp=cmds.group(empty=True,n=(cnt+'_SN'))
@@ -296,9 +428,9 @@ def fk(chain,namespace=''):
             cmds.parent(sngrp,phgrp)
             
             if node.parent:
-                cmds.parent(phgrp,node.parent.socket['fk'])
+                cmds.parent(phgrp,node.parent.socket['FK'])
             else:
                 cmds.parent(phgrp,plug)
             
             if node.meta:
-                node.meta.addControl(cnt,controlSystem='fk')
+                node.meta.addControl(cnt,controlSystem='FK')
