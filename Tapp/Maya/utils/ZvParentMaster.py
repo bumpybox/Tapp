@@ -419,6 +419,9 @@ def _applyBakedAnimation(obj):
 	# Find the animation curves of the locator
 	animCurves = cmds.listConnections(locatorName, d=False, type='animCurve')
 	
+	#running euler filter on curves
+	cmds.filterCurve(animCurves)
+	
 	# rinominale
 	for crv in animCurves:
 
@@ -521,7 +524,7 @@ def attach():
 	# carica la selezione
 	sel = cmds.ls(sl=True)
 	if sel == None: sel = []
-	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint' or cmds.nodeType(s) == 'hikFKJoint']		# nota: ls con filtro transforms non funziona bene (include i constraint)
+	sel = [s for s in sel if cmds.nodeType(s) == 'transform' or cmds.nodeType(s) == 'joint' or cmds.nodeType(s) == 'hikFKJoint' or cmds.nodeType(s) == 'hikIKEffector']		# nota: ls con filtro transforms non funziona bene (include i constraint)
 	
 	ctrls = []
 	# elimina gli elementi che hanno un suffisso di ZVPM
