@@ -20,26 +20,20 @@ def constructor(points=[]):
         
         point.name=node
         
-        cmds.addAttr(node,ln='IK_control',at='enum',k=True,enumName=':'.join(controlValues))
-        cmds.addAttr(node,ln='FK_control',at='enum',k=True,enumName=':'.join(controlValues))
         if point.controlData:
-            for attr in point.controlData:
-                cmds.setAttr(node+'.'+attr,controlValues.index(point.controlData[attr]))
+            for system in point.controlData:
+                cmds.addAttr(node,ln=system+'_control',at='enum',k=True,enumName=':'.join(controlValues))
+                cmds.setAttr(node+'.'+system+'_control',controlValues.index(point.controlData[system]))
         
-        cmds.addAttr(node,ln='IK_solver',at='bool',k=True)
-        cmds.addAttr(node,ln='FK_solver',at='bool',k=True)
         if point.solverData:
-            for attr in point.solverData:
-                cmds.setAttr(node+'.'+attr,point.solverData[attr])
+            for system in point.solverData:
+                cmds.addAttr(node,ln=system+'_solver',at='bool',k=True)
+                cmds.setAttr(node+'.'+system+'_solver',point.solverData[system])
         
         if point.parentData:
-            if isinstance(point.parentData,mrp.point):
-                cmds.addAttr(node,ln='parent',at='enum',k=True,
-                             enumName=':'.join(['None',point.parentData.name]),defaultValue=1)
-            #presuming parentData is 'None' if not a point class
-            else:
-                cmds.addAttr(node,ln='parent',at='enum',k=True,
-                             enumName=point.parentData)
+            
+            cmds.addAttr(node,ln='parent',at='enum',k=True,
+                         enumName=':'.join(['None',point.parentData.name]),defaultValue=1)
         else:
             cmds.addAttr(node,ln='parent',at='enum',k=True,enumName='None')
         
@@ -74,7 +68,7 @@ def constructor(points=[]):
         
         return result
 
-def destructor(obj=None):
+def destructor(obj=None,preserve=False):
     
     def createPoint(obj,parent=None):
         for node in cmds.listRelatives(obj):
@@ -100,11 +94,11 @@ def destructor(obj=None):
                     
                     if attr.split('_')[-1]=='control':
                         
-                        controlData[attr]=controlValues[cmds.getAttr(obj+'.'+attr)]
+                        controlData[attr.split('_')[0]]=controlValues[cmds.getAttr(obj+'.'+attr)]
                     
                     if attr.split('_')[-1]=='solver':
                         
-                        solverData[attr]=cmds.getAttr(obj+'.'+attr)
+                        solverData[attr.split('_')[0]]=cmds.getAttr(obj+'.'+attr)
                 
                 p.controlData=controlData
                 p.solverData=solverData
@@ -168,12 +162,14 @@ def destructor(obj=None):
         for node in roots:
             result.append(createPoint(node))
         
-        cmds.delete(roots)
+        if not preserve:
+            cmds.delete(roots)
         
     else:
         result.append(createPoint(obj))
         
-        cmds.delete(obj)
+        if not preserve:
+            cmds.delete(obj)
     
     for point in result:
         replaceParent(point,result)

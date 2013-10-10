@@ -16,9 +16,28 @@ def system(point,parent=None):
     
     point.meta=metaNode
     
+    metaNode.solverData=point.solverData
+    metaNode.controlData=point.controlData
+    
     if point.children:
         for child in point.children:
             system(child,parent=metaNode)
+
+def replaceParent(point):
+    
+    if point.parentData:
+        
+        print 'name:'
+        print point.name
+        
+        parent=meta.r9Meta.getMetaNodes(mTypes=['MetaPoint'],
+                                        mAttrs=['mNodeID=%s' % point.parentData.name])[0]
+        
+        point.meta.parentData=parent.mNode
+    
+    if point.children:
+        for child in point.children:
+            replaceParent(child)
 
 def parent(point):
     
@@ -105,7 +124,6 @@ def blend(points,namespace=''):
     mru.Snap(None,control,translation=points[0].translation,rotation=points[0].rotation)
     
     cmds.parent(control,points[0].socket['blend'])
-    cmds.rotate(0,90,0,control,r=True,os=True)
     
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
     mru.ChannelboxClean(control, attrs)
@@ -252,7 +270,7 @@ def IK(points,namespace=''):
         prefix=namespace+node.name+'_'
         
         #building root control, polevector and end control
-        if 'IK_control' in node.controlData:
+        if 'IK' in node.controlData:
             
             #create control plug
             cntplug=cmds.spaceLocator(name=prefix+'plug')[0]
@@ -275,7 +293,7 @@ def IK(points,namespace=''):
             cmds.parent(cntplug,sngrp)
             
             #creating control
-            cnt=mru.Sphere(prefix+'cnt',size=node.scale[0])
+            cnt=mru.icon(iconType=node.controlData['IK'],name=prefix+'cnt',size=node.scale[0])
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
@@ -297,7 +315,7 @@ def IK(points,namespace=''):
             #adding cntplug and cnt to meta system
             node.meta.addPlug(cntplug,plugType='control')
             
-            node.meta.addControl(cnt,controlSystem='IK')
+            node.meta.addControl(cnt,controlSystem='IK',icon=node.controlData['IK'])
             
             #root control
             if node==points[0]:
@@ -406,8 +424,8 @@ def FK(points,namespace=''):
         prefix=namespace+node.name.split('|')[-1]+'_'
         
         #create control
-        if 'FK_control' in node.controlData:
-            cnt=mru.Box(prefix+'cnt',size=node.scale[0])
+        if 'FK' in node.controlData:
+            cnt=mru.icon(iconType=node.controlData['FK'],name=prefix+'cnt',size=node.scale[0])
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
@@ -433,4 +451,4 @@ def FK(points,namespace=''):
                 cmds.parent(phgrp,plug)
             
             if node.meta:
-                node.meta.addControl(cnt,controlSystem='FK')
+                node.meta.addControl(cnt,controlSystem='FK',icon=node.controlData['FK'])

@@ -1,9 +1,10 @@
 '''
-- destructor method
+- find solution for plug parenting and ik parenting separation
 - test switching
 - test leg build
 - better namespaces
 - organize code better
+- fails when not building any controls
 - scaling feature
 - build spline solver
 '''
@@ -14,6 +15,7 @@ import Tapp.Maya.rigging.solvers as mrs
 reload(mrs)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
+import Tapp.Maya.rigging.point as mrp
 
 def constructor(points):
     
@@ -21,11 +23,11 @@ def constructor(points):
     def getSolverPoints(point,ik=[],fk=[],points=[]):
         
         #adding to fk list
-        if point.solverData['FK_solver'] or point.controlData['FK_control']!='None':
+        if point.solverData['FK'] or point.controlData['FK']!='None':
             fk.append(point)
         
         #adding to ik list
-        if point.solverData['IK_solver'] or point.controlData['IK_control']!='None':
+        if point.solverData['IK'] or point.controlData['IK']!='None':
             ik.append(point)
         
         #adding to all list
@@ -39,6 +41,7 @@ def constructor(points):
     
     for point in points:
         mrs.system(point)
+        mrs.replaceParent(point)
         
         chains=getSolverPoints(point,ik=[],fk=[],points=[])
         
@@ -60,29 +63,94 @@ def constructor(points):
 import maya.mel as mel
 import maya.cmds as cmds
 
-def destructor():
+def destructor(preserve=False):
     
-    nodes=meta.r9Meta.getMetaNodes(mTypes=['MetaPoint'])
+    points=meta.r9Meta.getMetaNodes(mTypes=['MetaPoint'])
     
-    for node in nodes:
-        meta.r9Meta.deleteEntireMetaRigStructure(node[0].mNode)
-    
-    '''
-    roots=[]    
-    for node in nodes:
+    newPoints=[]
+    for point in points:
         
-        metaNodes=meta.r9Meta.getConnectedMetaNodes(node.mNode,mTypes=['MetaPlug','MetaSocket','MetaControl'])
+        #creating point
+        p=mrp.point()
+        p.name=point.mNodeID
         
-        if metaNodes:
-            roots.append(mel.eval('rootOf("%s");' % metaNodes[0].getChildren(cAttrs='node')[0]))
-        else:
-            roots.append(mel.eval('rootOf("%s");' % node.getChildren(cAttrs='node')[0]))
+        #setting transform values
+        socket=point.getChildMetaNodes(mAttrs='mClass=MetaSocket')[0]
+        socketNode=socket.getNode()
+        
+        p.translation.set(cmds.xform(socketNode,q=True,ws=True,translation=True))
+        p.rotation.set(cmds.xform(socketNode,q=True,ws=True,rotation=True))
+        p.scale.set(cmds.xform(socketNode,q=True,ws=True,scale=True))
+        
+        #setting children
+        children=point.getChildren(walk=False, cAttrs=['points'])
+        for child in children:
+            p.addChild(meta.r9Meta.MetaClass(child).mNodeID)
+        
+        #setting data
+        p.controlData=point.controlData
+        p.solverData=point.solverData
+        
+        if point.getChildren(walk=False, cAttrs=['parentData']):
+            parent=point.getChildren(walk=False, cAttrs=['parentData'])[0]
+            p.parentData=meta.r9Meta.MetaClass(parent).mNodeID
+        
+        newPoints.append(p)
     
-    roots=list(set(roots))
-    for root in roots:
-        cmds.delete(root)
-        '''
+    #replacing children and parentData
+    for point in newPoints:
+        
+        for p in newPoints:
+            if point.parentData==p.name:
+                point.parentData=p
+        
+        for child in point.children:
+            for p in newPoints:
+                if child==p.name:
+                    for n,i in enumerate(point.children):
+                        if i==child:
+                            point.children[n]=p
+    
+    #setting parent
+    #possible very computational---
+    def setParent(point,parent=None):
+        
+        if parent:
+            point.parent=parent
+        
+        if point.children:
+            for child in point.children:
+                setParent(child,parent=point)
+    
+    for point in newPoints:
+        setParent(point)
+    
+    result=[]
+    for point in newPoints:
+        if not point.parent:
+            result.append(point)
+    
+    #deletion of nodes
+    if not preserve:
+        nodes=meta.r9Meta.getMetaNodes(mTypes=['MetaPoint','MetaSocket'])
+        
+        roots=[]    
+        for node in nodes:
+            
+            metaNodes=meta.r9Meta.getConnectedMetaNodes(node.mNode,mTypes=['MetaPlug','MetaSocket','MetaControl'])
+            
+            if metaNodes:
+                roots.append(mel.eval('rootOf("%s");' % metaNodes[0].getNode()))
+            else:
+                roots.append(mel.eval('rootOf("%s");' % node.getNode()))
+        
+        roots=list(set(roots))
+        for root in roots:
+            cmds.delete(root)
+    
+    return result
 
-#destructor()
+#points=destructor()
+#mrg.constructor(points)
 points=mrg.destructor()
 constructor(points)

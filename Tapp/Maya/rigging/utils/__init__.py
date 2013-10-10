@@ -386,6 +386,39 @@ def Sphere(name='sphere_cnt',group=False,size=1.0):
     #return
     return node
 
+def icon(iconType=None,name=None,group=False,size=1.0):
+    
+    if iconType=='Square':
+        if name:
+            return Square(name=name,group=group, size=size)
+        else:
+            return Square(group=group, size=size)
+    if iconType=='FourWay':
+        if name:
+            return FourWay(name=name,group=group, size=size)
+        else:
+            return FourWay(group=group, size=size)
+    if iconType=='Circle':
+        if name:
+            return Circle(name=name,group=group, size=size)
+        else:
+            return Circle(group=group, size=size)
+    if iconType=='Box':
+        if name:
+            return Box(name=name,group=group, size=size)
+        else:
+            return Box(group=group, size=size)
+    if iconType=='Pin':
+        if name:
+            return Pin(name=name,group=group, size=size)
+        else:
+            return Pin(group=group, size=size)
+    if iconType=='Sphere':
+        if name:
+            return Sphere(name=name,group=group, size=size)
+        else:
+            return Sphere(group=group, size=size)
+
 def Snap(source,target,translation=True,rotation=True,scale=False):
     ''' Snaps target object to source object.
     If point is True, translation will snap.

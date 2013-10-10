@@ -6,8 +6,8 @@ class MetaRoot(r9Meta.MetaRig):
     '''
     def __init__(self,*args,**kws):
         super(MetaRoot, self).__init__(*args,**kws)
-        self.lockState=True
-
+        self.lockState=False 
+    
     def addMetaSubSystem(self, systemType, side, nodeName=None): 
         '''
         Overload of default addMetaSubSystem method
@@ -36,10 +36,10 @@ class MetaSystem(MetaRoot):
     
     def __init__(self,*args,**kws):
         super(MetaSystem, self).__init__(*args,**kws)
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
-        self.addAttr('mirrorSide',enumName='Centre:Left:Right',attrType='enum')
+        pass
     
     def addPoint(self,name=None, boundData=None):
         
@@ -100,7 +100,7 @@ class MetaSystem(MetaRoot):
         
         return metaNode
     
-    def addControl(self, node,controlSystem=None, boundData=None):
+    def addControl(self, node,controlSystem=None,icon=None, boundData=None):
               
         if isinstance(node,list):
             raise StandardError('node must be a single Maya Object')
@@ -109,6 +109,9 @@ class MetaSystem(MetaRoot):
         
         if controlSystem:
             metaNode.system=controlSystem
+        
+        if icon:
+            metaNode.icon=icon
         
         self.connectChildren(metaNode, 'controls', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
@@ -124,11 +127,12 @@ class MetaPoint(MetaSystem):
     
     def __init__(self,*args,**kws):
         super(MetaPoint, self).__init__(*args,**kws)
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
-        
-        pass
+        self.addAttr('solverData',{})
+        self.addAttr('controlData',{})
+        self.addAttr('parentData','',attrType='messageSimple')
 
 class MetaTransform(r9Meta.MetaRig):
     '''
@@ -136,7 +140,7 @@ class MetaTransform(r9Meta.MetaRig):
     '''
     def __init__(self,*args,**kws):
         super(MetaTransform, self).__init__(*args,**kws) 
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
         '''
@@ -149,7 +153,7 @@ class MetaTransform(r9Meta.MetaRig):
         Returns node attached to meta node.
         '''
         
-        return self.getChildren(cAttrs='node')[0]
+        return self.getChildren(cAttrs=['node'])[0]
 
 class MetaSocket(MetaTransform):
     '''
@@ -157,7 +161,7 @@ class MetaSocket(MetaTransform):
     '''
     def __init__(self,*args,**kws):
         super(MetaSocket, self).__init__(*args,**kws) 
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
         '''
@@ -171,7 +175,7 @@ class MetaControl(MetaTransform):
     '''
     def __init__(self,*args,**kws):
         super(MetaControl, self).__init__(*args,**kws) 
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
         '''
@@ -185,7 +189,7 @@ class MetaPlug(MetaTransform):
     '''
     def __init__(self,*args,**kws):
         super(MetaPlug, self).__init__(*args,**kws) 
-        self.lockState=True
+        self.lockState=False
     
     def __bindData__(self):
         '''
