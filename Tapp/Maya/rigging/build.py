@@ -1,5 +1,5 @@
 '''
-- find solution for plug parenting and ik parenting separation
+- plug parenting
 - test switching
 - test leg build
 - better namespaces
@@ -41,7 +41,7 @@ def constructor(points):
     
     for point in points:
         mrs.system(point)
-        mrs.replaceParent(point)
+        mrs.replaceParentData(point)
         
         chains=getSolverPoints(point,ik=[],fk=[],points=[])
         

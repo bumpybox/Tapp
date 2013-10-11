@@ -23,12 +23,9 @@ def system(point,parent=None):
         for child in point.children:
             system(child,parent=metaNode)
 
-def replaceParent(point):
+def replaceParentData(point):
     
     if point.parentData:
-        
-        print 'name:'
-        print point.name
         
         parent=meta.r9Meta.getMetaNodes(mTypes=['MetaPoint'],
                                         mAttrs=['mNodeID=%s' % point.parentData.name])[0]
@@ -37,7 +34,7 @@ def replaceParent(point):
     
     if point.children:
         for child in point.children:
-            replaceParent(child)
+            replaceParentData(child)
 
 def parent(point):
     
