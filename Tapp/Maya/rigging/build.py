@@ -1,7 +1,8 @@
 '''
-- plug parenting
-- test switching
-- test leg build
+- test leg switching
+- static parenting system is not very flexible
+    - breaks when changing names
+    - breaks when messing with hierarchies
 - better namespaces
 - organize code better
 - fails when not building any controls
@@ -23,11 +24,11 @@ def constructor(points):
     def getSolverPoints(point,ik=[],fk=[],points=[]):
         
         #adding to fk list
-        if point.solverData['FK'] or point.controlData['FK']!='None':
+        if point.solverData['FK'] or point.controlData['FK']!=None:
             fk.append(point)
         
         #adding to ik list
-        if point.solverData['IK'] or point.controlData['IK']!='None':
+        if point.solverData['IK'] or point.controlData['IK']!=None:
             ik.append(point)
         
         #adding to all list
@@ -41,6 +42,8 @@ def constructor(points):
     
     for point in points:
         mrs.system(point)
+    
+    for point in points:
         mrs.replaceParentData(point)
         
         chains=getSolverPoints(point,ik=[],fk=[],points=[])
@@ -75,7 +78,7 @@ def destructor(preserve=False):
         p.name=point.mNodeID
         
         #setting transform values
-        socket=point.getChildMetaNodes(mAttrs='mClass=MetaSocket')[0]
+        socket=point.getSocket()
         socketNode=socket.getNode()
         
         p.translation.set(cmds.xform(socketNode,q=True,ws=True,translation=True))
@@ -83,9 +86,9 @@ def destructor(preserve=False):
         p.scale.set(cmds.xform(socketNode,q=True,ws=True,scale=True))
         
         #setting children
-        children=point.getChildren(walk=False, cAttrs=['points'])
+        children=point.getPoints()
         for child in children:
-            p.addChild(meta.r9Meta.MetaClass(child).mNodeID)
+            p.addChild(child.mNodeID)
         
         #setting data
         p.controlData=point.controlData
@@ -154,3 +157,20 @@ def destructor(preserve=False):
 #mrg.constructor(points)
 points=mrg.destructor()
 constructor(points)
+
+'''
+def printPoint(point):
+    
+    print point.name
+    print point.controlData
+    print point.solverData
+    print point.parentData
+    print '----'
+    
+    if point.children:
+        for child in point.children:
+            printPoint(child)
+
+for point in points:
+    printPoint(point)
+    '''

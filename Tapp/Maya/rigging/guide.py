@@ -71,7 +71,7 @@ def constructor(points=[]):
 def destructor(obj=None,preserve=False):
     
     def createPoint(obj,parent=None):
-        for node in cmds.listRelatives(obj):
+        for node in cmds.listRelatives(obj,fullPath=True):
             
             if cmds.nodeType(node)=='implicitSphere':
                 
@@ -80,6 +80,7 @@ def destructor(obj=None,preserve=False):
                 
                 #setting name
                 p.name=obj.split('|')[-1]
+                p.longname=obj
                 
                 #setting data
                 controlData={}
@@ -94,7 +95,12 @@ def destructor(obj=None,preserve=False):
                     
                     if attr.split('_')[-1]=='control':
                         
-                        controlData[attr.split('_')[0]]=controlValues[cmds.getAttr(obj+'.'+attr)]
+                        value=controlValues[cmds.getAttr(obj+'.'+attr)]
+                        
+                        if value=='None':
+                            controlData[attr.split('_')[0]]=None
+                        else:
+                            controlData[attr.split('_')[0]]=value
                     
                     if attr.split('_')[-1]=='solver':
                         
@@ -122,18 +128,15 @@ def destructor(obj=None,preserve=False):
                 else:
                     return p
     
-    def findName(point,name):
+    def findName(point,longname):
         
-        if not isinstance(name,mrp.point) and '|' in name:
-            name=name[1:]
-        
-        if point.name==name:
+        if point.longname==longname:
             
             return point
         
         if point.children:
             for child in point.children:
-                return findName(child,name)
+                return findName(child,longname)
     
     def replaceParent(point,nodes):
         
@@ -155,7 +158,7 @@ def destructor(obj=None,preserve=False):
         
         roots=[]
         for node in cmds.ls(type='implicitSphere',long=True):
-            roots.append(node.split('|')[1])
+            roots.append('|'+node.split('|')[1])
         
         roots=list(set(roots))
         
@@ -175,3 +178,25 @@ def destructor(obj=None,preserve=False):
         replaceParent(point,result)
     
     return result
+
+'''
+def printPoint(point):
+    
+    print point.name
+    print point.longname
+    print point.controlData
+    print point.solverData
+    print point.parentData
+    print '----'
+    
+    if point.children:
+        for child in point.children:
+            printPoint(child)
+    else:
+        print 'end of chain!!!!!!!!!!!!!!!!!!!!'
+
+points=destructor(preserve=True)
+
+for point in points:
+    printPoint(point)
+    '''

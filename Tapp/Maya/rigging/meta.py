@@ -41,6 +41,49 @@ class MetaSystem(MetaRoot):
     def __bindData__(self):
         pass
     
+    def getPoints(self):
+        
+        nodes=self.getChildren(walk=False, cAttrs=['points'])
+        
+        result=[]
+        for node in nodes:
+            result.append(r9Meta.MetaClass(node))
+        
+        return result
+    
+    def getControls(self):
+        
+        nodes=self.getChildren(walk=False, cAttrs=['controls'])
+        
+        result=[]
+        for node in nodes:
+            result.append(r9Meta.MetaClass(node))
+        
+        return result
+    
+    def getChildControls(self):
+        
+        points=self.getChildren(walk=True, cAttrs=['points'])
+        
+        result=[]
+        for point in points:
+            for control in r9Meta.MetaClass(point).getControls():
+                result.append(control)
+        
+        return result
+    
+    def getSocket(self):
+        
+        socket=self.getChildren(walk=False, cAttrs=['socket'])[0]
+        
+        return r9Meta.MetaClass(socket)
+
+    def getPlug(self):
+        
+        plug=self.getChildren(walk=False, cAttrs=['plug'])[0]
+        
+        return r9Meta.MetaClass(plug)
+    
     def addPoint(self,name=None, boundData=None):
         
         if name:
@@ -70,7 +113,7 @@ class MetaSystem(MetaRoot):
         if plugType:
             metaNode.type=plugType
         
-        self.connectChildren(metaNode, 'plugs', srcAttr='metaParent')
+        self.connectChildren(metaNode, 'plug', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
             if issubclass(type(boundData),dict): 
@@ -90,7 +133,7 @@ class MetaSystem(MetaRoot):
         if socketSystem:
             metaNode.system=socketSystem
         
-        self.connectChildren(metaNode, 'sockets', srcAttr='metaParent')
+        self.connectChildren(metaNode, 'socket', srcAttr='metaParent')
         metaNode.connectChild(node, 'node', srcAttr='metaParent')
         if boundData:
             if issubclass(type(boundData),dict): 
@@ -133,6 +176,7 @@ class MetaPoint(MetaSystem):
         self.addAttr('solverData',{})
         self.addAttr('controlData',{})
         self.addAttr('parentData','',attrType='messageSimple')
+        self.addAttr('longname', '')
 
 class MetaTransform(r9Meta.MetaRig):
     '''

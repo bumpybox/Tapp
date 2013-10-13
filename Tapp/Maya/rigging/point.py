@@ -7,6 +7,7 @@ class point():
         
         #base attributes
         self.name=''
+        self.longname=''
         self.children=[]
         self.parent=None
         self.translation=self.transform()

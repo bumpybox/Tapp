@@ -10,7 +10,6 @@ accuracy
 copy a keyframe range always
 store original animation
 multiple objects
-
 '''
 
 import os
