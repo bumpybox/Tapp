@@ -1,12 +1,10 @@
 '''
-- need to account for render layers
-    - have a regionNode per renderlayer
 - arnold
     - subtracts 1 pixel from min values
     - adds 2 pixels to max values
 '''
 
-import pymel.core as pc
+import maya.cmds as cmds
 
 class region():
     
@@ -20,35 +18,43 @@ class region():
 
 def getRegionDraw():
     
-    drg=pc.PyNode('defaultRenderGlobals')
-    
-    minX=drg.left.get()
-    maxX=drg.rght.get()
-    minY=drg.bot.get()
-    maxY=drg.top.get()
+    minX=cmds.getAttr('defaultRenderGlobals.left')
+    maxX=cmds.getAttr('defaultRenderGlobals.rght')
+    minY=cmds.getAttr('defaultRenderGlobals.bot')
+    maxY=cmds.getAttr('defaultRenderGlobals.top')
     
     return {'minX':minX,'maxX':maxX,'minY':minY,'maxY':maxY}
 
-def createRegionNode():
+def getRegionNode():
     
-    result=None
+    result=[]
     
-    for node in pc.ls(type='network'):
-        if node.name()=='regionNode':
-            result=node
+    for layer in cmds.ls(type='renderLayer'):
+        
+        #search for existing region nodes
+        node=cmds.listConnections('%s.message' % layer,type='network')
+        
+        #create node if none existing
+        if not node:
+            node=cmds.shadingNode('network',n='regionNode_'+layer,asUtility=True)
+        else:
+            node=node[0]
+        
+        #adding attributes
+        attrs=['minX','maxX','minY','maxY']
+        for attr in attrs:
+            if not cmds.objExists(node+'.'+attr):
+                cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long')
+        
+        #connecting to renderlayer
+        if not cmds.objExists(node+'.'+'renderlayer'):
+            cmds.addAttr(node,ln='renderlayer',attributeType='message')
+            
+            cmds.connectAttr(layer+'.message',node+'.renderlayer')
+        
+        #return node
+        result.append(node)
     
-    if not result:
-        result=pc.createNode('network',n='regionNode')
+    return result
     
-    attrs=['minX','maxX','minY','maxY']
-    
-    
-    try:
-        pc.addAttr(result,ln='minX',defaultValue=0)
-        pc.addAttr(result,ln='maxX',defaultValue=0)
-        pc.addAttr(result,ln='minY',defaultValue=0)
-        pc.addAttr(result,ln='maxY',defaultValue=0)
-    except:
-        pass
-    
-createRegionNode()
+print getRegionNode()
