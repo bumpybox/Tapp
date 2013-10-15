@@ -2,11 +2,12 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMaya as om
 
-import Tapp.Maya.utils.meta as mum
+#import Tapp.Maya.utils.meta as mum
 import Tapp.Maya.utils.ZvParentMaster as muz
 
+'''
 def SetWorld(childModule,worldModule,downStream=False):
-    ''' Attaches all ik controls to world module. '''
+    #Attaches all ik controls to world module.
     
     #getting world control
     worldcnt=mum.DownStream(worldModule, 'control')[0]
@@ -55,7 +56,7 @@ def Detach(module,detachChildren=False):
             Detach(childModule)
 
 def Attach(childModule,parentModule):
-    ''' Attaches child module to parent module. '''
+     #Attaches child module to parent module.
     
     #get child plug
     for plug in mum.DownStream(childModule, 'plug'):
@@ -82,6 +83,8 @@ def Attach(childModule,parentModule):
     
     #scale constraining
     cmds.scaleConstraint(parentSocket,childPlug)
+'''
+
 
 def Distance(objA,objB ):
     ''' Returns distance between two nodes. '''

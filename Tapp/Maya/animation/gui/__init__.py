@@ -11,10 +11,10 @@ import shiboken
 import pysideuic
 from PySide import QtGui, QtCore
 
-import Tapp.Maya.animation.character as character
-reload(character)
-import Tapp.Maya.animation.tools as tools
-reload(tools)
+#import Tapp.Maya.animation.character as character
+#reload(character)
+#import Tapp.Maya.animation.tools as tools
+#reload(tools)
 import Tapp.Maya.utils.ZvParentMaster as muz
 reload(muz)
 import Tapp.Maya.animation.utils as mau
@@ -83,6 +83,7 @@ class Form(base,form):
     
     def create_connections(self):
         
+        '''
         #character---
         self.character_ik_pushButton.released.connect(self.on_character_ik_pushButton_released)
         self.character_fk_pushButton.released.connect(self.on_character_fk_pushButton_released)
@@ -97,6 +98,7 @@ class Form(base,form):
         self.character_range_checkBox.stateChanged.connect(self.character_range)
         self.character_start_pushButton.released.connect(self.character_start)
         self.character_getTimeline_pushButton.released.connect(self.character_timeline)
+        '''
         
         #tools---
         self.tools_zvparentmaster_pushButton.released.connect(self.on_tools_zvparentmaster_pushButton_released)
@@ -159,6 +161,7 @@ class Form(base,form):
         self.character_start_lineEdit.setText(str(minT))
         self.character_end_lineEdit.setText(str(maxT))
     
+    '''
     def on_character_ik_pushButton_released(self):
         
         if self.character_range_checkBox.checkState()==QtCore.Qt.CheckState.Checked:
@@ -210,6 +213,8 @@ class Form(base,form):
     def on_character_selectcharacter_pushButton_released(self):
         
         character.SelectCharacter()
+    
+    '''
     
     def on_tools_zvparentmaster_pushButton_released(self):
         
@@ -270,6 +275,7 @@ class Form(base,form):
         
         cmds.confirmDialog( title='Key Clean Up Info', message=msg,defaultButton='OK')
     
+    '''
     def on_tools_exportanimation_pushButton_released(self):
         
         tools.ExportAnim()
@@ -281,6 +287,7 @@ class Form(base,form):
     def on_tools_importanimation_pushButton_released(self):
         
         tools.ImportAnim()
+    '''
     
     def on_tools_importanimationhelp_pushButton_released(self):
         

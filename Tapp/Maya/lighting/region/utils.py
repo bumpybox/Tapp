@@ -1,8 +1,6 @@
 '''
 
-- set renderlayer active and hook up connections
-
-- renderlayers
+- UI
 
 Credits:
 Author:  Ryan Trowbridge
@@ -36,8 +34,6 @@ def getRegionDraw():
 
 def getRegionNode():
     
-    sel=cmds.ls(selection=True)
-    
     result=[]
     
     for layer in cmds.ls(type='renderLayer'):
@@ -70,8 +66,6 @@ def getRegionNode():
         
         #return node
         result.append(node)
-    
-    cmds.select(sel)
     
     return result
 
@@ -271,8 +265,6 @@ def getMeshRegion(pixelBuffer=2):
 
 def getMeshAnimation():
     
-    sel=cmds.ls(selection=True)
-    
     startFrame=int(cmds.playbackOptions(min=True,q=True))
     endFrame=int(cmds.playbackOptions(max=True,q=True))
     
@@ -282,8 +274,6 @@ def getMeshAnimation():
         cmds.currentTime(f)
         
         result.append(getMeshRegion())
-    
-    cmds.select(sel)
     
     return result
 
@@ -315,9 +305,26 @@ def clampMax(inputAttr,maxAttr,outputAttr):
 
 def connectPreview():
     
-    sel=cmds.ls(selection=True)
+    nodes=getRegionNode()
     
-    for node in getRegionNode():
+    if len(nodes)>1:
+        for node in nodes:
+            renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+            if renderlayer!='defaultRenderLayer':
+                
+                cmds.editRenderLayerAdjustment( 'defaultRenderGlobals.left',
+                                                'defaultRenderGlobals.rght',
+                                                'defaultRenderGlobals.bot',
+                                                'defaultRenderGlobals.top',
+                                                layer=renderlayer )
+    
+    for node in nodes:
+        
+        #activating renderlayer
+        renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+        
+        cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+        cmds.refresh()
         
         #create container
         container=cmds.container(n=node+'_previewConnection')
@@ -336,18 +343,21 @@ def connectPreview():
         cmds.container(container,e=True,addNode=[clp,pms])
         [clp,pms]=clampMax(node+'.maxY',node+'.renderheight','defaultRenderGlobals.top')
         cmds.container(container,e=True,addNode=[clp,pms])
-    
-    cmds.select(sel)
 
 def disconnectPreview():
     
-    for node in cmds.listConnections('defaultRenderGlobals.left'):
+    for node in getRegionNode():
         
-        cmds.delete(node)
+        renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+        
+        cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+        cmds.refresh()
+    
+        for n in cmds.listConnections('defaultRenderGlobals.left',type='container'):
+        
+            cmds.delete(n)
 
 def connectArnold():
-    
-    sel=cmds.ls(selection=True)
     
     nodes=getRegionNode()
     if len(nodes)>1:
@@ -386,49 +396,35 @@ def connectArnold():
         cmds.connectAttr(node+'.minX',container+'.minX')
         
         #connect to arnold
-        '''
         renderlayer=cmds.listConnections(node+'.renderlayer')[0]
-        edits=cmds.editRenderLayerAdjustment( renderlayer, query=True, layer=True )
         
-        if 'defaultArnoldRenderOptions.regionMinX' in edits:
-            
-            #renderlayer adjustments connections
-            index=edits.index('defaultArnoldRenderOptions.regionMinX')
-            cmds.connectAttr(container+'.minX',renderlayer+'.adjustments[%s].value' % index)
-            
-            index=edits.index('defaultArnoldRenderOptions.regionMinY')
-            cmds.connectAttr(minpms+'.output1D',renderlayer+'.adjustments[%s].value' % index)
-            
-            index=edits.index('defaultArnoldRenderOptions.regionMaxX')
-            [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth',renderlayer+'.adjustments[%s].value' % index)
-            cmds.container(container,e=True,addNode=[clp,pms])
-            
-            index=edits.index('defaultArnoldRenderOptions.regionMaxY')
-            [clp,pms]=clampMax(maxpms+'.output1D',node+'.renderheight',renderlayer+'.adjustments[%s].value' % index)
-            cmds.container(container,e=True,addNode=[clp,pms])
-            
-        else:
+        cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+        cmds.refresh()
         
-            cmds.connectAttr(container+'.minX','defaultArnoldRenderOptions.regionMinX')
-            cmds.connectAttr(minpms+'.output1D','defaultArnoldRenderOptions.regionMinY')
-            
-            [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth','defaultArnoldRenderOptions.regionMaxX')
-            cmds.container(container,e=True,addNode=[clp,pms])
-            [clp,pms]=clampMax(maxpms+'.output1D',node+'.renderheight','defaultArnoldRenderOptions.regionMaxY')
-            cmds.container(container,e=True,addNode=[clp,pms])
-            '''
-    
-    cmds.select(sel)
+        cmds.connectAttr(container+'.minX','defaultArnoldRenderOptions.regionMinX')
+        cmds.connectAttr(minpms+'.output1D','defaultArnoldRenderOptions.regionMinY')
+        
+        [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth','defaultArnoldRenderOptions.regionMaxX')
+        cmds.container(container,e=True,addNode=[clp,pms])
+        [clp,pms]=clampMax(maxpms+'.output1D',node+'.renderheight','defaultArnoldRenderOptions.regionMaxY')
+        cmds.container(container,e=True,addNode=[clp,pms])
 
 def disconnectArnold():
     
-    for node in cmds.listConnections('defaultArnoldRenderOptions.regionMinX'):
+    for node in getRegionNode():
         
-        cmds.delete(node)
+        renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+        
+        cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+        cmds.refresh()
+    
+        for n in cmds.listConnections('defaultArnoldRenderOptions.regionMinX',type='container'):
+        
+            cmds.delete(n)
 
 #connectPreview()
-#disconnectPreview()
 #connectArnold()
+#disconnectPreview()
 #disconnectArnold()
 
 '''
