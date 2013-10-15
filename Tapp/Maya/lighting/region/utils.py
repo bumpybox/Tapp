@@ -1,15 +1,6 @@
 '''
 
-- connect regionNode to resolution values
-
-- need to clamp max values when connecting to renders (resolution-1)
-    - clamp values before input
-
-- connect connection nodes to regionNode message
-
-- connect arnold render region
-    - minY=renderHeight-maxY
-    - maxY=renderHeight-minY
+- set renderlayer active and hook up connections
 
 - renderlayers
 
@@ -45,6 +36,8 @@ def getRegionDraw():
 
 def getRegionNode():
     
+    sel=cmds.ls(selection=True)
+    
     result=[]
     
     for layer in cmds.ls(type='renderLayer'):
@@ -59,10 +52,15 @@ def getRegionNode():
             node=node[0]
         
         #adding attributes
-        attrs=['minX','maxX','minY','maxY']
+        attrs=['minX','maxX','minY','maxY','renderheight','renderwidth']
         for attr in attrs:
             if not cmds.objExists(node+'.'+attr):
                 cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long')
+        
+        #connecting to default render resolution
+        if not cmds.listConnections('%s.width' % 'defaultResolution',type='network'):
+            cmds.connectAttr('defaultResolution.width',node+'.renderwidth',force=True)
+            cmds.connectAttr('defaultResolution.height',node+'.renderheight',force=True)
         
         #connecting to renderlayer
         if not cmds.objExists(node+'.'+'renderlayer'):
@@ -72,6 +70,8 @@ def getRegionNode():
         
         #return node
         result.append(node)
+    
+    cmds.select(sel)
     
     return result
 
@@ -241,8 +241,7 @@ def getMeshRegion(pixelBuffer=2):
         if (maxY+pixelBuffer)<=renderHeight:
             maxY+=pixelBuffer
     
-    #regions cant exceed or equal max resolution
-    '''
+    #regions cant equal max resolution
     if minX==renderWidth:
         minX=renderWidth-1
     if maxX==renderWidth:
@@ -251,7 +250,6 @@ def getMeshRegion(pixelBuffer=2):
         minY=renderHeight-1
     if maxY==renderHeight:
         maxY=renderHeight-1
-        '''
     
     #resetting overscan
     cmds.setAttr(cam+'.overscan',overscan)
@@ -266,18 +264,14 @@ def getMeshRegion(pixelBuffer=2):
     if minY==renderHeight and maxY==renderHeight:
         return None
     
-    #setting region
-    cmds.setAttr('defaultRenderGlobals.left',minX)
-    cmds.setAttr('defaultRenderGlobals.rght',maxX)
-    cmds.setAttr('defaultRenderGlobals.bot',minY)
-    cmds.setAttr('defaultRenderGlobals.top',maxY)
-    
     #return
     frame=int(cmds.currentTime(q=True))
     
     return region(frame,minX,maxX,minY,maxY)
 
 def getMeshAnimation():
+    
+    sel=cmds.ls(selection=True)
     
     startFrame=int(cmds.playbackOptions(min=True,q=True))
     endFrame=int(cmds.playbackOptions(max=True,q=True))
@@ -289,38 +283,161 @@ def getMeshAnimation():
         
         result.append(getMeshRegion())
     
+    cmds.select(sel)
+    
     return result
 
-def connectPreview(node):
-    
-    cmds.connectAttr(node+'.minX','defaultRenderGlobals.left',force=True)
-    cmds.connectAttr(node+'.maxX','defaultRenderGlobals.rght',force=True)
-    cmds.connectAttr(node+'.minY','defaultRenderGlobals.bot',force=True)
-    cmds.connectAttr(node+'.maxY','defaultRenderGlobals.top',force=True)
-
-def disconnectPreview():
-    
-    node=cmds.listConnections('defaultRenderGlobals.left',type='network')
-    
-    if node:
-        try:
-            cmds.disconnectAttr(node[0]+'.minX','defaultRenderGlobals.left')
-            cmds.disconnectAttr(node[0]+'.maxX','defaultRenderGlobals.rght')
-            cmds.disconnectAttr(node[0]+'.minY','defaultRenderGlobals.bot')
-            cmds.disconnectAttr(node[0]+'.maxY','defaultRenderGlobals.top')
-        except:
-            pass
-
 def setRegionNode(node,region):
+    
+    sel=cmds.ls(selection=True)
     
     cmds.setKeyframe( node, attribute='minX',v=region.minX, t=region.frame )
     cmds.setKeyframe( node, attribute='maxX',v=region.maxX, t=region.frame )
     cmds.setKeyframe( node, attribute='minY',v=region.minY, t=region.frame )
     cmds.setKeyframe( node, attribute='maxY',v=region.maxY, t=region.frame )
+    
+    cmds.select(sel)
 
+def clampMax(inputAttr,maxAttr,outputAttr):
+    
+    clp=cmds.shadingNode('clamp',asUtility=True)
+    pms=cmds.shadingNode('plusMinusAverage',asUtility=True)
+    
+    cmds.addAttr(clp,ln='maxDiff',defaultValue=-1)
+    cmds.connectAttr(inputAttr,clp+'.inputR')
+    cmds.connectAttr(clp+'.outputR',outputAttr)
+    
+    cmds.connectAttr(maxAttr,pms+'.input1D[0]')
+    cmds.connectAttr(clp+'.maxDiff',pms+'.input1D[1]')
+    cmds.connectAttr(pms+'.output1D',clp+'.maxR')
+    
+    return [clp,pms]
+
+def connectPreview():
+    
+    sel=cmds.ls(selection=True)
+    
+    for node in getRegionNode():
+        
+        #create container
+        container=cmds.container(n=node+'_previewConnection')
+        
+        cmds.addAttr(container,ln='minX',defaultValue=1)
+        cmds.addAttr(container,ln='minY',defaultValue=1)
+        
+        #connect to preview
+        cmds.connectAttr(node+'.minX',container+'.minX')
+        cmds.connectAttr(container+'.minX','defaultRenderGlobals.left')
+        
+        cmds.connectAttr(node+'.minY',container+'.minY')
+        cmds.connectAttr(container+'.minY','defaultRenderGlobals.bot')
+        
+        [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth','defaultRenderGlobals.rght')
+        cmds.container(container,e=True,addNode=[clp,pms])
+        [clp,pms]=clampMax(node+'.maxY',node+'.renderheight','defaultRenderGlobals.top')
+        cmds.container(container,e=True,addNode=[clp,pms])
+    
+    cmds.select(sel)
+
+def disconnectPreview():
+    
+    for node in cmds.listConnections('defaultRenderGlobals.left'):
+        
+        cmds.delete(node)
+
+def connectArnold():
+    
+    sel=cmds.ls(selection=True)
+    
+    nodes=getRegionNode()
+    if len(nodes)>1:
+        for node in nodes:
+            renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+            if renderlayer!='defaultRenderLayer':
+                
+                cmds.editRenderLayerAdjustment( 'defaultArnoldRenderOptions.regionMinX',
+                                                'defaultArnoldRenderOptions.regionMaxX',
+                                                'defaultArnoldRenderOptions.regionMinY',
+                                                'defaultArnoldRenderOptions.regionMaxY',
+                                                layer=renderlayer )
+    
+    for node in nodes:
+    
+        #create container
+        container=cmds.container(n=node+'_arnoldConnection')
+        
+        cmds.addAttr(container,ln='minX',defaultValue=1)
+        
+        #create utility nodes
+        minpms=cmds.shadingNode('plusMinusAverage',asUtility=True)
+        maxpms=cmds.shadingNode('plusMinusAverage',asUtility=True)
+        
+        cmds.container(container,e=True,addNode=[minpms,maxpms])
+        
+        #setup nodes
+        cmds.setAttr(minpms+'.operation',2)
+        cmds.connectAttr(node+'.renderheight',minpms+'.input1D[0]')
+        cmds.connectAttr(node+'.maxY',minpms+'.input1D[1]')
+        
+        cmds.setAttr(maxpms+'.operation',2)
+        cmds.connectAttr(node+'.renderheight',maxpms+'.input1D[0]')
+        cmds.connectAttr(node+'.minY',maxpms+'.input1D[1]')
+        
+        cmds.connectAttr(node+'.minX',container+'.minX')
+        
+        #connect to arnold
+        '''
+        renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+        edits=cmds.editRenderLayerAdjustment( renderlayer, query=True, layer=True )
+        
+        if 'defaultArnoldRenderOptions.regionMinX' in edits:
+            
+            #renderlayer adjustments connections
+            index=edits.index('defaultArnoldRenderOptions.regionMinX')
+            cmds.connectAttr(container+'.minX',renderlayer+'.adjustments[%s].value' % index)
+            
+            index=edits.index('defaultArnoldRenderOptions.regionMinY')
+            cmds.connectAttr(minpms+'.output1D',renderlayer+'.adjustments[%s].value' % index)
+            
+            index=edits.index('defaultArnoldRenderOptions.regionMaxX')
+            [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth',renderlayer+'.adjustments[%s].value' % index)
+            cmds.container(container,e=True,addNode=[clp,pms])
+            
+            index=edits.index('defaultArnoldRenderOptions.regionMaxY')
+            [clp,pms]=clampMax(maxpms+'.output1D',node+'.renderheight',renderlayer+'.adjustments[%s].value' % index)
+            cmds.container(container,e=True,addNode=[clp,pms])
+            
+        else:
+        
+            cmds.connectAttr(container+'.minX','defaultArnoldRenderOptions.regionMinX')
+            cmds.connectAttr(minpms+'.output1D','defaultArnoldRenderOptions.regionMinY')
+            
+            [clp,pms]=clampMax(node+'.maxX',node+'.renderwidth','defaultArnoldRenderOptions.regionMaxX')
+            cmds.container(container,e=True,addNode=[clp,pms])
+            [clp,pms]=clampMax(maxpms+'.output1D',node+'.renderheight','defaultArnoldRenderOptions.regionMaxY')
+            cmds.container(container,e=True,addNode=[clp,pms])
+            '''
+    
+    cmds.select(sel)
+
+def disconnectArnold():
+    
+    for node in cmds.listConnections('defaultArnoldRenderOptions.regionMinX'):
+        
+        cmds.delete(node)
+
+#connectPreview()
+#disconnectPreview()
+#connectArnold()
+#disconnectArnold()
+
+'''
 regions=getMeshAnimation()
+
 for node in getRegionNode():
     
     for r in regions:
         if r:
+            
             setRegionNode(node, r)
+            '''
