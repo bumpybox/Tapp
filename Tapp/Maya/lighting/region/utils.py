@@ -3,6 +3,7 @@
 - connect regionNode to resolution values
 
 - need to clamp max values when connecting to renders (resolution-1)
+    - clamp values before input
 
 - connect connection nodes to regionNode message
 
