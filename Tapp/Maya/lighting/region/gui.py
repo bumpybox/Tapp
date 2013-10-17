@@ -32,7 +32,12 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def mod_layout(self):
         
-        pass
+        nodes=utils.getRegionNode()
+        
+        for node in nodes:
+            
+            renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+            self.renderlayer_listWidget.addItem(renderlayer)
     
     def create_connections(self):
         
