@@ -38,38 +38,46 @@ def getRegionNode():
     
     for layer in cmds.ls(type='renderLayer'):
         
-        #search for existing region nodes
-        node=cmds.listConnections('%s.message' % layer,type='network')
+        if not cmds.referenceQuery(layer,isNodeReferenced=True):
         
-        #create node if none existing
-        if not node:
-            node=cmds.shadingNode('network',n='regionNode_'+layer,asUtility=True)
-        else:
-            node=node[0]
-        
-        #adding attributes
-        attrs=['minX','maxX','minY','maxY','renderheight','renderwidth']
-        for attr in attrs:
-            if not cmds.objExists(node+'.'+attr):
-                cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long')
-        
-        #connecting to default render resolution
-        if not cmds.listConnections('%s.width' % 'defaultResolution',type='network'):
-            cmds.connectAttr('defaultResolution.width',node+'.renderwidth',force=True)
-            cmds.connectAttr('defaultResolution.height',node+'.renderheight',force=True)
-        
-        #connecting to renderlayer
-        if not cmds.objExists(node+'.'+'renderlayer'):
-            cmds.addAttr(node,ln='renderlayer',attributeType='message')
+            #search for existing region nodes
+            node=cmds.listConnections('%s.message' % layer,type='network')
             
-            cmds.connectAttr(layer+'.message',node+'.renderlayer')
-        
-        #return node
-        result.append(node)
+            #create node if none existing
+            if not node:
+                node=cmds.shadingNode('network',n='regionNode_'+layer,asUtility=True)
+            else:
+                node=node[0]
+            
+            #adding attributes
+            attrs=['minX','maxX','minY','maxY','renderheight','renderwidth']
+            for attr in attrs:
+                if not cmds.objExists(node+'.'+attr):
+                    cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long')
+            
+            #connecting to default render resolution
+            if not cmds.listConnections('%s.width' % 'defaultResolution',type='network'):
+                cmds.connectAttr('defaultResolution.width',node+'.renderwidth',force=True)
+                cmds.connectAttr('defaultResolution.height',node+'.renderheight',force=True)
+            
+            #connecting to renderlayer
+            if not cmds.objExists(node+'.'+'renderlayer'):
+                cmds.addAttr(node,ln='renderlayer',attributeType='message')
+                
+                cmds.connectAttr(layer+'.message',node+'.renderlayer')
+            
+            #return node
+            result.append(node)
     
     return result
 
 def getMeshRegion(pixelBuffer=2):
+    '''
+    Main part of this code is credited to: 
+    
+    Author:  Ryan Trowbridge
+    Contact: admin@rtrowbridge.com
+    '''
 
     # get current render width and height settings
     renderWidth = cmds.getAttr('defaultResolution.width')
