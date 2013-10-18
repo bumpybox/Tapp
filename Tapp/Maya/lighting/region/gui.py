@@ -41,6 +41,8 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def create_connections(self):
         
+        self.renderlayer_listWidget.SelectedClicked.connect(self.on_renderlayer_pressed)
+        
         self.refresh_pushButton.pressed.connect(self.refresh)
         
         self.getPreviewRegion_pushButton.pressed.connect(self.on_getPreviewRegion_pressed)
@@ -53,9 +55,18 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.connectPreview_pushButton.pressed.connect(self.on_connectPreview_pressed)
         self.disconnectPreview_pushButton.pressed.connect(self.on_disconnectPreview_pressed)
     
+    def on_renderlayer_pressed(self):
+    
     def refresh(self):
         
-        print 'refresh'
+        self.renderlayer_listWidget.clear()
+        
+        nodes=utils.getRegionNode()
+        
+        for node in nodes:
+            
+            renderlayer=cmds.listConnections(node+'.renderlayer')[0]
+            self.renderlayer_listWidget.addItem(renderlayer)
     
     def on_getPreviewRegion_pressed(self):
         
