@@ -53,7 +53,10 @@ def getRegionNode():
             attrs=['minX','maxX','minY','maxY','renderheight','renderwidth']
             for attr in attrs:
                 if not cmds.objExists(node+'.'+attr):
-                    cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long')
+                    cmds.addAttr(node,ln=attr,defaultValue=0,attributeType='long',k=True)
+            
+            cmds.setAttr(node+'.renderheight',k=False)
+            cmds.setAttr(node+'.renderwidth',k=False)
             
             #connecting to default render resolution
             if not cmds.listConnections('%s.width' % 'defaultResolution',type='network'):
@@ -287,14 +290,10 @@ def getMeshAnimation():
 
 def setRegionNode(node,region):
     
-    sel=cmds.ls(selection=True)
-    
     cmds.setKeyframe( node, attribute='minX',v=region.minX, t=region.frame )
     cmds.setKeyframe( node, attribute='maxX',v=region.maxX, t=region.frame )
     cmds.setKeyframe( node, attribute='minY',v=region.minY, t=region.frame )
     cmds.setKeyframe( node, attribute='maxY',v=region.maxY, t=region.frame )
-    
-    cmds.select(sel)
 
 def clampMax(inputAttr,maxAttr,outputAttr):
     

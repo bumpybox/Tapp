@@ -1,3 +1,10 @@
+'''
+- non renderlayer selected fail safe
+- pass in nodes to find the region on
+- error for user when render region because of locked attributes
+    - viewport based preview?
+'''
+
 from PySide import QtGui
 from PySide import QtCore
 from shiboken import wrapInstance
@@ -8,6 +15,7 @@ import maya.OpenMayaUI as omui
 import Tapp.Maya.lighting.region.resources.region as gui
 reload(gui)
 import Tapp.Maya.lighting.region.utils as utils
+reload(utils)
 
 '''
 import Tapp.utils.pyside.compileUi as upc
@@ -41,7 +49,7 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def create_connections(self):
         
-        self.renderlayer_listWidget.SelectedClicked.connect(self.on_renderlayer_pressed)
+        self.renderlayer_listWidget.clicked.connect(self.on_renderlayer_clicked)
         
         self.refresh_pushButton.pressed.connect(self.refresh)
         
@@ -55,7 +63,30 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.connectPreview_pushButton.pressed.connect(self.on_connectPreview_pressed)
         self.disconnectPreview_pushButton.pressed.connect(self.on_disconnectPreview_pressed)
     
-    def on_renderlayer_pressed(self):
+    def getSelectedRegionNode(self):
+        
+        if self.renderlayer_listWidget.selectedItems():
+            renderlayer=self.renderlayer_listWidget.selectedItems()[0].text()
+            
+            cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+            cmds.refresh()
+            
+            regionNode=cmds.listConnections(renderlayer+'.message',type='network')[0]
+            
+            return regionNode
+        else:
+            return None
+    
+    def on_renderlayer_clicked(self):
+        
+        renderlayer=self.renderlayer_listWidget.selectedItems()[0].text()
+        
+        cmds.editRenderLayerGlobals( currentRenderLayer=renderlayer)
+        cmds.refresh()
+        
+        regionNode=cmds.listConnections(renderlayer+'.message',type='network')[0]
+        
+        cmds.select(regionNode)
     
     def refresh(self):
         
@@ -70,11 +101,46 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def on_getPreviewRegion_pressed(self):
         
-        utils.getRegionDraw()
+        r=utils.getRegionDraw()
+        
+        regionNode=self.getSelectedRegionNode()
+        
+        if regionNode:
+        
+            utils.setRegionNode(regionNode, r)
+        
+        else:
+            
+            cmds.warning('No renderlayer selected in region window!')
     
     def on_getObjectRegion_pressed(self):
         
-        utils.getMeshAnimation()
+        sel=cmds.ls(selection=True)
+        
+        #checking selection for meshes
+        check=False
+        for node in sel:
+            
+            shape=cmds.listRelatives(node,shapes=True)
+            if shape:
+                
+                if cmds.nodeType(shape)=='mesh':
+                    
+                    check=True
+        
+        if check:
+        
+            regions=utils.getMeshAnimation()
+            
+            regionNode=self.getSelectedRegionNode()
+            
+            for r in regions:
+                
+                utils.setRegionNode(regionNode, r)
+        
+        else:
+            
+            cmds.warning('Nothing selected. Please select one or more meshes!')
     
     def on_connectArnold_pressed(self):
         

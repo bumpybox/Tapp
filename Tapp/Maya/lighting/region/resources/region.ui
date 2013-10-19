@@ -6,15 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>562</width>
+    <width>349</width>
     <height>259</height>
    </rect>
   </property>
+  <property name="acceptDrops">
+   <bool>false</bool>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Region Render</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QListWidget" name="renderlayer_listWidget"/>
+    </item>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
@@ -139,12 +145,6 @@
        </widget>
       </item>
      </layout>
-    </item>
-    <item>
-     <widget class="QListWidget" name="renderlayer_listWidget"/>
-    </item>
-    <item>
-     <widget class="QTableWidget" name="frame_tableWidget"/>
     </item>
    </layout>
   </widget>
