@@ -18,6 +18,8 @@ class point():
         self.rotation.set(0,0,0)
         self.scale.set(1,1,1)
         
+        self.size=1
+        
         #guide attributes
         self.solverData=None
         self.controlData=None

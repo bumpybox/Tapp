@@ -244,7 +244,7 @@ def IK(points,namespace=''):
     
     cmds.connectAttr(plug+'.ik_stretch',ikResult['softIk']+'.stretch')
     
-    endplug=cmds.spaceLocator(name=prefix+'plug')[0]
+    endplug=cmds.spaceLocator(name=namespace+'endPlug')[0]
     
     points[0].plug['IK_control']=endplug
     
@@ -277,7 +277,7 @@ def IK(points,namespace=''):
         
         count=points.index(node)
         
-        prefix=namespace+node.name+'_'
+        prefix='ik_'+node.name+'_'
         
         #building root control, polevector and end control
         if node.controlData['IK']:
@@ -303,7 +303,7 @@ def IK(points,namespace=''):
             cmds.parent(cntplug,sngrp)
             
             #creating control
-            cnt=mru.icon(iconType=node.controlData['IK'],name=prefix+'cnt',size=node.scale[0])
+            cnt=mru.icon(iconType=node.controlData['IK'],name=prefix+'cnt',size=node.size)
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)
@@ -382,7 +382,7 @@ def IK(points,namespace=''):
                 cmds.orientConstraint(cnt,node.socket['IK'])
                 
                 #deleting end plug helpers
-                cmds.delete(endphgrp,endsngrp,metaEndplug)
+                cmds.delete(endphgrp,endsngrp,metaEndplug.mNode)
                 
                 del(points[-1].plug['IK_plug'])
                 
@@ -437,11 +437,11 @@ def FK(points,namespace=''):
     #build controls---
     for node in points:
         
-        prefix=namespace+node.name.split('|')[-1]+'_'
+        prefix='fk_'+node.name+'_'
         
         #create control
         if node.controlData['FK']:
-            cnt=mru.icon(iconType=node.controlData['FK'],name=prefix+'cnt',size=node.scale[0])
+            cnt=mru.icon(iconType=node.controlData['FK'],name=prefix+'cnt',size=node.size)
             
             #setup control
             mru.Snap(None,cnt, translation=node.translation, rotation=node.rotation)

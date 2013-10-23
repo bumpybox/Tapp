@@ -1,4 +1,5 @@
 '''
+- better naming of non helper objects
 - test leg switching
 - static parenting system is not very flexible
     - breaks when changing names
@@ -12,8 +13,8 @@
 
 import Tapp.Maya.rigging.guide as mrg
 reload(mrg)
-import Tapp.Maya.rigging.solvers as mrs
-reload(mrs)
+import Tapp.Maya.rigging.build_utils as mrbu
+reload(mrbu)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 import Tapp.Maya.rigging.point as mrp
@@ -41,27 +42,25 @@ def constructor(points):
             return {'IK':ik,'FK':fk,'points':points}
     
     for point in points:
-        mrs.system(point)
+        mrbu.system(point)
     
     for point in points:
-        mrs.replaceParentData(point)
+        mrbu.replaceParentData(point)
         
         chains=getSolverPoints(point,ik=[],fk=[],points=[])
         
-        index=points.index(point)
-        
         if chains['IK']:
-            mrs.IK(chains['IK'],'ik_%s_' % index)
+            mrbu.IK(chains['IK'],'ik_%s_' % point.name)
         
         if chains['FK']:
-            mrs.FK(chains['FK'],'fk_%s_' % index)
-    
+            mrbu.FK(chains['FK'],'fk_%s_' % point.name)
+        
         #build blend
-        mrs.blend(chains['points'], 'bld_%s_' % index)
+        mrbu.blend(chains['points'], 'bld_%s_' % point.name)
     
     #static parenting
     for point in points:
-        mrs.parent(point)
+        mrbu.parent(point)
 
 import maya.mel as mel
 import maya.cmds as cmds

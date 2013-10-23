@@ -23,17 +23,25 @@ def constructor(points=[]):
         if point.controlData:
             for system in point.controlData:
                 cmds.addAttr(node,ln=system+'_control',at='enum',k=True,enumName=':'.join(controlValues))
-                cmds.setAttr(node+'.'+system+'_control',controlValues.index(point.controlData[system]))
+                
+                if point.controlData[system]:
+                    cmds.setAttr(node+'.'+system+'_control',controlValues.index(point.controlData[system]))
+        else:
+            cmds.addAttr(node,ln='IK_control',at='enum',k=True,enumName=':'.join(controlValues))
+            cmds.addAttr(node,ln='FK_control',at='enum',k=True,enumName=':'.join(controlValues))
         
         if point.solverData:
             for system in point.solverData:
                 cmds.addAttr(node,ln=system+'_solver',at='bool',k=True)
                 cmds.setAttr(node+'.'+system+'_solver',point.solverData[system])
+        else:
+            cmds.addAttr(node,ln='IK_solver',at='bool',k=True)
+            cmds.addAttr(node,ln='FK_solver',at='bool',k=True)
         
         if point.parentData:
             
             cmds.addAttr(node,ln='parent',at='enum',k=True,
-                         enumName=':'.join(['None',point.parentData.name]),defaultValue=1)
+                         enumName=':'.join(['None',point.parentData.longname]),defaultValue=1)
         else:
             cmds.addAttr(node,ln='parent',at='enum',k=True,enumName='None')
         
@@ -41,6 +49,15 @@ def constructor(points=[]):
         cmds.xform(node,ws=True,translation=point.translation)
         cmds.xform(node,ws=True,rotation=point.rotation)
         cmds.xform(node,ws=True,scale=point.scale)
+        
+        #size
+        cmds.addAttr(node,ln='size',at='float',k=True)
+        
+        shape=cmds.listRelatives(node,shapes=True,fullPath=True)[0]
+        
+        cmds.connectAttr(node+'.size',shape+'.radius')
+        
+        cmds.setAttr(node+'.size',point.size)
         
         #parenting
         if point.parent:
@@ -113,7 +130,9 @@ def destructor(obj=None,preserve=False):
                 #transforms
                 p.translation.set(cmds.xform(obj,q=True,ws=True,translation=True))
                 p.rotation.set(cmds.xform(obj,q=True,ws=True,rotation=True))
-                p.scale.set(cmds.xform(obj,q=True,relative=True,scale=True))
+                
+                #size
+                p.size=cmds.getAttr(obj+'.size')
                 
                 #parent and children
                 p.parent=parent
@@ -199,4 +218,4 @@ points=destructor(preserve=True)
 
 for point in points:
     printPoint(point)
-    '''
+'''
