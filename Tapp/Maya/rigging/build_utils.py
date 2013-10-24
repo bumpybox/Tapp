@@ -67,9 +67,7 @@ def parent(point):
 def blend(points,namespace=''):
     
     #create extra control
-    control=mru.Pin(namespace+'cnt')
-    
-    metaNode=points[0].meta.addControl(control,'extra')
+    control=mru.Pin(namespace+'extra_cnt',size=points[0].size)
     
     #building blends
     rootgrp=cmds.group(empty=True,name=namespace+'grp')
@@ -88,6 +86,19 @@ def blend(points,namespace=''):
         
         node.meta.addSocket(socket)
         
+        #setting up extra attributes
+        if hasattr(node,'extraAttributes'):
+            for attr in node.extraAttributes:
+                
+                a=attr.split('.')[-1]
+                
+                if not cmds.objExists(control+'.'+a):
+                    
+                    cmds.addAttr(control,ln=a,at='float',min=0,max=1,k=True)
+                    
+                    cmds.connectAttr(control+'.'+a,attr)
+        
+        #setting up blending
         for s in node.socket:
             
             con=cmds.parentConstraint(node.socket[s],socket)[0]
@@ -108,6 +119,9 @@ def blend(points,namespace=''):
                     if node.socket[s] in target:
                         
                         cmds.connectAttr(control+'.'+s,con+'.'+target)
+                        
+                        cmds.connectAttr(control+'.'+s,node.control[s]+'.v')
+                        
             
             #parenting up the points
             if node.parent:
@@ -133,6 +147,8 @@ def blend(points,namespace=''):
     
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
     mru.ChannelboxClean(control, attrs)
+    
+    points[0].meta.addControl(control,controlSystem='extra',icon='Pin')
     
     if len(points)==1:
         cmds.delete(control)
@@ -244,6 +260,8 @@ def IK(points,namespace=''):
     
     cmds.connectAttr(plug+'.ik_stretch',ikResult['softIk']+'.stretch')
     
+    points[0].extraAttributes=[plug+'.ik_stretch']
+    
     endplug=cmds.spaceLocator(name=namespace+'endPlug')[0]
     
     points[0].plug['IK_control']=endplug
@@ -322,6 +340,8 @@ def IK(points,namespace=''):
             cmds.parent(sngrp,phgrp)
             cmds.parent(cnt,sngrp)
             
+            mru.ChannelboxClean(cnt, ['v'], lock=False)
+            
             #adding cntplug and cnt to meta system
             node.meta.addPlug(cntplug,plugType='control')
             
@@ -376,6 +396,8 @@ def IK(points,namespace=''):
             
             #end control
             if not node.children:
+                
+                cmds.parent(endStretch,rootgrp)
             
                 cmds.pointConstraint(cnt,endStretch)
                 
@@ -460,6 +482,8 @@ def FK(points,namespace=''):
             
             cmds.parent(cnt,sngrp)
             cmds.parent(sngrp,phgrp)
+            
+            mru.ChannelboxClean(cnt, ['v'], lock=False)
             
             if node.parent:
                 cmds.parent(phgrp,node.parent.socket['FK'])

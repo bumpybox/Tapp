@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-import Tapp.Maya.utils.meta as mum
+import Tapp.Maya.rigging.meta as meta
 import Tapp.Maya.rigging.utils as mru
 
 def switch(mode,timeRange=False,start=0,end=0):
@@ -12,87 +12,89 @@ def switch(mode,timeRange=False,start=0,end=0):
     nodeSelection=cmds.ls(selection=True)
     
     if len(nodeSelection)>=1:
-    
+        
+        #time based switching
         if timeRange:
             
             for count in xrange(start,end):
                 
                 cmds.currentTime(count)
                 
-                __switch__(mode)
+                for node in nodeSelection:
+                    point=meta.r9Meta.getConnectedMetaSystemRoot(node)
+                    
+                    snap(point,mode)
             
+            for node in nodeSelection:
+                point=meta.r9Meta.getConnectedMetaSystemRoot(node)
+                
+                activate(point,mode)
+        
+        #non time based switching
         else:
             
-            __switch__(mode)
+            for node in nodeSelection:
+            
+                point=meta.r9Meta.getConnectedMetaSystemRoot(node)
+                
+                snap(point,mode)
+                
+                activate(point,mode)
     
     else:
         cmds.warning('Nothing is selected!')
     
     cmds.undoInfo(closeChunk=True)
 
-def __switch__(mode):
+def activate(point,targetSystem):
     
-    #error checking for selection count
-    nodeSelection=cmds.ls(selection=True)
+    root=meta.r9Meta.getConnectedMetaSystemRoot(point.mNode)
     
-    if len(nodeSelection)>=1:
-        #getting modules
-        modules=[]
-        for node in nodeSelection:
-            
-            modules.append(mum.UpStream(node, 'module'))
+    #collecting controls
+    controls=root.getControls()
+    for control in root.getChildControls():
+        controls.append(control)
+    
+    #collecting systems
+    systems=[]
+    for control in controls:
+        systems.append(control.system)
+    
+    systems=list(set(systems))
+    
+    #finding extra control
+    for control in controls:
         
-        modules=set(modules)
+        if control.system=='extra':
+            
+            node=control.getNode()
+            
+            for system in systems:
+                
+                #activating target system
+                if system==targetSystem:
+                    cmds.setAttr(node+'.'+system,1)
+                
+                #deactivating all other systems
+                if system!='extra' and system!=targetSystem:
+                    cmds.setAttr(node+'.'+system,0)
+
+def snap(point,targetSystem):
+    
+    socket=point.getSocket().getNode()
+    
+    #snapping target system control to socket
+    for control in point.getControls():
         
-        #module loop
-        for module in modules:
-            #finding cnts and switching to ik with extra control
-            cnts=mum.DownStream(module, 'control')
+        if control.system==targetSystem:
             
-            for cnt in cnts:
-                data=mum.GetData(cnt,stripNamespace=False)
-                
-                if data['component']=='extra':
-                    transformNode=mum.GetTransform(cnt)
-                    
-                    if mode=='ik':
-                        cmds.setAttr(transformNode+'.FKIK',1)
-                    if mode=='fk':
-                        cmds.setAttr(transformNode+'.FKIK',0)
-            
-            #finding ik cnts
-            if mode=='ik':
-                filterData={'system':'ik'}
-            if mode=='fk':
-                filterData={'system':'fk'}
-            ikcnts=mum.Filter(cnts, filterData)
-            
-            #transforming ik cnts to their switch node
-            for cnt in mum.Sort(ikcnts, 'index'):
-                data=mum.GetData(cnt,stripNamespace=False)
-                
-                switch=data['switch']
-                transformNode=mum.GetTransform(cnt)
-                
-                mru.Snap(switch, transformNode,scale=True)
-                
-                #scale switching
-                transscl=mru.GetWorldScale(transformNode)
-                transscl=mru.RoundList(transscl, 9)
-                switchscl=mru.GetWorldScale(switch)
-                switchscl=mru.RoundList(switchscl, 9)
-                
-                scl=[1,1,1]
-                for count in xrange(0,3):
-                    if transscl[count]!=switchscl[count]:
-                        
-                        scl[count]=switchscl[count]/transscl[count]
-                
-                cmds.xform(transformNode,r=True,scale=scl)
-                
-                cmds.setKeyframe(transformNode)
-    else:
-        cmds.warning('Nothing is selected!')
+            mru.Snap(socket, control.getNode())
+            cmds.setKeyframe(control.getNode())
+    
+    #continuing with child points
+    if point.getPoints():
+        for child in point.getPoints():
+            snap(child,targetSystem)
 
 def __zeroNode__(node):
     if (cmds.getAttr('%s.tx' % node,lock=True))!=True:
@@ -127,6 +129,7 @@ def ZeroControl():
     
     cmds.undoInfo(closeChunk=True)
 
+'''
 def ZeroLimb():
     #failsafe on non-modular nodes selected
     
@@ -305,3 +308,4 @@ def SelectCharacter():
         cmds.warning('No nodes select!')
     
     cmds.undoInfo(closeChunk=True)
+    '''

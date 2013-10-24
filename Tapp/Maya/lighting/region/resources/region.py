@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\lighting\region\resources\region.ui'
+# Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\lighting\region\resources\region.ui'
 #
-# Created: Sat Oct 19 13:22:41 2013
+# Created: Thu Oct 24 15:39:08 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(349, 259)
+        MainWindow.resize(392, 259)
         MainWindow.setAcceptDrops(False)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")

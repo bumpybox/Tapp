@@ -198,6 +198,9 @@ def destructor(obj=None,preserve=False):
     
     return result
 
+nodes=destructor()
+constructor(nodes)
+
 '''
 def printPoint(point):
     

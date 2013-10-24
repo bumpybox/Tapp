@@ -1,9 +1,9 @@
 '''
-- better naming of non helper objects
 - test leg switching
 - static parenting system is not very flexible
     - breaks when changing names
     - breaks when messing with hierarchies
+- need secondary ik control
 - better namespaces
 - organize code better
 - fails when not building any controls

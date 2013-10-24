@@ -17,12 +17,11 @@ reload(gui)
 import Tapp.Maya.lighting.region.utils as utils
 reload(utils)
 
-'''
+
 import Tapp.utils.pyside.compileUi as upc
 #uiPath=os.path.dirname(__file__)+'/resources/timing.ui'
-uiPath=r'C:\Users\tokejepsen\Documents\GitHub\Tapp\Tapp\Maya\lighting\region\resources\region.ui'
+uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\lighting\region\resources\region.ui'
 upc.compileUi(uiPath)
-'''
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()

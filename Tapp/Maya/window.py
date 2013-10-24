@@ -1,9 +1,8 @@
 from PySide import QtGui
-import shiboken
+from shiboken import wrapInstance
 
 import maya.cmds as cmds
-import maya.OpenMayaUI as omu
-import pymel.core as pmc
+import maya.OpenMayaUI as omui
 
 import Tapp.Maya.lighting.gui as lighting
 import Tapp.Maya.animation.gui as animation
@@ -11,13 +10,8 @@ import Tapp.Maya.animation.gui as animation
 import Tapp.Maya.modelling.gui as modelling
 
 def maya_main_window():
-    """
-    Get the main Maya window as a QtGui.QMainWindow instance
-    @return: QtGui.QMainWindow instance of the top level Maya windows
-    """
-    ptr = omu.MQtUtil.mainWindow()
-    if ptr is not None:
-        return shiboken.wrapInstance(long(ptr), QtGui.QMainWindow)
+    main_window_ptr=omui.MQtUtil.mainWindow()
+    return wrapInstance(long(main_window_ptr), QtGui.QWidget)
 
 class Window(QtGui.QDialog):
     def __init__(self, parent=maya_main_window()):
@@ -33,7 +27,7 @@ class Window(QtGui.QDialog):
         
         self.main_tabs.addTab(modelling.Form(), 'Modelling')
         #main_tabs.addTab(rigging.Form(), 'Rigging')
-        self.main_tabs.addTab(animation.Form(), 'Animation')
+        self.main_tabs.addTab(animation.Window(), 'Animation')
         self.main_tabs.addTab(lighting.Form(), 'Lighting')
 
 def show():
