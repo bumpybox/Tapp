@@ -182,7 +182,7 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def on_character_zerolimb_pushButton_released(self):
         
-        ''
+        '''
         #undo enable
         cmds.undoInfo(openChunk=True)
         
@@ -200,18 +200,19 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
             
             def recurseListConnections(node,attr,result=[]):
                 
-                print 'something'
-                children=cmds.listConnections(node+'.'+attr)
-                print children
+                children=cmds.listConnections(node.mNode+'.'+attr)
+                
+                if children:
+                    for child in children:
+                        result.append(child)
             
             for root in list(set(roots)):
                 
                 recurseListConnections(root,'points')
-                '''
+                
                 for control in root.getChildControls():
                     
                     character.zeroNode(control.getNode())
-                    '''
             
             #revert selection
             cmds.select(sel)
@@ -219,6 +220,7 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
             cmds.warning('No nodes select!')
         
         cmds.undoInfo(closeChunk=True)
+        '''
     
     def on_character_zerocharacter_pushButton_released(self):
         
