@@ -25,11 +25,15 @@ import Tapp.Maya.utils.paie as paie
 reload(paie)
 import Tapp.Maya.animation.resources.animation as gui
 reload(gui)
+import Tapp.Maya.rigging.meta as meta
+reload(meta)
+
 
 import Tapp.utils.pyside.compileUi as upc
 #uiPath=os.path.dirname(__file__)+'/resources/timing.ui'
 uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
 upc.compileUi(uiPath)
+
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
@@ -60,8 +64,8 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.character_ik_pushButton.released.connect(self.on_character_ik_pushButton_released)
         self.character_fk_pushButton.released.connect(self.on_character_fk_pushButton_released)
         self.character_zerocontrol_pushButton.released.connect(self.on_character_zerocontrol_pushButton_released)
-        #self.character_zerolimb_pushButton.released.connect(self.on_character_zerolimb_pushButton_released)
-        #self.character_zerocharacter_pushButton.released.connect(self.on_character_zerocharacter_pushButton_released)
+        self.character_zerolimb_pushButton.released.connect(self.on_character_zerolimb_pushButton_released)
+        self.character_zerocharacter_pushButton.released.connect(self.on_character_zerocharacter_pushButton_released)
         #self.character_keylimb_pushButton.released.connect(self.on_character_keylimb_pushButton_released)
         #self.character_keycharacter_pushButton.released.connect(self.on_character_keycharacter_pushButton_released)
         #self.character_selectlimb_pushButton.released.connect(self.on_character_selectlimb_pushButton_released)
@@ -158,15 +162,67 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
     
     def on_character_zerocontrol_pushButton_released(self):
         
-        pass
+        #undo enable
+        cmds.undoInfo(openChunk=True)
+        
+        #getting selection
+        sel=cmds.ls(sl=True)
+        
+        #zero controls
+        if len(sel)>=1:
+            for node in cmds.ls(sl=True):
+                character.zeroNode(node)
+            
+            #revert selection
+            cmds.select(sel)
+        else:
+            cmds.warning('No nodes select!')
+        
+        cmds.undoInfo(closeChunk=True)
     
     def on_character_zerolimb_pushButton_released(self):
         
-        pass
+        ''
+        #undo enable
+        cmds.undoInfo(openChunk=True)
+        
+        #getting selection
+        sel=cmds.ls(sl=True)
+        
+        #zero controls
+        if len(sel)>=1:
+            
+            roots=[]
+            for node in sel:
+                mNode=meta.r9Meta.MetaClass(node).getParentMetaNode()
+                
+                roots.append(meta.r9Meta.getConnectedMetaSystemRoot(mNode.mNode))
+            
+            def recurseListConnections(node,attr,result=[]):
+                
+                print 'something'
+                children=cmds.listConnections(node+'.'+attr)
+                print children
+            
+            for root in list(set(roots)):
+                
+                recurseListConnections(root,'points')
+                '''
+                for control in root.getChildControls():
+                    
+                    character.zeroNode(control.getNode())
+                    '''
+            
+            #revert selection
+            cmds.select(sel)
+        else:
+            cmds.warning('No nodes select!')
+        
+        cmds.undoInfo(closeChunk=True)
     
     def on_character_zerocharacter_pushButton_released(self):
         
-        pass
+        print 'zero character'
     
     def on_character_keylimb_pushButton_released(self):
         
@@ -304,4 +360,5 @@ def show():
     win=Window()
     win.show()
 
-#show()
+win=Window()
+win.on_character_zerolimb_pushButton_released()

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
 #
-# Created: Thu Oct 24 17:23:10 2013
+# Created: Fri Oct 25 17:08:03 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
         self.character_zerocontrol_pushButton.setObjectName("character_zerocontrol_pushButton")
         self.horizontalLayout_3.addWidget(self.character_zerocontrol_pushButton)
         self.character_zerolimb_pushButton = QtGui.QPushButton(self.characterTab)
-        self.character_zerolimb_pushButton.setEnabled(False)
+        self.character_zerolimb_pushButton.setEnabled(True)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -163,7 +163,7 @@ class Ui_MainWindow(object):
         self.character_zerolimb_pushButton.setObjectName("character_zerolimb_pushButton")
         self.horizontalLayout_3.addWidget(self.character_zerolimb_pushButton)
         self.character_zerocharacter_pushButton = QtGui.QPushButton(self.characterTab)
-        self.character_zerocharacter_pushButton.setEnabled(False)
+        self.character_zerocharacter_pushButton.setEnabled(True)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

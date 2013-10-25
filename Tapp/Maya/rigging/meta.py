@@ -177,6 +177,7 @@ class MetaPoint(MetaSystem):
         self.addAttr('controlData',{})
         self.addAttr('parentData','',attrType='messageSimple')
         self.addAttr('longname', '')
+        self.addAttr('size',1.0)
 
 class MetaTransform(r9Meta.MetaRig):
     '''

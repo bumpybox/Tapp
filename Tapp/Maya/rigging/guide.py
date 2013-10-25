@@ -1,3 +1,7 @@
+'''
+- need to involve dependant parents
+'''
+
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.point as mrp
@@ -97,7 +101,9 @@ def destructor(obj=None,preserve=False):
                 
                 #setting name
                 p.name=obj.split('|')[-1]
-                p.longname=obj
+                
+                #setting long name
+                p.longname=cmds.ls(obj,long=True)[0]
                 
                 #setting data
                 controlData={}
@@ -188,7 +194,10 @@ def destructor(obj=None,preserve=False):
             cmds.delete(roots)
         
     else:
-        result.append(createPoint(obj))
+        
+        if isinstance(obj,list):
+            for point in obj:
+                result.append(createPoint(point))
         
         if not preserve:
             cmds.delete(obj)
@@ -196,12 +205,24 @@ def destructor(obj=None,preserve=False):
     for point in result:
         replaceParent(point,result)
     
+    #parent checking
+    def checkParent(point):
+        
+        if isinstance(point.parentData,unicode):
+            print 'WARNING! %s has string for parent!' % point.name
+        
+        if point.children:
+            for child in point.children:
+                checkParent(child)
+    
+    for point in result:
+        checkParent(point)
+    
     return result
 
-nodes=destructor()
-constructor(nodes)
-
 '''
+points=destructor(preserve=True)
+
 def printPoint(point):
     
     print point.name
@@ -217,8 +238,6 @@ def printPoint(point):
     else:
         print 'end of chain!!!!!!!!!!!!!!!!!!!!'
 
-points=destructor(preserve=True)
-
 for point in points:
     printPoint(point)
-'''
+    '''

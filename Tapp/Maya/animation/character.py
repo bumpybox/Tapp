@@ -96,7 +96,7 @@ def snap(point,targetSystem):
         for child in point.getPoints():
             snap(child,targetSystem)
 
-def __zeroNode__(node):
+def zeroNode(node):
     if (cmds.getAttr('%s.tx' % node,lock=True))!=True:
         cmds.setAttr('%s.tx' % node,0)
     if (cmds.getAttr('%s.ty' % node,lock=True))!=True:
@@ -110,60 +110,7 @@ def __zeroNode__(node):
     if (cmds.getAttr('%s.rz' % node,lock=True))!=True:
         cmds.setAttr('%s.rz' % node,0)
 
-def ZeroControl():
-    #undo enable
-    cmds.undoInfo(openChunk=True)
-    
-    #getting selection
-    sel=cmds.ls(sl=True)
-    
-    #zero controls
-    if len(sel)>=1:
-        for node in cmds.ls(sl=True):
-            __zeroNode__(node)
-        
-        #revert selection
-        cmds.select(sel)
-    else:
-        cmds.warning('No nodes select!')
-    
-    cmds.undoInfo(closeChunk=True)
-
 '''
-def ZeroLimb():
-    #failsafe on non-modular nodes selected
-    
-    #undo enable
-    cmds.undoInfo(openChunk=True)
-    
-    #getting selection
-    sel=cmds.ls(sl=True)
-    
-    #zero limb
-    if len(sel)>=1:
-        modules=[]
-        for node in sel:
-            modules.append(mum.UpStream(node, 'module'))
-        
-        if len(modules)>=1:
-            modules=set(modules)
-            for module in modules:
-                cnts=mum.DownStream(module, 'control')
-                
-                for cnt in cnts:
-                    tn=mum.GetTransform(cnt)
-                    
-                    __zeroNode__(tn)
-        else:
-            cmds.warning('Could not find any limbs connected to the selected nodes.')
-        
-        #revert selection
-        cmds.select(sel)
-    else:
-        cmds.warning('No nodes select!')
-    
-    cmds.undoInfo(closeChunk=True)
-
 def ZeroCharacter():
     #undo enable
     cmds.undoInfo(openChunk=True)

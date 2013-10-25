@@ -1,9 +1,12 @@
 '''
+- parenting gets lost when destructing
 - test leg switching
 - static parenting system is not very flexible
     - breaks when changing names
     - breaks when messing with hierarchies
 - need secondary ik control
+    - treat controls as points, to have child controls
+- build doesnt handle split chains
 - better namespaces
 - organize code better
 - fails when not building any controls
@@ -36,7 +39,9 @@ def constructor(points):
         points.append(point)
         
         if point.children:
+            
             for child in point.children:
+                
                 return getSolverPoints(child,ik=ik,fk=fk,points=points)
         else:
             return {'IK':ik,'FK':fk,'points':points}
@@ -49,14 +54,26 @@ def constructor(points):
         
         chains=getSolverPoints(point,ik=[],fk=[],points=[])
         
+        print 'building IK:'
+        for p in chains['IK']:
+            print p.name
+        
         if chains['IK']:
-            mrbu.IK(chains['IK'],'ik_%s_' % point.name)
+            mrbu.IK(chains['IK'],'')
+        
+        print 'building FK:'
+        for p in chains['FK']:
+            print p.name
         
         if chains['FK']:
-            mrbu.FK(chains['FK'],'fk_%s_' % point.name)
+            mrbu.FK(chains['FK'],'')
         
         #build blend
-        mrbu.blend(chains['points'], 'bld_%s_' % point.name)
+        print 'blending points:'
+        for p in chains['points']:
+            print p.name
+        
+        mrbu.blend(chains['points'], '')
     
     #static parenting
     for point in points:
@@ -90,6 +107,8 @@ def destructor(preserve=False):
             p.addChild(child.mNodeID)
         
         #setting data
+        p.size=point.size
+        
         p.controlData=point.controlData
         p.solverData=point.solverData
         
@@ -157,6 +176,9 @@ def destructor(preserve=False):
 points=mrg.destructor()
 constructor(points)
 
+cmds.select('hip_jnt',hierarchy=True)
+mrbu.parentSkeleton()
+
 '''
 def printPoint(point):
     
@@ -172,4 +194,4 @@ def printPoint(point):
 
 for point in points:
     printPoint(point)
-    '''
+'''

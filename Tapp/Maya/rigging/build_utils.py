@@ -20,6 +20,7 @@ def system(point,parent=None):
     metaNode.solverData=point.solverData
     metaNode.controlData=point.controlData
     metaNode.longname=point.longname
+    metaNode.size=point.size
     
     if point.children:
         for child in point.children:
@@ -67,10 +68,13 @@ def parent(point):
 def blend(points,namespace=''):
     
     #create extra control
-    control=mru.Pin(namespace+'extra_cnt',size=points[0].size)
+    control=mru.Pin('%s_extra_cnt' % points[0].name,size=points[0].size)
     
     #building blends
-    rootgrp=cmds.group(empty=True,name=namespace+'grp')
+    if cmds.objExists('bld_grp'):
+        rootgrp='bld_grp'
+    else:
+        rootgrp=cmds.group(empty=True,n='bld_grp')
     
     def _build(node):
         
@@ -99,7 +103,10 @@ def blend(points,namespace=''):
                     cmds.connectAttr(control+'.'+a,attr)
         
         #setting up blending
+        
         for s in node.socket:
+            
+            systems.append(s)
             
             con=cmds.parentConstraint(node.socket[s],socket)[0]
             
@@ -138,29 +145,36 @@ def blend(points,namespace=''):
             for child in node.children:
                 _build(child)
     
+    systems=[]
+    
     _build(points[0])
     
     #setup extra control
-    mru.Snap(None,control,translation=points[0].translation,rotation=points[0].rotation)
+    mru.Snap(None,control,translation=points[-1].translation,rotation=points[0].rotation)
     
-    cmds.parent(control,points[0].socket['blend'])
+    cmds.parent(control,points[-1].socket['blend'])
     
     attrs=['tx','ty','tz','rx','ry','rz','sx','sy','sz','v']
     mru.ChannelboxClean(control, attrs)
     
     points[0].meta.addControl(control,controlSystem='extra',icon='Pin')
     
-    if len(points)==1:
+    #removing control if only one system is present
+    systems=list(set(systems))
+    if len(systems)==1:
         cmds.delete(control)
 
 def IK(points,namespace=''):
     
     #build rig---       
     #create root grp
-    rootgrp=cmds.group(empty=True,name=namespace+'grp')
+    if cmds.objExists('ik_grp'):
+        rootgrp='ik_grp'
+    else:
+        rootgrp=cmds.group(empty=True,n='ik_grp')
     
     #create plug object
-    plug=cmds.spaceLocator(name=namespace+'plug')[0]
+    plug=cmds.spaceLocator(n='ik_%s_rootplug' % points[0].name)[0]
     
     if not hasattr(points[0],'plug'):
         points[0].plug={}
@@ -191,7 +205,7 @@ def IK(points,namespace=''):
     for node in points:
         count=points.index(node)
         
-        prefix=namespace+node.name.split('|')[-1]+'_'
+        prefix=namespace+node.name
         
         #creating joint
         cmds.select(cl=True)
@@ -243,8 +257,8 @@ def IK(points,namespace=''):
     cmds.parent(jnts[0],plug)
     
     #create ik
-    startStretch=cmds.group(empty=True,n=namespace+'startStretch')
-    endStretch=cmds.group(empty=True,n=namespace+'endStretch')
+    startStretch=cmds.group(empty=True,n='ik_%s_startStretch' % points[0].name)
+    endStretch=cmds.group(empty=True,n='ik_%s_endStretch' % points[0].name)
     
     mru.Snap(jnts[0],startStretch)
     mru.Snap(jnts[-1],endStretch)
@@ -352,8 +366,6 @@ def IK(points,namespace=''):
                 
                 cmds.parent(jnts[0],cnt)
                 cmds.parent(startStretch,cnt)
-                
-                cmds.parent(node.socket['IK'],cnt)
             
             #polevector control
             if node.children and node!=points[0]:
@@ -393,6 +405,9 @@ def IK(points,namespace=''):
                 cmds.poleVectorConstraint(cnt,ikResult['ikHandle'])
                 
                 cmds.parent(polevectorSHP,rootgrp)
+                
+                #connecting polevector shape vibility to controls visibility
+                cmds.connectAttr(cnt+'.v',polevectorSHP+'.v')
             
             #end control
             if not node.children:
@@ -413,10 +428,13 @@ def FK(points,namespace=''):
     
     #build rig---
     #create root grp
-    rootgrp=cmds.group(empty=True,n=namespace+'grp')
+    if cmds.objExists('fk_grp'):
+        rootgrp='fk_grp'
+    else:
+        rootgrp=cmds.group(empty=True,n='fk_grp')
     
     #create plug object
-    plug=cmds.spaceLocator(n=namespace+'plug')[0]
+    plug=cmds.spaceLocator(n='fk_%s_rootplug' % points[0].name)[0]
     
     if not hasattr(points[0],'plug'):
         points[0].plug={}
@@ -439,10 +457,8 @@ def FK(points,namespace=''):
     
     for node in points:
         
-        prefix=namespace+node.name.split('|')[-1]+'_'
-        
         #create sockets
-        socket=cmds.spaceLocator(name=prefix+'socket')[0]
+        socket=cmds.spaceLocator(name='fk_%s_socket' % node.name)[0]
         
         #setup socket
         mru.Snap(None,socket, translation=node.translation, rotation=node.rotation)
@@ -492,3 +508,47 @@ def FK(points,namespace=''):
             
             if node.meta:
                 node.meta.addControl(cnt,controlSystem='FK',icon=node.controlData['FK'])
+
+def parentSkeleton():
+    ''' Parents selection to closest joint in rig. ''' 
+    
+    cmds.undoInfo(openChunk=True)
+    
+    for jnt in cmds.ls(selection=True):
+        
+        if cmds.nodeType(jnt)=='joint':
+        
+            nodes={}
+            for node in meta.r9Meta.getMetaNodes(mTypes=['MetaSocket']):
+                    
+                tn=node.getNode()
+                nodes[tn]=mru.Distance(tn, jnt)
+            
+            socket=min(nodes, key=nodes.get)
+            
+            #print 'Parenting %s to %s' % (jnt,socket)
+            
+            cmds.parentConstraint(socket,jnt,mo=True)
+    
+    cmds.undoInfo(closeChunk=True)
+
+def colorControls():
+    
+    for node in meta.r9Meta.getMetaNodes(mTypes=['MetaControl']):
+        
+        pos=cmds.xform(node.getNode(),q=True,ws=True,translation=True)
+        
+        color=0
+        #left color
+        if pos[0]>0.1:
+            color=14
+        #right color
+        elif pos[0]<-0.1:
+            color=13
+        #center color
+        else:
+            color=6
+        
+        cmds.setAttr('%s.overrideEnabled' % node.getNode(),1)
+            
+        cmds.setAttr('%s.overrideColor' % node.getNode(),color)
