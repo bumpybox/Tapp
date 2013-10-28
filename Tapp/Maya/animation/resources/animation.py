@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
 #
-# Created: Fri Oct 25 17:08:03 2013
+# Created: Fri Oct 25 17:30:54 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!

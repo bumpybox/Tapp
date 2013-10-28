@@ -28,11 +28,12 @@ reload(gui)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
-
+'''
 import Tapp.utils.pyside.compileUi as upc
 #uiPath=os.path.dirname(__file__)+'/resources/timing.ui'
 uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
 upc.compileUi(uiPath)
+'''
 
 
 def maya_main_window():
@@ -210,9 +211,8 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
                 
                 recurseListConnections(root,'points')
                 
-                for control in root.getChildControls():
-                    
-                    character.zeroNode(control.getNode())
+                #for control in root.getChildControls():
+                #    character.zeroNode(control.getNode())
             
             #revert selection
             cmds.select(sel)
