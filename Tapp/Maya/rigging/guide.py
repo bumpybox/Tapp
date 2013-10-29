@@ -72,7 +72,9 @@ def constructor(points=[]):
         #children
         if point.children:
             for child in point.children:
-                constructor(points=[child])
+                return constructor(points=[child])
+        else:
+            return node
     
     #if no points are passed in
     if not points:

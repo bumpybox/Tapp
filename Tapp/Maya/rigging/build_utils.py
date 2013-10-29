@@ -1,3 +1,8 @@
+'''
+- parentSkeleton
+    - check for existing connections, and dont constraint
+'''
+
 import maya.cmds as cmds
 import maya.mel as mel
 
@@ -526,8 +531,6 @@ def parentSkeleton():
             
             socket=min(nodes, key=nodes.get)
             
-            #print 'Parenting %s to %s' % (jnt,socket)
-            
             cmds.parentConstraint(socket,jnt,mo=True)
     
     cmds.undoInfo(closeChunk=True)
@@ -552,3 +555,5 @@ def colorControls():
         cmds.setAttr('%s.overrideEnabled' % node.getNode(),1)
             
         cmds.setAttr('%s.overrideColor' % node.getNode(),color)
+
+#colorControls()

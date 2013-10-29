@@ -7,6 +7,7 @@
 - need secondary ik control
     - treat controls as points, to have child controls
 - build doesnt handle split chains
+- forcing polevector direction
 - better namespaces
 - organize code better
 - fails when not building any controls
