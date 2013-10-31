@@ -1,3 +1,8 @@
+'''
+- selectionConstruct
+    - replicate hierarchy if possible
+'''
+
 import maya.cmds as cmds
 
 import Tapp.Maya.rigging.guide as mrg

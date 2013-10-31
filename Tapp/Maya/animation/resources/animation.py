@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
 #
-# Created: Fri Oct 25 17:30:54 2013
+# Created: Thu Oct 31 11:10:29 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(316, 608)
+        MainWindow.resize(316, 654)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.centralwidget)
@@ -611,6 +611,15 @@ class Ui_MainWindow(object):
         self.tools_ghostingHelp_pushButton.setObjectName("tools_ghostingHelp_pushButton")
         self.horizontalLayout_23.addWidget(self.tools_ghostingHelp_pushButton)
         self.verticalLayout_2.addLayout(self.horizontalLayout_23)
+        self.tools_localizeImagePlane_pushButton = QtGui.QPushButton(self.toolsTab)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.tools_localizeImagePlane_pushButton.sizePolicy().hasHeightForWidth())
+        self.tools_localizeImagePlane_pushButton.setSizePolicy(sizePolicy)
+        self.tools_localizeImagePlane_pushButton.setMinimumSize(QtCore.QSize(0, 40))
+        self.tools_localizeImagePlane_pushButton.setObjectName("tools_localizeImagePlane_pushButton")
+        self.verticalLayout_2.addWidget(self.tools_localizeImagePlane_pushButton)
         self.tools_rat_pushButton = QtGui.QPushButton(self.toolsTab)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -718,7 +727,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tatTabWidget.setCurrentIndex(0)
+        self.tatTabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -767,6 +776,7 @@ class Ui_MainWindow(object):
         self.tools_changeRotationOrderHelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_ghosting_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Ghosting", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_ghostingHelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
+        self.tools_localizeImagePlane_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Localize Image Plane", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_rat_pushButton.setText(QtGui.QApplication.translate("MainWindow", "RAT", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_paie_pushButton.setText(QtGui.QApplication.translate("MainWindow", "PAIE", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_exportimportanimation_label.setText(QtGui.QApplication.translate("MainWindow", "Export/Import Animation", None, QtGui.QApplication.UnicodeUTF8))

@@ -92,9 +92,18 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.tools_changeRotationOrderHelp_pushButton.released.connect(self.on_tools_changeRotationOrderHelp_pushButton_released)
         self.tools_ghosting_pushButton.released.connect(self.on_tools_ghosting_pushButton_released)
         self.tools_ghostingHelp_pushButton.released.connect(self.on_tools_ghostingHelp_pushButton_released)
+        
+        self.tools_localizeImagePlane_pushButton.released.connect(self.on_localizeImagePlane_pushButton_released)
+        
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
         
         self.tools_paie_pushButton.released.connect(self.tools_paie)
+    
+    def on_localizeImagePlane_pushButton_released(self):
+        
+        import Tapp.Maya.animation.utils.imageplane as ip
+        
+        ip.localizeImagePlane()
     
     def tools_paie(self):
         

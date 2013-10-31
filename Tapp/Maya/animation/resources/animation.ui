@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>316</width>
-    <height>608</height>
+    <height>654</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tatTabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="characterTab">
        <attribute name="title">
@@ -1142,6 +1142,25 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="tools_localizeImagePlane_pushButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Localize Image Plane</string>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="tools_rat_pushButton">

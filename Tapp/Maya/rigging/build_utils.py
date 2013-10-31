@@ -556,4 +556,16 @@ def colorControls():
             
         cmds.setAttr('%s.overrideColor' % node.getNode(),color)
 
-#colorControls()
+def hideRig():
+    
+    for node in (cmds.ls(type='locator')+cmds.ls(type='ikHandle')+cmds.ls(type='clusterHandle')):
+        
+        cmds.setAttr(node+'.v',0)
+    
+    for node in cmds.ls(type='ikHandle'):
+        
+        jnt=cmds.listConnections(node+'.startJoint')[0]
+        cmds.setAttr(jnt+'.v',0)
+
+colorControls()
+hideRig()
