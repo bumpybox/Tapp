@@ -312,12 +312,12 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         parentDir=os.path.abspath(os.path.join(path, os.pardir))
         
         #sourcing zoo utils
-        melPath=parentDir+'/utils/zooUtils.mel'
+        melPath=parentDir+'/animation/utils/zooUtils.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
         #sourcing zoo change
-        melPath=parentDir+'/utils/zooChangeRoo.mel'
+        melPath=parentDir+'/animation/utils/zooChangeRoo.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
@@ -333,7 +333,7 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         parentDir=os.path.abspath(os.path.join(path, os.pardir))
         
         #sourcing ghost util
-        melPath=parentDir+'/utils/bhGhost.mel'
+        melPath=parentDir+'/animation/utils/bhGhost.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
@@ -349,12 +349,12 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         parentDir=os.path.abspath(os.path.join(path, os.pardir))
         
         #sourcing rat util
-        melPath=parentDir+'/utils/RAT.mel'
+        melPath=parentDir+'/animation/utils/RAT.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
         #launching rat gui
-        uiPath=parentDir+'/utils/RAT_ui.ui'
+        uiPath=parentDir+'/animation/utils/RAT_ui.ui'
         uiPath=uiPath.replace('\\','/')
         mel.eval('RAT_GUI(1,"%s")' % uiPath)
 
