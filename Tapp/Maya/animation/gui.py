@@ -28,14 +28,6 @@ reload(gui)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
 
-'''
-import Tapp.utils.pyside.compileUi as upc
-#uiPath=os.path.dirname(__file__)+'/resources/timing.ui'
-uiPath=r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
-upc.compileUi(uiPath)
-'''
-
-
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
@@ -370,6 +362,3 @@ def show():
     #showing new dialog
     win=Window()
     win.show()
-
-win=Window()
-win.on_character_zerolimb_pushButton_released()
