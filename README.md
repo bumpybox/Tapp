@@ -25,3 +25,5 @@ CREDITS:
 - Karim Kashefy; kk_symmetry
 - Francis O'Brien; RoadKill
 - Brian Horgan; bhGhost
+- Daniel S. Lima; SculptInbetweenEditor
+- Dora Yuki; Dora SkinWeight

@@ -11,9 +11,6 @@ print 'Tapp.Maya imported!'
 #creating menu
 import menu
 
-#mg tools
-import MG_Tools
-
 #launching window if preferred
 cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
 

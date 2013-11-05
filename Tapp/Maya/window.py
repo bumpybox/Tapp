@@ -6,7 +6,7 @@ import maya.OpenMayaUI as omui
 
 import Tapp.Maya.lighting.gui as lighting
 import Tapp.Maya.animation.gui as animation
-#import Tapp.Maya.rigging.gui as rigging
+import Tapp.Maya.rigging.gui as rigging
 import Tapp.Maya.modelling.gui as modelling
 
 def maya_main_window():
@@ -26,7 +26,7 @@ class Window(QtGui.QDialog):
         self.main_layout.addWidget(self.main_tabs)
         
         self.main_tabs.addTab(modelling.Form(), 'Modelling')
-        #main_tabs.addTab(rigging.Form(), 'Rigging')
+        self.main_tabs.addTab(rigging.Window(), 'Rigging')
         self.main_tabs.addTab(animation.Window(), 'Animation')
         self.main_tabs.addTab(lighting.Form(), 'Lighting')
 
@@ -38,6 +38,3 @@ def show():
     #creating ui
     Window()
     cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
-    
-
-#show()
