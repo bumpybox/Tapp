@@ -59,10 +59,6 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.character_zerocontrol_pushButton.released.connect(self.on_character_zerocontrol_pushButton_released)
         self.character_zerolimb_pushButton.released.connect(self.on_character_zerolimb_pushButton_released)
         self.character_zerocharacter_pushButton.released.connect(self.on_character_zerocharacter_pushButton_released)
-        #self.character_keylimb_pushButton.released.connect(self.on_character_keylimb_pushButton_released)
-        #self.character_keycharacter_pushButton.released.connect(self.on_character_keycharacter_pushButton_released)
-        #self.character_selectlimb_pushButton.released.connect(self.on_character_selectlimb_pushButton_released)
-        #self.character_selectcharacter_pushButton.released.connect(self.on_character_selectcharacter_pushButton_released)
         
         self.character_range_checkBox.stateChanged.connect(self.character_range)
         self.character_start_pushButton.released.connect(self.character_start)
@@ -71,6 +67,7 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         
         #tools---
         self.tools_zvparentmaster_pushButton.released.connect(self.on_tools_zvparentmaster_pushButton_released)
+        self.zvChain_pushButton.released.connect(self.on_zvChain_pushButton_released)
         self.tools_zvparentmasterhelp_pushButton.released.connect(self.on_tools_zvparentmasterhelp_pushButton_released)
         self.tools_breakdowndragger_pushButton.released.connect(self.on_tools_breakdowndragger_pushButton_released)
         self.tools_breakdowndraggerhelp_pushButton.released.connect(self.on_tools_breakdowndraggerhelp_pushButton_released)
@@ -90,6 +87,15 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
         
         self.tools_paie_pushButton.released.connect(self.tools_paie)
+    
+    def on_zvChain_pushButton_released(self):
+        
+        #undo enable
+        cmds.undoInfo(openChunk=True)
+        
+        muz.attach_chain()
+        
+        cmds.undoInfo(closeChunk=True)
     
     def on_localizeImagePlane_pushButton_released(self):
         

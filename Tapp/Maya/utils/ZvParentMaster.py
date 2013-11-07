@@ -518,6 +518,19 @@ def createParentGroups(translation=True, rotation=True):
 		singplur = 's'
 	sys.stdout.write('Parent groups created for %d object%s\n' % (len(ctrls), singplur))
 
+def attach_chain():
+	
+	sel=cmds.ls(sl=True)
+	
+	for node in sel:
+		
+		if node!=sel[-1]:
+			index=sel.index(node)
+			
+			cmds.select(node,sel[index+1])
+			
+			attach()
+
 def attach():
 	'''Parent constraint intelligente.'''
 	

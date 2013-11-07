@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources\animation.ui'
+# Form implementation generated from reading ui file 'C:\Users\Chucky\Documents\GitHub\Tapp\Tapp\Maya\animation\resources/animation.ui'
 #
-# Created: Thu Oct 31 11:10:29 2013
+# Created: Wed Nov 06 22:01:07 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -415,6 +415,10 @@ class Ui_MainWindow(object):
         self.tools_zvparentmaster_pushButton.setMinimumSize(QtCore.QSize(0, 40))
         self.tools_zvparentmaster_pushButton.setObjectName("tools_zvparentmaster_pushButton")
         self.horizontalLayout_16.addWidget(self.tools_zvparentmaster_pushButton)
+        self.zvChain_pushButton = QtGui.QPushButton(self.toolsTab)
+        self.zvChain_pushButton.setMinimumSize(QtCore.QSize(0, 40))
+        self.zvChain_pushButton.setObjectName("zvChain_pushButton")
+        self.horizontalLayout_16.addWidget(self.zvChain_pushButton)
         self.line_9 = QtGui.QFrame(self.toolsTab)
         self.line_9.setFrameShape(QtGui.QFrame.VLine)
         self.line_9.setFrameShadow(QtGui.QFrame.Sunken)
@@ -757,6 +761,7 @@ class Ui_MainWindow(object):
         self.character_mirrorcharacter_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Character", None, QtGui.QApplication.UnicodeUTF8))
         self.tatTabWidget.setTabText(self.tatTabWidget.indexOf(self.characterTab), QtGui.QApplication.translate("MainWindow", "Character", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_zvparentmaster_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Parent Master", None, QtGui.QApplication.UnicodeUTF8))
+        self.zvChain_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Chain", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_zvparentmasterhelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_breakdowndragger_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Breakdown Dragger", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_breakdowndraggerhelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))

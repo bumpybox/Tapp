@@ -725,6 +725,19 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="zvChain_pushButton">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Zv Chain</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="Line" name="line_9">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
