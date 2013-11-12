@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>316</width>
-    <height>654</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1210,6 +1210,19 @@
           </property>
           <property name="text">
            <string>PAIE</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="collisionDeformer_pushButton">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Collision Deformer</string>
           </property>
          </widget>
         </item>

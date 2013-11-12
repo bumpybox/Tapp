@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\Chucky\Documents\GitHub\Tapp\Tapp\Maya\animation\resources/animation.ui'
+# Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Tapp\Maya\animation\resources/animation.ui'
 #
-# Created: Wed Nov 06 22:01:07 2013
+# Created: Tue Nov 12 13:34:17 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(316, 654)
+        MainWindow.resize(316, 700)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.centralwidget)
@@ -642,6 +642,10 @@ class Ui_MainWindow(object):
         self.tools_paie_pushButton.setMinimumSize(QtCore.QSize(0, 40))
         self.tools_paie_pushButton.setObjectName("tools_paie_pushButton")
         self.verticalLayout_2.addWidget(self.tools_paie_pushButton)
+        self.collisionDeformer_pushButton = QtGui.QPushButton(self.toolsTab)
+        self.collisionDeformer_pushButton.setMinimumSize(QtCore.QSize(0, 40))
+        self.collisionDeformer_pushButton.setObjectName("collisionDeformer_pushButton")
+        self.verticalLayout_2.addWidget(self.collisionDeformer_pushButton)
         self.horizontalLayout_14 = QtGui.QHBoxLayout()
         self.horizontalLayout_14.setObjectName("horizontalLayout_14")
         self.line_22 = QtGui.QFrame(self.toolsTab)
@@ -784,6 +788,7 @@ class Ui_MainWindow(object):
         self.tools_localizeImagePlane_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Localize Image Plane", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_rat_pushButton.setText(QtGui.QApplication.translate("MainWindow", "RAT", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_paie_pushButton.setText(QtGui.QApplication.translate("MainWindow", "PAIE", None, QtGui.QApplication.UnicodeUTF8))
+        self.collisionDeformer_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Collision Deformer", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_exportimportanimation_label.setText(QtGui.QApplication.translate("MainWindow", "Export/Import Animation", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_exportanimation_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Export", None, QtGui.QApplication.UnicodeUTF8))
         self.tools_exportanimationhelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))

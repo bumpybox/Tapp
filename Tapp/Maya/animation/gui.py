@@ -87,6 +87,17 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         self.tools_rat_pushButton.released.connect(self.on_tools_rat_pushButton_released)
         
         self.tools_paie_pushButton.released.connect(self.tools_paie)
+        
+        self.collisionDeformer_pushButton.released.connect(self.collisionDeformer_released)
+    
+    def collisionDeformer_released(self):
+        
+        cmds.loadPlugin('jlCollisionDeformer.py',quiet=True)
+        
+        try:
+            mel.eval('jlCollisionDeformer()')
+        except:
+            cmds.warning('First select the collider mesh then the mesh that should be deformed.')
     
     def on_zvChain_pushButton_released(self):
         
