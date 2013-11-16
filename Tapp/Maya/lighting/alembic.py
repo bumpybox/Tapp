@@ -90,7 +90,7 @@ def swapAlembic(alembic):
         for attr in attrDict[node]:
             sourceAttr=cmds.listConnections(node+'.'+attr,plugs=True)[0]
             
-            cmds.connectAttr(sourceAttr,target+'.'+attr)
+            cmds.connectAttr(sourceAttr,target+'.'+attr,force=True)
         
         #cmds.delete(node)
     

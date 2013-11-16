@@ -110,7 +110,7 @@ class Form(base,form):
                     
                     alembic.swapAlembic(node)
                 else:
-                    cmds.warning('%s is not a nurbsCurve!' % node)
+                    cmds.warning('%s is not a Alembic Node!' % node)
             else:
                 cmds.warning('More than one node is selected! Please select only one node.')
         else:
