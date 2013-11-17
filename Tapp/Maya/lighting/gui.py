@@ -62,6 +62,8 @@ class Form(base,form):
         self.fileTextureManager_pushButton.released.connect(self.on_fileTextureManager_pushButton_released)
         self.addRimLight_pushButton.released.connect(self.on_addRimLight_pushButton_released)
         
+        self.fgshooter_pushButton.released.connect(self.on_fgshooter_pushButton_released)
+        
         self.exportAlembic_pushButton.released.connect(self.on_exportAlembic_pushButton_released)
         self.importAlembic_pushButton.released.connect(self.on_importAlembic_pushButton_released)
         self.swapAlembic_pushButton.released.connect(self.on_swapAlembic_pushButton_released)
@@ -73,6 +75,11 @@ class Form(base,form):
         self.addDomeLight_pushButton.released.connect(self.on_addDomeLight_pushButton_released)
         self.createTechPasses_pushButton.released.connect(self.on_createTechPasses_pushButton_released)
         self.addObjectID_pushButton.released.connect(self.on_addObjectID_pushButton_released)
+    
+    def on_fgshooter_pushButton_released(self):
+        
+        from . import fgshooter
+        fgshooter.ui()
     
     def on_exportAlembic_pushButton_released(self):
         
