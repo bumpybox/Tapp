@@ -27,3 +27,4 @@ CREDITS:
 - Brian Horgan; bhGhost
 - Daniel S. Lima; SculptInbetweenEditor
 - Dora Yuki; Dora SkinWeight
+- Brenton Rayner; fgshooter
