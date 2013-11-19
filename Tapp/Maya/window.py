@@ -5,9 +5,13 @@ import maya.cmds as cmds
 import maya.OpenMayaUI as omui
 
 import Tapp.Maya.lighting.gui as lighting
+reload(lighting)
 import Tapp.Maya.animation.gui as animation
+reload(animation)
 import Tapp.Maya.rigging.gui as rigging
+reload(rigging)
 import Tapp.Maya.modelling.gui as modelling
+reload(modelling)
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()

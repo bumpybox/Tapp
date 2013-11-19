@@ -31,8 +31,8 @@ cmds.evalDeferred('import Tapp.Maya.rigging.meta')
 
 #opening command port for Eclipse
 try:
-    if cmds.commandPort(':7720', q=True) !=1:
-        cmds.commandPort(n=':7720', eo = False, nr = True)
+    if cmds.commandPort(':7721', q=True) !=1:
+        cmds.commandPort(n=':7721', eo = False, nr = True)
 except:
     pass
 

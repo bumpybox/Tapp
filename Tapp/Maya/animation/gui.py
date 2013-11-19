@@ -9,7 +9,7 @@ from PySide import QtGui
 from PySide import QtCore
 from shiboken import wrapInstance
 
-import Tapp.Maya.animation.character as character
+import Tapp.Maya.animation.utils.character as character
 reload(character)
 import Tapp.Maya.utils.ZvParentMaster as muz
 reload(muz)
@@ -23,22 +23,31 @@ import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 reload(maumlk)
 import Tapp.Maya.utils.paie as paie
 reload(paie)
-import Tapp.Maya.animation.resources.animation as gui
-reload(gui)
+import Tapp.Maya.animation.resources.dialog as dialog
+reload(dialog)
 import Tapp.Maya.rigging.meta as meta
 reload(meta)
+import Tapp.Maya.animation.utils.setsSelector.gui as mausg
+reload(mausg)
+
+#rebuilding ui
+import Tapp.utils.pyside.compileUi as upc
+uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
+upc.compileUi(uiPath)
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
     return wrapInstance(long(main_window_ptr), QtGui.QWidget)
 
-class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
+class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def __init__(self, parent=maya_main_window()):
         super(Window,self).__init__(parent)
         self.setupUi(self)
         
         self.setObjectName('tatDialog')
+        
+        self.modify_dialog()
         
         self.create_connections()
         
@@ -50,6 +59,12 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         
         self.character_start_lineEdit.setEnabled(False)
         self.character_end_lineEdit.setEnabled(False)
+    
+    def modify_dialog(self):
+        
+        #adding Sets Selector to dialog
+        layout=self.toolsTab.layout()
+        layout.addWidget(mausg.Window())
     
     def create_connections(self):
         
@@ -374,8 +389,3 @@ class Window(QtGui.QMainWindow,gui.Ui_MainWindow):
         uiPath=parentDir+'/animation/utils/RAT_ui.ui'
         uiPath=uiPath.replace('\\','/')
         mel.eval('RAT_GUI(1,"%s")' % uiPath)
-
-def show():
-    #showing new dialog
-    win=Window()
-    win.show()
