@@ -115,8 +115,11 @@ def destructor(obj=None,preserve=False):
                     
                     if attr=='parent':
                         
-                        values=cmds.attributeQuery( attr, node=obj, listEnum=True )[0].split(':')
-                        parentData=values[cmds.getAttr(obj+'.'+attr)]
+                        try:
+                            values=cmds.attributeQuery( attr, node=obj, listEnum=True )[0].split(':')
+                            parentData=values[cmds.getAttr(obj+'.'+attr)]
+                        except:
+                            print ('%s failed to get parent!' % obj)
                     
                     if attr.split('_')[-1]=='control':
                         

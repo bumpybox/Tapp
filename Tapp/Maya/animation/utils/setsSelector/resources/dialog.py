@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:/Users/toke.jepsen/Documents/GitHub/Tapp\Tapp\Maya\animation\utils\setsSelector\resources/dialog.ui'
 #
-# Created: Tue Nov 19 12:41:52 2013
+# Created: Thu Nov 21 14:35:10 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
