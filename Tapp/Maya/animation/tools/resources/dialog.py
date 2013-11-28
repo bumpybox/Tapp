@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:/Users/Chucky/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\resources/dialog.ui'
 #
-# Created: Fri Nov 22 00:38:43 2013
+# Created: Thu Nov 28 23:45:20 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -19,10 +19,10 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.zvChain_pushButton_2 = QtGui.QPushButton(self.centralwidget)
-        self.zvChain_pushButton_2.setMinimumSize(QtCore.QSize(0, 35))
-        self.zvChain_pushButton_2.setObjectName("zvChain_pushButton_2")
-        self.horizontalLayout.addWidget(self.zvChain_pushButton_2)
+        self.zvParentMaster_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.zvParentMaster_pushButton.setMinimumSize(QtCore.QSize(0, 35))
+        self.zvParentMaster_pushButton.setObjectName("zvParentMaster_pushButton")
+        self.horizontalLayout.addWidget(self.zvParentMaster_pushButton)
         self.zvChain_pushButton = QtGui.QPushButton(self.centralwidget)
         self.zvChain_pushButton.setMinimumSize(QtCore.QSize(0, 35))
         self.zvChain_pushButton.setObjectName("zvChain_pushButton")
@@ -32,16 +32,16 @@ class Ui_MainWindow(object):
         self.line_9.setFrameShadow(QtGui.QFrame.Sunken)
         self.line_9.setObjectName("line_9")
         self.horizontalLayout.addWidget(self.line_9)
-        self.tools_zvparentmasterhelp_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.zvParentMasterHelp_pushButton = QtGui.QPushButton(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tools_zvparentmasterhelp_pushButton.sizePolicy().hasHeightForWidth())
-        self.tools_zvparentmasterhelp_pushButton.setSizePolicy(sizePolicy)
-        self.tools_zvparentmasterhelp_pushButton.setMinimumSize(QtCore.QSize(30, 35))
-        self.tools_zvparentmasterhelp_pushButton.setMaximumSize(QtCore.QSize(25, 16777215))
-        self.tools_zvparentmasterhelp_pushButton.setObjectName("tools_zvparentmasterhelp_pushButton")
-        self.horizontalLayout.addWidget(self.tools_zvparentmasterhelp_pushButton)
+        sizePolicy.setHeightForWidth(self.zvParentMasterHelp_pushButton.sizePolicy().hasHeightForWidth())
+        self.zvParentMasterHelp_pushButton.setSizePolicy(sizePolicy)
+        self.zvParentMasterHelp_pushButton.setMinimumSize(QtCore.QSize(30, 35))
+        self.zvParentMasterHelp_pushButton.setMaximumSize(QtCore.QSize(25, 16777215))
+        self.zvParentMasterHelp_pushButton.setObjectName("zvParentMasterHelp_pushButton")
+        self.horizontalLayout.addWidget(self.zvParentMasterHelp_pushButton)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.horizontalLayout_18 = QtGui.QHBoxLayout()
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
@@ -264,9 +264,9 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Tools", None, QtGui.QApplication.UnicodeUTF8))
-        self.zvChain_pushButton_2.setText(QtGui.QApplication.translate("MainWindow", "Zv Parent Master", None, QtGui.QApplication.UnicodeUTF8))
+        self.zvParentMaster_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Parent Master", None, QtGui.QApplication.UnicodeUTF8))
         self.zvChain_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Chain", None, QtGui.QApplication.UnicodeUTF8))
-        self.tools_zvparentmasterhelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
+        self.zvParentMasterHelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
         self.breakDownDragger_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Breakdown Dragger", None, QtGui.QApplication.UnicodeUTF8))
         self.breakDownDraggerHelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
         self.holdKey_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Hold Key", None, QtGui.QApplication.UnicodeUTF8))

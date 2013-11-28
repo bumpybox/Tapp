@@ -1,4 +1,5 @@
 import os
+import webbrowser
 
 from PySide import QtGui
 from shiboken import wrapInstance
@@ -7,17 +8,19 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omui
 
-#from .resources import dialog as dialog
-#from .setsSelector import gui as ssGui
-
 import Tapp.Maya.animation.tools.resources.dialog as dialog
 import Tapp.Maya.animation.tools.setsSelector.gui as ssGui
+import Tapp.Maya.utils.ZvParentMaster as muz
+import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
+import Tapp.Maya.animation.utils.ml_hold as maumlh
+import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
+import Tapp.Maya.animation.utils as mau
 
 #rebuild ui
-#import Tapp.utils.pyside.compileUi as upc
-#uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
-#upc.compileUi(uiPath)
-#reload(dialog)
+import Tapp.utils.pyside.compileUi as upc
+uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
+upc.compileUi(uiPath)
+reload(dialog)
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
@@ -80,6 +83,10 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         except:
             cmds.warning('First select the collider mesh then the mesh that should be deformed.')
     
+    def zvParentMaster_pushButton_released(self):
+        
+        muz.ZvParentMaster()
+    
     def zvChain_pushButton_released(self):
         
         #undo enable
@@ -89,12 +96,121 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         
         cmds.undoInfo(closeChunk=True)
     
+    def zvParentMasterHelp_pushButton_released(self):
+        
+        webbrowser.open('http://www.creativecrash.com/maya/script/zv-parent-master')
+    
     def localizeImagePlane_pushButton_released(self):
         
         import Tapp.Maya.animation.utils.imageplane as ip
         
         ip.localizeImagePlane()
     
-    def paie_released(self):
+    def paie_pushButton_released(self):
+        
+        from ..utils import paie as paie
         
         paie.GUI()
+    
+    def breakDownDragger_pushButton_released(self):
+        
+        maumlb.drag()
+    
+    def breakDownDraggerHelp_pushButton_released(self):
+        
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_breakdownDragger')
+    
+    def holdKey_pushButton_released(self):
+        
+        maumlh.ui()
+    
+    def holdKeyHelp_pushButton_released(self):
+        
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_hold')
+    
+    def keyValueDragger_pushButton_released(self):
+        
+        maumlk.drag()
+    
+    def keyValueDraggerHelp_pushButton_released(self):
+        
+        webbrowser.open('http://morganloomis.com/wiki/tools.html#ml_keyValueDragger')
+    
+    def keyCleanUp_pushButton_released(self):
+        
+        cmds.undoInfo(openChunk=True)
+        
+        #execute redundant keys script
+        path=os.path.dirname(mau.__file__).replace('\\','/')
+        
+        mel.eval('source "'+path+'/deleteRedundantKeys.mel"')
+        mel.eval('llDeleteRedundantKeys;')
+        
+        #deleting static channels in scene or on selected object
+        sel=cmds.ls(selection=True)
+        
+        if len(sel)>0:
+            cmds.delete(staticChannels=True)
+        else:
+            cmds.delete(staticChannels=True,all=True)
+        
+        cmds.undoInfo(closeChunk=True)
+    
+    def keyCleanUpHelp_pushButton_released(self):
+        
+        msg='This cleans any static channels and redundant keys.\n'
+        msg+='If nothing is selected, everything in the scene gets cleaned.'
+        
+        cmds.confirmDialog( title='Key Clean Up Info', message=msg,defaultButton='OK')
+    
+    def changeRotationOrder_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing zoo utils
+        melPath=parentDir+'/animation/utils/zooUtils.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #sourcing zoo change
+        melPath=parentDir+'/animation/utils/zooChangeRoo.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        mel.eval('zooChangeRoo %s' % self.tools_changeRotationOrder_comboBox.currentText())
+    
+    def changeRotationOrderHelp_pushButton_released(self):
+        
+        webbrowser.open('http://www.creativecrash.com/maya/script/zoochangeroo')
+    
+    def ghosting_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing ghost util
+        melPath=parentDir+'/animation/utils/bhGhost.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        mel.eval('bhGhost')
+    
+    def ghostingHelp_pushButton_released(self):
+        
+        webbrowser.open('https://vimeo.com/50029607')
+    
+    def rat_pushButton_released(self):
+        
+        path=os.path.dirname(__file__)
+        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        
+        #sourcing rat util
+        melPath=parentDir+'/animation/utils/RAT.mel'
+        melPath=melPath.replace('\\','/')
+        mel.eval('source "%s"' % melPath)
+        
+        #launching rat gui
+        uiPath=parentDir+'/animation/utils/RAT_ui.ui'
+        uiPath=uiPath.replace('\\','/')
+        mel.eval('RAT_GUI(1,"%s")' % uiPath)

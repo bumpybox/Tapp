@@ -11,7 +11,7 @@ if 'tappMenu' in menuList:
 tappMenu=cmds.menu('tappMenu',label='Tapp',parent=gMainWindow,tearOff=True)
 
 #tapp menu
-cmd='import Tapp.Maya.window as win;reload(win);win.show()'
+cmd='import Tapp.Maya.gui as gui;reload(gui);win=gui.Window();win.show()'
 cmds.menuItem(label='Tapp Tools',parent=tappMenu,command=cmd)
 
 #settings menu

@@ -18,7 +18,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="zvChain_pushButton_2">
+       <widget class="QPushButton" name="zvParentMaster_pushButton">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -51,7 +51,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="tools_zvparentmasterhelp_pushButton">
+       <widget class="QPushButton" name="zvParentMasterHelp_pushButton">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
           <horstretch>0</horstretch>

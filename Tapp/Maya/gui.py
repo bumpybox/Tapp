@@ -33,12 +33,14 @@ class Window(QtGui.QDialog):
         self.main_tabs.addTab(rigging.Window(), 'Rigging')
         self.main_tabs.addTab(animation.Window(), 'Animation')
         self.main_tabs.addTab(lighting.Form(), 'Lighting')
-
-def show():
-    #delete previous ui
-    if cmds.dockControl('tappWindow',exists=True):
-        cmds.deleteUI('tappWindow')
-
-    #creating ui
-    Window()
-    cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp')
+    
+    def show(self):
+        #delete previous ui
+        if cmds.dockControl('tappWindow',exists=True):
+            cmds.deleteUI('tappWindow')
+    
+        #creating ui
+        win=Window()
+        minSize=win.minimumSizeHint()
+        cmds.dockControl('tappWindow',content='tappDialog', area='right',label='Tapp',
+                         width=minSize.width())
