@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\Chucky\Documents\GitHub\Tapp\Tapp\Maya\rigging\resources/rigging.ui'
+# Form implementation generated from reading ui file 'C:/Users/toke.jepsen/Documents/GitHub/Tapp\Tapp\Maya\rigging/resources/dialog.ui'
 #
-# Created: Tue Nov 05 00:03:52 2013
+# Created: Fri Nov 29 15:33:05 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(352, 655)
+        MainWindow.resize(141, 156)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -25,6 +25,10 @@ class Ui_MainWindow(object):
         self.sculptInbetweenEditor_pushButton.setMinimumSize(QtCore.QSize(0, 40))
         self.sculptInbetweenEditor_pushButton.setObjectName("sculptInbetweenEditor_pushButton")
         self.verticalLayout.addWidget(self.sculptInbetweenEditor_pushButton)
+        self.zvRadialBlendshape_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.zvRadialBlendshape_pushButton.setMinimumSize(QtCore.QSize(0, 40))
+        self.zvRadialBlendshape_pushButton.setObjectName("zvRadialBlendshape_pushButton")
+        self.verticalLayout.addWidget(self.zvRadialBlendshape_pushButton)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -36,4 +40,5 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
         self.doraSkin_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Dora Skin", None, QtGui.QApplication.UnicodeUTF8))
         self.sculptInbetweenEditor_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Sculpt Inbetween Editor", None, QtGui.QApplication.UnicodeUTF8))
+        self.zvRadialBlendshape_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Radial Blendshape", None, QtGui.QApplication.UnicodeUTF8))
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/Chucky/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\setsSelector\resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:/Users/toke.jepsen/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\setsSelector\resources/dialog.ui'
 #
-# Created: Thu Nov 28 23:45:20 2013
+# Created: Fri Nov 29 15:33:05 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!

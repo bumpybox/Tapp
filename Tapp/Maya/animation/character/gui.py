@@ -9,11 +9,13 @@ import maya.cmds as cmds
 import Tapp.Maya.animation.character.resources.dialog as dialog
 import Tapp.Maya.animation.character.utils as utils
 
+'''
 #rebuild ui
 import Tapp.utils.pyside.compileUi as upc
 uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
+'''
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()

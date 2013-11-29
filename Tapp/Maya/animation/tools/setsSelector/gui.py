@@ -36,6 +36,8 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def refresh(self):
         
+        self.listWidget.clear()
+        
         #populate list
         if self.getSets():
             self.listWidget.addItems(self.getSets())
@@ -52,12 +54,12 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def on_listWidget_itemSelectionChanged(self):
         
-        sets=[]
+        members=[]
         for item in self.listWidget.selectedItems():
             
-            sets.append(item.text())
+            members.extend(cmds.listConnections(item.text()+'.dagSetMembers'))
         
-        cmds.select(sets)
+        cmds.select(members)
     
     def getSets(self):
         

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>352</width>
-    <height>655</height>
+    <width>141</width>
+    <height>156</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,6 +38,19 @@
       </property>
       <property name="text">
        <string>Sculpt Inbetween Editor</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="zvRadialBlendshape_pushButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Zv Radial Blendshape</string>
       </property>
      </widget>
     </item>
