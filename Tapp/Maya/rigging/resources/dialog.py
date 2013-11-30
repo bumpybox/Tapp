@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/toke.jepsen/Documents/GitHub/Tapp\Tapp\Maya\rigging/resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:/Users/Chucky/Documents/GitHub/Tapp\Tapp\Maya\rigging/resources/dialog.ui'
 #
-# Created: Fri Nov 29 15:33:05 2013
+# Created: Sat Nov 30 16:49:41 2013
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!

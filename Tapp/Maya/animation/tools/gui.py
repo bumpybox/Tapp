@@ -1,7 +1,7 @@
 import os
 import webbrowser
 
-from PySide import QtGui
+from PySide import QtGui,QtCore
 from shiboken import wrapInstance
 
 import maya.cmds as cmds
@@ -10,19 +10,20 @@ import maya.OpenMayaUI as omui
 
 import Tapp.Maya.animation.tools.resources.dialog as dialog
 import Tapp.Maya.animation.tools.setsSelector.gui as ssGui
+import Tapp.Maya.animation.tools.resetAttributes.gui as rGui
 import Tapp.Maya.utils.ZvParentMaster as muz
 import Tapp.Maya.animation.utils.ml_breakdownDragger as maumlb
 import Tapp.Maya.animation.utils.ml_hold as maumlh
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 import Tapp.Maya.animation.utils as mau
 
-'''
+
 #rebuild ui
 import Tapp.utils.pyside.compileUi as upc
 uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
-'''
+
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
@@ -40,11 +41,18 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def modify_dialog(self):
         
+        layout=self.central_verticalLayout
+        
+        #adding Reset Attributes to dialog
+        layout.addWidget(rGui.Window())
+        
         #adding Sets Selector to dialog
-        layout=self.centralwidget.layout()
         layout.addWidget(ssGui.Window())
     
     def create_connections(self):
+        
+        self.channelBoxLeft_pushButton.released.connect(self.channelBoxLeft)
+        self.channelBoxRight_pushButton.released.connect(self.channelBoxRight)
         
         self.zvParentMaster_pushButton.released.connect(self.zvParentMaster_pushButton_released)
         self.zvChain_pushButton.released.connect(self.zvChain_pushButton_released)
@@ -75,6 +83,60 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         self.paie_pushButton.released.connect(self.paie_pushButton_released)
         
         self.collisionDeformer_pushButton.released.connect(self.collisionDeformer_released)
+    
+    def channelBoxLeft(self):
+        
+        toggle=self.channelBoxLeft_pushButton.isChecked()
+        
+        if toggle:
+            
+            #toggling right channelbox
+            rightToggle=self.channelBoxRight_pushButton.isChecked()
+            self.channelBoxRight_pushButton.setChecked(False)
+            
+            if rightToggle:
+                self.channelBoxRight_widget.setParent(None)
+            
+            #creating left channelbox
+            ptr = omui.MQtUtil.findControl(cmds.channelBox())
+            self.channelBoxLeft_widget=wrapInstance(long(ptr), QtGui.QWidget)
+            
+            layout=self.channelBoxLeft_horizontalLayout
+            layout.addWidget(self.channelBoxLeft_widget)
+            
+            self.resize(400,0)
+            
+            self.updateGeometry()
+        else:
+            
+            self.channelBoxLeft_widget.setParent(None)
+    
+    def channelBoxRight(self):
+        
+        toggle=self.channelBoxRight_pushButton.isChecked()
+        
+        if toggle:
+            
+            #toggling left channelbox
+            leftToggle=self.channelBoxLeft_pushButton.isChecked()
+            self.channelBoxLeft_pushButton.setChecked(False)
+            
+            if leftToggle:
+                self.channelBoxLeft_widget.setParent(None)
+            
+            #creating Right channelbox
+            ptr = omui.MQtUtil.findControl(cmds.channelBox())
+            self.channelBoxRight_widget=wrapInstance(long(ptr), QtGui.QWidget)
+            
+            layout=self.channelBoxRight_horizontalLayout
+            layout.addWidget(self.channelBoxRight_widget)
+            
+            self.resize(400,0)
+            
+            self.updateGeometry()
+        else:
+            
+            self.channelBoxRight_widget.setParent(None)
     
     def collisionDeformer_released(self):
         
