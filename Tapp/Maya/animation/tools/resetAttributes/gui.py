@@ -53,24 +53,33 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         #reset attributes to default
         values=cmds.attributeQuery(attr,node=node,listDefault=True)
         
-        if not cmds.getAttr('%s.%s' % (node,attr),lock=True):
+        try:
             cmds.setAttr(node+'.'+attr,*values)
+        except:
+            pass
     
     def resetAttributes(self,node,translation=True,rotation=True,
                        scale=True,userAttrs=True):
         
         if translation:
-            self.resetAttribute(node,'translate')
+            self.resetAttribute(node,'tx')
+            self.resetAttribute(node,'ty')
+            self.resetAttribute(node,'tz')
         
         if rotation:
-            self.resetAttribute(node,'rotate')
+            self.resetAttribute(node,'rx')
+            self.resetAttribute(node,'ry')
+            self.resetAttribute(node,'rz')
         
         if scale:
-            self.resetAttribute(node,'scale')
+            self.resetAttribute(node,'sx')
+            self.resetAttribute(node,'sy')
+            self.resetAttribute(node,'sz')
         
         if userAttrs:
-            for attr in cmds.listAttr(node,userDefined=True):
-                self.resetAttribute(node, attr)
+            if cmds.listAttr(node,userDefined=True):
+                for attr in cmds.listAttr(node,userDefined=True):
+                    self.resetAttribute(node, attr)
     
     def resetSelection(self,translation=True,rotation=True,
                       scale=True,userAttrs=True):
@@ -84,6 +93,8 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         #zero nodes
         if len(sel)>=1:
             for node in cmds.ls(sl=True):
+                print node
+                
                 self.resetAttributes(node,translation,rotation,
                                scale,userAttrs)
             

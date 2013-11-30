@@ -1,7 +1,7 @@
 import os
 import webbrowser
 
-from PySide import QtGui,QtCore
+from PySide import QtGui
 from shiboken import wrapInstance
 
 import maya.cmds as cmds
@@ -17,13 +17,13 @@ import Tapp.Maya.animation.utils.ml_hold as maumlh
 import Tapp.Maya.animation.utils.ml_keyValueDragger as maumlk
 import Tapp.Maya.animation.utils as mau
 
-
+'''
 #rebuild ui
 import Tapp.utils.pyside.compileUi as upc
 uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
-
+'''
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
