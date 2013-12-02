@@ -229,16 +229,15 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def changeRotationOrder_pushButton_released(self):
         
-        path=os.path.dirname(__file__)
-        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        path=os.path.dirname(mau.__file__)
         
         #sourcing zoo utils
-        melPath=parentDir+'/animation/utils/zooUtils.mel'
+        melPath=path+'/zooUtils.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
         #sourcing zoo change
-        melPath=parentDir+'/animation/utils/zooChangeRoo.mel'
+        melPath=path+'/zooChangeRoo.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
@@ -250,11 +249,10 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def ghosting_pushButton_released(self):
         
-        path=os.path.dirname(__file__)
-        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        path=os.path.dirname(mau.__file__)
         
         #sourcing ghost util
-        melPath=parentDir+'/animation/utils/bhGhost.mel'
+        melPath=path+'/bhGhost.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
@@ -266,15 +264,14 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
     
     def rat_pushButton_released(self):
         
-        path=os.path.dirname(__file__)
-        parentDir=os.path.abspath(os.path.join(path, os.pardir))
+        path=os.path.dirname(mau.__file__)
         
         #sourcing rat util
-        melPath=parentDir+'/animation/utils/RAT.mel'
+        melPath=path+'/RAT.mel'
         melPath=melPath.replace('\\','/')
         mel.eval('source "%s"' % melPath)
         
         #launching rat gui
-        uiPath=parentDir+'/animation/utils/RAT_ui.ui'
+        uiPath=path+'/RAT_ui.ui'
         uiPath=uiPath.replace('\\','/')
         mel.eval('RAT_GUI(1,"%s")' % uiPath)

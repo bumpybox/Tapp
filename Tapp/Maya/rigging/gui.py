@@ -8,11 +8,13 @@ from shiboken import wrapInstance
 
 from .resources import dialog
 
+'''
 #rebuild ui
 import Tapp.utils.pyside.compileUi as upc
 uiPath=os.path.dirname(__file__)+'/resources/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
+'''
 
 def maya_main_window():
     main_window_ptr=omui.MQtUtil.mainWindow()
