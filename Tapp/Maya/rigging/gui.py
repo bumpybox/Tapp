@@ -10,8 +10,9 @@ from .resources import dialog
 
 '''
 #rebuild ui
+from Tapp.Maya.rigging.resources import dialog
 import Tapp.utils.pyside.compileUi as upc
-uiPath=os.path.dirname(__file__)+'/resources/dialog.ui'
+uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
 '''
@@ -33,6 +34,7 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         self.doraSkin_pushButton.released.connect(self.doraSkin_pushButton_released)
         self.sculptInbetweenEditor_pushButton.released.connect(self.sculptInbetweenEditor_pushButton_released)
         self.zvRadialBlendshape_pushButton.released.connect(self.zvRadialBlendshape_pushButton_released)
+        self.ngSkinTools_pushButton.released.connect(self.ngSkinTools_pushButton_released)
     
     def sculptInbetweenEditor_pushButton_released(self):
         
@@ -57,3 +59,8 @@ class Window(QtGui.QMainWindow,dialog.Ui_MainWindow):
         from .utils import ZvRadialBlendShape as zv
         
         zv.ZvRadialBlendShape()
+    
+    def ngSkinTools_pushButton_released(self):
+        
+        from Tapp.Maya.ngSkinTools.ui.mainwindow import MainWindow
+        MainWindow.open()

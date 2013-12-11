@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>141</width>
-    <height>156</height>
+    <height>202</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,6 +51,19 @@
       </property>
       <property name="text">
        <string>Zv Radial Blendshape</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="ngSkinTools_pushButton">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>ngSkinTools</string>
       </property>
      </widget>
     </item>
