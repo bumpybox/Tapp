@@ -7,6 +7,8 @@ Everything are very much a work-in-progress.
 ## Install
 Run Tapp/install.py, and follow on screen instructions.
 
+When launching an app (Maya or Nuke), you will be prompted for the location of the Tapp directory.
+
 ## Documentation
 
 You can find all the documentation for the Tapp tools here: https://github.com/Bumpybox/Tapp/wiki/Documentation
