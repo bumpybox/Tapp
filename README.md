@@ -4,6 +4,9 @@ This is a tool set for Maya and Nuke
 
 Everything are very much a work-in-progress.
 
+## Install
+Run Tapp/install.py, and follow on screen instructions.
+
 ## Documentation
 
 You can find all the documentation for the Tapp tools here: https://github.com/Bumpybox/Tapp/wiki/Documentation
