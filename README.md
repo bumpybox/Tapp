@@ -7,7 +7,10 @@ Everything are very much a work-in-progress.
 ## Install
 Run Tapp/install.py, and follow on screen instructions.
 
-When launching an app (Maya or Nuke), you will be prompted for the location of the Tapp directory.
+Alternatively you can set/add the environment variables manually:
+
+PYTHONPATH: Tapp/System,..Tapp (parent directory of Tapp)
+NUKE_PATH: Tapp/System,..Tapp (parent directory of Tapp)
 
 ## Documentation
 
