@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/toke.jepsen/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\setsSelector\resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Maya\animation\tools\setsSelector\resources/dialog.ui'
 #
-# Created: Fri Nov 29 15:33:05 2013
+# Created: Wed Feb 19 09:40:46 2014
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -43,6 +43,10 @@ class Ui_MainWindow(object):
         self.line_2.setObjectName("line_2")
         self.horizontalLayout_2.addWidget(self.line_2)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.checkBox = QtGui.QCheckBox(self.centralwidget)
+        self.checkBox.setChecked(True)
+        self.checkBox.setObjectName("checkBox")
+        self.verticalLayout.addWidget(self.checkBox)
         self.listWidget = QtGui.QListWidget(self.centralwidget)
         self.listWidget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.listWidget.setObjectName("listWidget")
@@ -58,5 +62,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Sets Selector", None, QtGui.QApplication.UnicodeUTF8))
         self.character_fkik_label.setText(QtGui.QApplication.translate("MainWindow", "Sets Selector", None, QtGui.QApplication.UnicodeUTF8))
+        self.checkBox.setText(QtGui.QApplication.translate("MainWindow", "Toggle Selection", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton.setText(QtGui.QApplication.translate("MainWindow", "Refresh", None, QtGui.QApplication.UnicodeUTF8))
 

@@ -53,6 +53,16 @@
      </layout>
     </item>
     <item>
+     <widget class="QCheckBox" name="checkBox">
+      <property name="text">
+       <string>Toggle Selection</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QListWidget" name="listWidget">
       <property name="selectionMode">
        <enum>QAbstractItemView::ExtendedSelection</enum>

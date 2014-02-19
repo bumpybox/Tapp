@@ -52,7 +52,7 @@ def installMaya():
         if val in os.environ['PYTHONPATH']:
             print 'Tapp Environment Variables already set!'
         else:
-            val += ';' + os.environ['PYTHONPATH']
+            val = os.environ['PYTHONPATH'] + ';' + val
 
             setEnv('PYTHONPATH', val)
     else:
