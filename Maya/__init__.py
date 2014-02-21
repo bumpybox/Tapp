@@ -15,7 +15,7 @@ import menu
 cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
 
 #adding plugins
-cmds.evalDeferred('import Tapp.Maya.pluginsLoad')
+cmds.evalDeferred('import Tapp.Maya.plugins')
 
 #framerate prompting
 import utils.framerate as uf
