@@ -16,12 +16,16 @@ example of what's expected and what the systems can do on simple data
 
 
 import pymel.core as pm
+#import maya.standalone
+#maya.standalone.initialize(name='python')
+
 import maya.cmds as cmds
 import os
 
-#import Red9_Meta as r9Meta
 import Red9.core.Red9_Meta as r9Meta
+
 import Red9.startup.setup as r9Setup
+r9Setup.start(Menu=False)
 
 class Test_MetaRegistryCalls():
     
@@ -35,13 +39,15 @@ class Test_MetaRegistryCalls():
          
         #register transforms to the NodeTypes
         r9Meta.registerMClassNodeMapping(nodeTypes='transform')
-        assert r9Meta.getMClassNodeTypes()==['network', 'transform']
+        print r9Meta.getMClassNodeTypes()
+        assert r9Meta.getMClassNodeTypes()==sorted(['network', 'objectSet', 'transform'])
         new=r9Meta.MetaClass(name='newTransformMetaNode', nodeType='transform')
         assert [cmds.nodeType(n.mNode) for n in r9Meta.getMetaNodes()]==['network','transform']  
         
         #reset the NodeTypes
         r9Meta.resetMClassNodeTypes()
-        assert r9Meta.getMClassNodeTypes()==['network']
+        print r9Meta.getMClassNodeTypes()
+        assert r9Meta.getMClassNodeTypes()==['network','objectSet']#,'HIKCharacterNode']
         assert [cmds.nodeType(n.mNode) for n in r9Meta.getMetaNodes()]==['network'] 
         
     
@@ -317,8 +323,14 @@ class Test_MetaClass():
             assert True
         
     def test_connectParent(self):
-        #TODO: Fill Test
-        pass
+        
+        parent=r9Meta.MetaFacialRig(name='Facial')
+        self.MClass.connectParent(parent,'FacialNode')
+        
+        assert parent.getChildMetaNodes()[0]==self.MClass
+        assert self.MClass.getParentMetaNode()==parent
+        assert parent.FacialNode==self.MClass
+        
     
     def test_attrLocking(self):
         '''
@@ -563,7 +575,7 @@ class Test_MetaClass():
         assert len(self.MClass.json_test)==40000
         
         #save the file and reload to ensure the attr is consistent
-        cmds.file(rename=os.path.join(r9Setup.red9ModulePath(),'tests','testFiles','deleteMe'))
+        cmds.file(rename=os.path.join(r9Setup.red9ModulePath(),'tests','testFiles','deleteMe.ma'))
         cmds.file(save=True,type='mayaAscii')
         cmds.file(new=True,f=True)
         cmds.file(os.path.join(r9Setup.red9ModulePath(),'tests','testFiles','deleteMe.ma'),open=True,f=True)
