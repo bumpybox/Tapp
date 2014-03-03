@@ -14,13 +14,13 @@ import menu
 #launching window if preferred
 cmds.evalDeferred('import Tapp.Maya.settings as ms;ms.startup()')
 
-#adding plugins
-cmds.evalDeferred('import Tapp.Maya.plugins')
-
 #framerate prompting
 import utils.framerate as uf
 
 uf.FrameratePrompt()
+
+#load plugins
+cmds.evalDeferred('import Tapp.Maya.plugins')
 
 #import Red9
 sys.path.append(os.path.dirname(__file__))
