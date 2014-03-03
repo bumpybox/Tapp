@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/Chucky/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\resetAttributes\resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:\Users\Chucky\Documents\GitHub\Tapp\Maya\animation\tools\resetAttributes\resources/dialog.ui'
 #
-# Created: Fri Nov 29 21:49:24 2013
+# Created: Mon Mar 03 21:28:19 2014
 #      by: pyside-uic 0.2.14 running on PySide 1.1.1
 #
 # WARNING! All changes made in this file will be lost!
