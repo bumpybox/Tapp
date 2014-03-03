@@ -23,11 +23,8 @@ import utils.framerate as uf
 uf.FrameratePrompt()
 
 #import Red9
-cmds.evalDeferred('import sys;sys.path.append("%s")' % os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__))
 cmds.evalDeferred('import Tapp.Maya.Red9;Tapp.Maya.Red9.start()')
-
-#import custom Red9 meta
-cmds.evalDeferred('import Tapp.Maya.rigging.meta')
 
 #opening command port for Eclipse
 try:

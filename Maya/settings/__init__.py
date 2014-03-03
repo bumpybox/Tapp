@@ -1,6 +1,6 @@
 import maya.cmds as cmds
 
-import Tapp.utils.yaml as uy
+import Tapp.System.yaml as uy
 
 def getSettings():
     

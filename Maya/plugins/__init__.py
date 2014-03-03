@@ -2,8 +2,7 @@ import os
 
 import maya.cmds as cmds
 
-#path = os.path.dirname(__file__)
-path = r'C:\Users\toke.jepsen\Documents\GitHub\Tapp\Maya\plugins'
+path = os.path.dirname(__file__)
 
 for f in os.listdir(path):
 

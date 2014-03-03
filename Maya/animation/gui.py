@@ -4,7 +4,6 @@ from shiboken import wrapInstance
 import maya.OpenMayaUI as omui
 
 from . import tools
-from . import character
 
 
 def maya_main_window():
@@ -31,7 +30,6 @@ class Window(QtGui.QDialog):
         self.main_tabs = QtGui.QTabWidget()
         self.main_layout.addWidget(self.main_tabs)
 
-        self.main_tabs.addTab(character.Window(), 'Character')
         self.main_tabs.addTab(tools.Window(), 'Tools')
 
     def create_connections(self):
