@@ -61,17 +61,18 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
     def on_listWidget_itemSelectionChanged(self):
 
         members = []
-        currSelection = []
         #getting members of sets
         if self.listWidget.selectedItems():
 
             for item in self.listWidget.selectedItems():
 
-                currSelection.append(item.text())
                 members.extend(cmds.listConnections(item.text() +
                                                      '.dagSetMembers'))
 
-        cmds.select(members, toggle=self.checkBox.isChecked())
+        if members:
+            cmds.select(members, toggle=self.checkBox.isChecked())
+        else:
+            cmds.select(cl=True)
 
     def getSets(self):
 

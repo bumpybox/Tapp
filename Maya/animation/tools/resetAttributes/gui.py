@@ -52,13 +52,14 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def resetAttribute(self, node, attr):
 
-        #reset attributes to default
-        values = cmds.attributeQuery(attr, node=node, listDefault=True)
+        #reset attributes to default if keyable
+        if cmds.attributeQuery(attr, node=node, keyable=True):
+            values = cmds.attributeQuery(attr, node=node, listDefault=True)
 
-        try:
-            cmds.setAttr(node + '.' + attr, *values)
-        except:
-            pass
+            try:
+                cmds.setAttr(node + '.' + attr, *values)
+            except:
+                pass
 
     def resetAttributes(self, node, translation=True, rotation=True,
                        scale=True, userAttrs=True):
