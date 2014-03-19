@@ -96,8 +96,6 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         #zero nodes
         if len(sel) >= 1:
             for node in cmds.ls(sl=True):
-                print node
-
                 self.resetAttributes(node, translation, rotation,
                                scale, userAttrs)
 
