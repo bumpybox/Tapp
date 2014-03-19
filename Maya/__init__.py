@@ -19,6 +19,9 @@ import utils.framerate as uf
 
 uf.FrameratePrompt()
 
+#setting project
+cmds.evalDeferred('import Tapp.Maya.utils.setProject')
+
 #load plugins
 cmds.evalDeferred('import Tapp.Maya.plugins')
 
