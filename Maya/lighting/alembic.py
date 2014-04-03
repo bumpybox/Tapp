@@ -1,98 +1,116 @@
+import os
 from compiler.ast import flatten
 
 import maya.cmds as cmds
 import maya.mel as mel
 
+
 def loadAlembic():
-    
-    cmds.loadPlugin('AbcExport.mll',quiet=True)
-    cmds.loadPlugin('AbcImport.mll',quiet=True)
+
+    cmds.loadPlugin('AbcExport.mll', quiet=True)
+    cmds.loadPlugin('AbcImport.mll', quiet=True)
+
 
 def exportAlembic():
-    
+
     loadAlembic()
-    
-    #export alembic
-    fileFilter = "Alembic Files (*.abc)"
-    f=cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,fileMode=0)
-    
-    if f:
-        #collecting export objects
-        cmd=''
-        for obj in cmds.ls(selection=True):
-            cmd+=' -root '+obj
-        
-        #get time range
-        start=cmds.playbackOptions(q=True,animationStartTime=True)
-        end=cmds.playbackOptions(q=True,animationEndTime=True)
-        
-        alembic=mel.eval('AbcExport -j \"-frameRange %s %s -stripNamespaces -uvWrite -worldSpace %s -file %s";' % (start,end,cmd,f[0]))
-        
-        return alembic
+
+    sel = cmds.ls(selection=True)
+
+    path = []
+    if sel:
+        #export alembic
+        fileFilter = "Alembic Files (*.abc)"
+        path = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+                                fileMode=3)
+
+        if path:
+            alembics = []
+            currentFile = cmds.file(q=True, sn=True)
+            path = path[0].replace('\\', '/')
+
+            #collecting export objects
+            cmd = ''
+            for obj in cmds.ls(selection=True, long=True):
+                cmd = ' -root ' + obj
+
+                #get time range
+                start = cmds.playbackOptions(q=True, animationStartTime=True)
+                end = cmds.playbackOptions(q=True, animationEndTime=True)
+
+                melCmd = 'AbcExport -j \"-frameRange %s %s' % (start, end)
+                melCmd += ' -writeVisibility -uvWrite -worldSpace %s -file' % cmd
+                fileName = os.path.basename(currentFile).split('.')[0] + '_'
+                fileName += obj.split(':')[0].replace('|', '') + '.abc'
+                melCmd += ' \\\"%s\\\"\";' % (path + '/' + fileName)
+                alembics.append(path + '/' + fileName)
+                mel.eval(melCmd)
+        else:
+            cmds.warning('No path chosen!')
+
+    else:
+        cmds.warning('No nodes selected!')
+
 
 def importAlembic():
-    
-    loadAlembic()
-    
-    #import alembic
-    fileFilter = "Alembic Files (*.abc)"
-    f=cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,fileMode=1)
-    
-    if f:
-        alembic=mel.eval('AbcImport -mode import -fitTimeRange -setToStartFrame "%s";' % f[0])
-    
-    return alembic
 
-def swapAlembic(alembic):
-    #undo start
-    cmds.undoInfo(openChunk=True)
-    
-    #getting connected attributes and nodes
-    attrDict={}
-    nodeList=[]
-    for con in cmds.listConnections(alembic,skipConversionNodes=True,source=False,
-                                    shapes=True,plugs=True):
-        attr=con.split('.')[-1]
-        node=con.split('.')[0]
-        
-        nodeList.append(node)
-        
-        attrDict.setdefault(node, []).append(attr)
-    
-    nodeList=list(set(nodeList))
-    
-    #getting scene nodes without the alembic nodes
-    sceneNodes=[]
-    sceneNodes.append(cmds.ls(transforms=True))
-    sceneNodes.append(cmds.ls(shapes=True))
-    sceneNodes=flatten(sceneNodes)
-    sceneNodes=list(set(sceneNodes)-set(nodeList))
-    
-    #pairing scene nodes with alembic nodes
-    pairingDict={}
-    for node in nodeList:
-        
-        nameCompare=node
-        
-        if cmds.nodeType(node)=='mesh':
-            if node.endswith('Deformed'):
-                nameCompare=node.replace('Deformed','')
-        
-        for sceneNode in sceneNodes:
-            
-            if nameCompare==sceneNode.split(':')[-1]:
-                pairingDict[node]=sceneNode
-    
-    #connecting scene nodes with alembic nodes, and deleting alembic nodes
-    for node in pairingDict:
-        target=pairingDict[node]
-        
-        for attr in attrDict[node]:
-            sourceAttr=cmds.listConnections(node+'.'+attr,plugs=True)[0]
-            
-            cmds.connectAttr(sourceAttr,target+'.'+attr,force=True)
-        
-        #cmds.delete(node)
-    
-    #undo end
-    cmds.undoInfo(closeChunk=True)
+    loadAlembic()
+
+    fileFilter = "Alembic Files (*.abc)"
+    files = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+                            fileMode=4)
+
+    if files:
+        for f in files:
+            filename = os.path.basename(f)
+            newNodes = cmds.file(f, reference=True, namespace=filename,
+                                 groupReference=True, groupName='NewReference',
+                                 returnNewNodes=True)
+
+            for node in newNodes:
+                if node == '|NewReference':
+                    cmds.rename('%s:grp' % filename)
+
+
+def getConnectedAttr(node, connectShapes=True):
+    data = {}
+
+    if connectShapes:
+        shapes = cmds.listRelatives(node, shapes=True, fullPath=True)
+        if shapes:
+            for shp in shapes:
+                data = getConnectedAttr(shp)
+
+    exceptions = ['message', 'instObjGroups']
+    for attr in cmds.listAttr(node, connectable=False):
+        if attr not in exceptions:
+            try:
+                if cmds.listConnections('%s.%s' % (node, attr),
+                                        connections=True):
+                    data[attr] = cmds.listConnections('%s.%s' % (node, attr),
+                                                      plugs=True)[0]
+            except:
+                pass
+
+    return data
+
+
+def connectAlembic(connectShapes=True):
+    sel = cmds.ls(selection=True)
+    alembic = sel[0]
+    target = sel[1]
+
+    alembics = cmds.ls(alembic, dagObjects=True, long=True)
+    targets = cmds.ls(target, dagObjects=True, long=True)
+    for node in targets:
+        for abc in alembics:
+            if node.split(':')[-1] == abc.split('|')[-1]:
+                data = getConnectedAttr(abc, connectShapes)
+                if data:
+                    for attr in data:
+                        cmds.connectAttr(data[attr], '%s.%s' % (node, attr),
+                                         force=True)
+
+exportAlembic()
+#importAlembic()
+#connectAlembic()

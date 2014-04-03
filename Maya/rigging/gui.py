@@ -10,12 +10,10 @@ from .resources import dialog
 from .utils import spherePreview
 
 '''
-import os
-
 #rebuild ui
 from Tapp.Maya.rigging.resources import dialog
 import Tapp.System.pyside.compileUi as upc
-uiPath = os.path.dirname(dialog.__file__)+'/dialog.ui'
+uiPath = os.path.dirname(dialog.__file__) + '/dialog.ui'
 upc.compileUi(uiPath)
 reload(dialog)
 '''
@@ -49,6 +47,8 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.sculptInbetweenEditor_pushButton.released.connect(self.sculptInbetweenEditor_pushButton_released)
         self.zvRadialBlendshape_pushButton.released.connect(self.zvRadialBlendshape_pushButton_released)
         self.ngSkinTools_pushButton.released.connect(self.ngSkinTools_pushButton_released)
+        self.latticeAdd_pushButton.released.connect(self.latticeAdd_pushButton_released)
+        self.latticeRemove_pushButton.released.connect(self.latticeRemove_pushButton_released)
 
     def sculptInbetweenEditor_pushButton_released(self):
 
@@ -78,3 +78,13 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
         from Tapp.Maya.ngSkinTools.ui.mainwindow import MainWindow
         MainWindow.open()
+
+    def latticeAdd_pushButton_released(self):
+
+        from .utils import lattice
+        lattice.latticeAdd()
+
+    def latticeRemove_pushButton_released(self):
+
+        from .utils import lattice
+        lattice.latticeRemove()
