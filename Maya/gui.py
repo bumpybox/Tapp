@@ -31,7 +31,7 @@ class Window(QtGui.QDialog):
         self.main_tabs = QtGui.QTabWidget()
         self.main_layout.addWidget(self.main_tabs)
 
-        self.main_tabs.addTab(modelling.Form(), 'Modelling')
+        self.main_tabs.addTab(modelling.Window(), 'Modelling')
         self.main_tabs.addTab(rigging.Window(), 'Rigging')
         self.main_tabs.addTab(animation.Window(), 'Animation')
         self.main_tabs.addTab(lighting.Window(), 'Lighting')
