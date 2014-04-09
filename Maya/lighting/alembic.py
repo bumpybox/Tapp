@@ -1,5 +1,4 @@
 import os
-from compiler.ast import flatten
 
 import maya.cmds as cmds
 import maya.mel as mel
@@ -11,7 +10,7 @@ def loadAlembic():
     cmds.loadPlugin('AbcImport.mll', quiet=True)
 
 
-def exportAlembic():
+def Export():
 
     loadAlembic()
 
@@ -52,7 +51,7 @@ def exportAlembic():
         cmds.warning('No nodes selected!')
 
 
-def importAlembic():
+def Import():
 
     loadAlembic()
 
@@ -95,7 +94,7 @@ def getConnectedAttr(node, connectShapes=True):
     return data
 
 
-def connectAlembic(connectShapes=True):
+def Connect(connectShapes=True):
     sel = cmds.ls(selection=True)
     alembic = sel[0]
     target = sel[1]
@@ -111,6 +110,15 @@ def connectAlembic(connectShapes=True):
                         cmds.connectAttr(data[attr], '%s.%s' % (node, attr),
                                          force=True)
 
-exportAlembic()
-#importAlembic()
-#connectAlembic()
+def Blendshape():
+    sel = cmds.ls(selection=True)
+    alembic = sel[0]
+    target = sel[1]
+
+    alembics = cmds.ls(alembic, dagObjects=True, long=True)
+    targets = cmds.ls(target, dagObjects=True, long=True)
+    for node in targets:
+        for abc in alembics:
+            if node.split(':')[-1] == abc.split('|')[-1]:
+                blendshape = cmds.blendShape(abc, node)[0]
+                cmds.setAttr('%s.%s' % (blendshape, abc.split('|')[-1]), 1)

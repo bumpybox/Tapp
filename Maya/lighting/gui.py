@@ -8,7 +8,7 @@ from PySide import QtGui
 from shiboken import wrapInstance
 
 from .resources import dialog
-#from . import alembic
+from . import alembic
 
 
 def maya_main_window():
@@ -37,8 +37,11 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.fgshooter_pushButton.released.connect(self.on_fgshooter_pushButton_released)
 
         self.exportAlembic_pushButton.released.connect(self.on_exportAlembic_pushButton_released)
+        self.importAlembic_pushButton.released.connect(self.on_importAlembic_pushButton_released)
+        self.connectAlembic_pushButton.released.connect(self.on_connectAlembic_pushButton_released)
+        self.blendshapeAlembic_pushButton.released.connect(self.on_blendshapeAlembic_pushButton_released)
 
-        self.arnold_addSubdivision_pushButton.released.connect(self.on_arnold_addSubdivision_pushButton_released)
+        self.arnoldSubdivision_pushButton.released.connect(self.on_arnoldSubdivision_pushButton_released)
 
         self.addSubdivision_pushButton.released.connect(self.on_addSubdivision_pushButton_released)
         self.setSubdivision_pushButton.released.connect(self.on_setSubdivision_pushButton_released)
@@ -53,9 +56,19 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def on_exportAlembic_pushButton_released(self):
 
-        #exporting alembic
-        #alembic.exportAlembic()
-        pass
+        alembic.Export()
+
+    def on_importAlembic_pushButton_released(self):
+
+        alembic.Import()
+
+    def on_connectAlembic_pushButton_released(self):
+
+        alembic.Connect()
+
+    def on_blendshapeAlembic_pushButton_released(self):
+
+        alembic.Blendshape()
 
     def on_addRimLight_pushButton_released(self):
 
@@ -108,10 +121,11 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         mel.eval('source "%s"' % melPath)
         mel.eval('FileTextureManager')
 
-    def on_arnold_addSubdivision_pushButton_released(self):
+    def on_arnoldSubdivision_pushButton_released(self):
 
         import Tapp.Maya.lighting.arnold as mla
-        mla.addSubdivision()
+        iterations = self.arnoldSubdivision_spinBox.value()
+        mla.Subdivision(iterations)
 
 
 def show():
