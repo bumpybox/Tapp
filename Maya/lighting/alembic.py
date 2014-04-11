@@ -24,7 +24,6 @@ def Export():
                                 fileMode=3)
 
         if path:
-            alembics = []
             currentFile = cmds.file(q=True, sn=True)
             path = path[0].replace('\\', '/')
 
@@ -39,10 +38,10 @@ def Export():
 
                 melCmd = 'AbcExport -j \"-frameRange %s %s' % (start, end)
                 melCmd += ' -writeVisibility -uvWrite -worldSpace %s -file' % cmd
-                fileName = os.path.basename(currentFile).split('.')[0] + '_'
-                fileName += obj.split(':')[0].replace('|', '') + '.abc'
+                fileName = obj.split(':')[0].replace('|', '') + '.'
+                fileName += os.path.basename('.'.join(currentFile.split('.')[1:-1]))
+                fileName += '.abc'
                 melCmd += ' \\\"%s\\\"\";' % (path + '/' + fileName)
-                alembics.append(path + '/' + fileName)
                 mel.eval(melCmd)
         else:
             cmds.warning('No path chosen!')
