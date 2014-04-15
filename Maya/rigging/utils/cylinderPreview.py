@@ -1,7 +1,8 @@
 import maya.cmds as cmds
+import maya.mel as mel
 
 
-def cylinderPreview(targets):
+def __create(targets):
     grp = cmds.group(empty=True, name='polevector_grp')
 
     locs = []
@@ -50,11 +51,14 @@ def cylinderPreview(targets):
     cmds.setAttr(cyl + '.overrideDisplayType', 2)
 
 
-def deleteAll():
+def Delete():
+    cmds.select(cl=True)
     roots = []
+    jnts = []
     for node in cmds.ls(type='transform'):
         if cmds.objExists(node + '.joint'):
             jnt = cmds.listConnections(node + '.joint')[0]
+            jnts.append(jnt)
             parent = None
             if cmds.listRelatives(jnt, parent=True):
                 parent = cmds.listRelatives(jnt, parent=True)[0]
@@ -81,4 +85,35 @@ def deleteAll():
 
     cmds.delete(list(set(roots)))
 
-deleteAll()
+    for jnt in jnts:
+        cmds.select(jnt)
+        mel.eval('FreezeTransformations;')
+
+    cmds.ikHandle(sj=jnts[0], ee=jnts[-1], solver='ikRPsolver')
+
+
+def Create():
+
+    cmds.undoInfo(openChunk=True)
+
+    sel = cmds.ls(selection=True)
+    if not sel:
+        cmds.warning('No nodes selected!')
+
+    if len(sel) == 1:
+        children = cmds.listRelatives(sel[0], ad=True)
+        if children:
+            if len(children) == 2:
+                sel.append(children[-1])
+                sel.append(children[0])
+                __create(sel)
+            else:
+                cmds.warning('Select a 3 chain hierarchy!')
+        else:
+            cmds.warning('No children found on %s!' % sel[0])
+    elif len(sel) == 3:
+        __create(sel)
+    else:
+        cmds.warning('Select 3 nodes, or first node of a 3 chain hierarchy!')
+
+    cmds.undoInfo(closeChunk=True)

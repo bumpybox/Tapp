@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/lighting/resources/dialog.ui'
 #
-# Created: Thu Apr 10 00:34:37 2014
+# Created: Tue Apr 15 22:03:08 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(251, 463)
+        MainWindow.resize(251, 494)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -255,6 +255,15 @@ class Ui_MainWindow(object):
         self.arnoldSubdivision_spinBox.setObjectName("arnoldSubdivision_spinBox")
         self.horizontalLayout_3.addWidget(self.arnoldSubdivision_spinBox)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.horizontalLayout_11 = QtGui.QHBoxLayout()
+        self.horizontalLayout_11.setObjectName("horizontalLayout_11")
+        self.arnoldMask_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.arnoldMask_pushButton.setObjectName("arnoldMask_pushButton")
+        self.horizontalLayout_11.addWidget(self.arnoldMask_pushButton)
+        self.arnoldRebuildMask_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.arnoldRebuildMask_pushButton.setObjectName("arnoldRebuildMask_pushButton")
+        self.horizontalLayout_11.addWidget(self.arnoldRebuildMask_pushButton)
+        self.verticalLayout.addLayout(self.horizontalLayout_11)
         self.horizontalLayout_7 = QtGui.QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
         self.line_5 = QtGui.QFrame(self.centralwidget)
@@ -396,6 +405,10 @@ class Ui_MainWindow(object):
         self.blendshapeAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Blendshape Alembic", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "Arnold", None, QtGui.QApplication.UnicodeUTF8))
         self.arnoldSubdivision_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Set Subdivision", None, QtGui.QApplication.UnicodeUTF8))
+        self.arnoldMask_pushButton.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>Makes the selection into a AOV rgb mask.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.arnoldMask_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Mask", None, QtGui.QApplication.UnicodeUTF8))
+        self.arnoldRebuildMask_pushButton.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>Rebuilds the AOV rgb mask from the current sets.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.arnoldRebuildMask_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Rebuild Masks", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Vray", None, QtGui.QApplication.UnicodeUTF8))
         self.addSubdivision_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Add Subdivision", None, QtGui.QApplication.UnicodeUTF8))
         self.setSubdivision_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Set Subdivision", None, QtGui.QApplication.UnicodeUTF8))

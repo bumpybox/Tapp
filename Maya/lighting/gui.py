@@ -42,6 +42,8 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.blendshapeAlembic_pushButton.released.connect(self.on_blendshapeAlembic_pushButton_released)
 
         self.arnoldSubdivision_pushButton.released.connect(self.on_arnoldSubdivision_pushButton_released)
+        self.arnoldMask_pushButton.released.connect(self.on_arnoldMask_pushButton_released)
+        self.arnoldRebuildMask_pushButton.released.connect(self.on_arnoldRebuildMask_pushButton_released)
 
         self.addSubdivision_pushButton.released.connect(self.on_addSubdivision_pushButton_released)
         self.setSubdivision_pushButton.released.connect(self.on_setSubdivision_pushButton_released)
@@ -127,6 +129,16 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         iterations = self.arnoldSubdivision_spinBox.value()
         mla.Subdivision(iterations)
 
+    def on_arnoldMask_pushButton_released(self):
+
+        import Tapp.Maya.lighting.arnold as mla
+        mla.Mask()
+
+    def on_arnoldRebuildMask_pushButton_released(self):
+
+        import Tapp.Maya.lighting.arnold as mla
+        mla.MaskFlush()
+        mla.MaskBuild()
 
 def show():
     #closing previous dialog

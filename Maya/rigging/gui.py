@@ -9,15 +9,6 @@ from shiboken import wrapInstance
 from .resources import dialog
 from .utils import spherePreview
 
-'''
-#rebuild ui
-from Tapp.Maya.rigging.resources import dialog
-import Tapp.System.pyside.compileUi as upc
-uiPath = os.path.dirname(dialog.__file__) + '/dialog.ui'
-upc.compileUi(uiPath)
-reload(dialog)
-'''
-
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -47,6 +38,10 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.sculptInbetweenEditor_pushButton.released.connect(self.sculptInbetweenEditor_pushButton_released)
         self.zvRadialBlendshape_pushButton.released.connect(self.zvRadialBlendshape_pushButton_released)
         self.ngSkinTools_pushButton.released.connect(self.ngSkinTools_pushButton_released)
+
+        self.cylinderPreviewCreate_pushButton.released.connect(self.on_cylinderPreviewCreate_pushButton_released)
+        self.cylinderPreviewDelete_pushButton.released.connect(self.on_cylinderPreviewDelete_pushButton_released)
+
         self.latticeAdd_pushButton.released.connect(self.latticeAdd_pushButton_released)
         self.latticeRemove_pushButton.released.connect(self.latticeRemove_pushButton_released)
 
@@ -78,6 +73,16 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
         from Tapp.Maya.ngSkinTools.ui.mainwindow import MainWindow
         MainWindow.open()
+
+    def on_cylinderPreviewCreate_pushButton_released(self):
+
+        from .utils import cylinderPreview
+        cylinderPreview.Create()
+
+    def on_cylinderPreviewDelete_pushButton_released(self):
+
+        from .utils import cylinderPreview
+        cylinderPreview.Delete()
 
     def latticeAdd_pushButton_released(self):
 

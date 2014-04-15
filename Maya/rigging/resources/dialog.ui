@@ -7,35 +7,55 @@
     <x>0</x>
     <y>0</y>
     <width>178</width>
-    <height>273</height>
+    <height>213</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QVBoxLayout" name="central_verticalLayout">
       <item>
-       <widget class="QPushButton" name="doraSkin_pushButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="spacing">
+         <number>6</number>
         </property>
-        <property name="text">
-         <string>Dora Skin</string>
-        </property>
-       </widget>
+        <item>
+         <widget class="QPushButton" name="doraSkin_pushButton">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Dora Skin</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="ngSkinTools_pushButton">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>ngSkinTools</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QPushButton" name="sculptInbetweenEditor_pushButton">
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>40</height>
+          <height>0</height>
          </size>
         </property>
         <property name="text">
@@ -48,7 +68,7 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>40</height>
+          <height>0</height>
          </size>
         </property>
         <property name="text">
@@ -57,17 +77,47 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="ngSkinTools_pushButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>ngSkinTools</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="Line" name="line_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Cylinder Preview</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QPushButton" name="cylinderPreviewCreate_pushButton">
+          <property name="text">
+           <string>Create</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="cylinderPreviewDelete_pushButton">
+          <property name="text">
+           <string>Delete</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
@@ -101,7 +151,7 @@
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>40</height>
+            <height>0</height>
            </size>
           </property>
           <property name="text">
@@ -114,7 +164,7 @@
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>40</height>
+            <height>0</height>
            </size>
           </property>
           <property name="text">
@@ -140,6 +190,14 @@
      </spacer>
     </item>
    </layout>
+   <zorder>label_2</zorder>
+   <zorder>line_3</zorder>
+   <zorder>line_4</zorder>
+   <zorder>ngSkinTools_pushButton</zorder>
+   <zorder>doraSkin_pushButton</zorder>
+   <zorder>cylinderPreviewCreate_pushButton</zorder>
+   <zorder>cylinderPreviewDelete_pushButton</zorder>
+   <zorder>cylinderPreviewCreate_pushButton</zorder>
   </widget>
  </widget>
  <resources/>
