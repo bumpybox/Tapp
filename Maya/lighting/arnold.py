@@ -54,22 +54,33 @@ def MaskBuild():
 
             for obj in cmds.listRelatives(cmds.sets(i, q=1), pa=1):
                 inpt = cmds.getAttr(tSwitch + '.input', s=1)
-                cmds.connectAttr(obj + '.instObjGroups[0]', tSwitch + '.input[' + str(inpt) + '].inShape', f=1)
-                cmds.connectAttr(aiColor + '.outColor', tSwitch + '.input[' + str(inpt) + '].inTriple', f=1)
+                if cmds.nodeType(obj) == 'mesh':
+                    cmds.connectAttr(obj + '.instObjGroups[0]',
+                                     tSwitch + '.input[' + str(inpt) + '].inShape', f=1)
+                    cmds.connectAttr(aiColor + '.outColor',
+                                     tSwitch + '.input[' + str(inpt) + '].inTriple', f=1)
 
         # AOV'S
 
         aovListSize = cmds.getAttr('defaultArnoldRenderOptions.aovList', s=1)
 
-        customAOV = cmds.createNode('aiAOV', n='aiAOV_rgbMask' + str(aiSet // 3 + 1), skipSelect=True)
-        cmds.setAttr(customAOV + '.name', 'rgbMask' + str(aiSet // 3 + 1), type='string')
-        cmds.connectAttr(customAOV + '.message', 'defaultArnoldRenderOptions.aovList[' + str(aovListSize) + ']', f=1)
+        customAOV = cmds.createNode('aiAOV',
+                                    n='aiAOV_rgbMask' + str(aiSet // 3 + 1),
+                                    skipSelect=True)
+        cmds.setAttr(customAOV + '.name', 'rgbMask' + str(aiSet // 3 + 1),
+                     type='string')
+        cmds.connectAttr(customAOV + '.message',
+                         'defaultArnoldRenderOptions.aovList[' + str(aovListSize) + ']',
+                         f=1)
 
-        cmds.connectAttr('defaultArnoldDriver.message', customAOV + '.outputs[0].driver', f=1)
-        cmds.connectAttr('defaultArnoldFilter.message', customAOV + '.outputs[0].filter', f=1)
+        cmds.connectAttr('defaultArnoldDriver.message',
+                         customAOV + '.outputs[0].driver', f=1)
+        cmds.connectAttr('defaultArnoldFilter.message',
+                         customAOV + '.outputs[0].filter', f=1)
 
         # connect to default shader
-        cmds.connectAttr(aiUshader + '.outColor', customAOV + '.defaultValue', f=1)
+        cmds.connectAttr(aiUshader + '.outColor',
+                         customAOV + '.defaultValue', f=1)
 
 
 def MaskFlush():
