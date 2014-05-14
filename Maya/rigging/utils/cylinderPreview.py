@@ -52,6 +52,9 @@ def __create(targets):
 
 
 def Delete():
+
+    cmds.undoInfo(openChunk=True)
+
     cmds.select(cl=True)
     roots = []
     jnts = []
@@ -90,6 +93,8 @@ def Delete():
         mel.eval('FreezeTransformations;')
 
     cmds.ikHandle(sj=jnts[0], ee=jnts[-1], solver='ikRPsolver')
+
+    cmds.undoInfo(closeChunk=True)
 
 
 def Create():
