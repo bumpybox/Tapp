@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>251</width>
-    <height>494</height>
+    <height>523</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -324,6 +324,13 @@
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <widget class="QPushButton" name="copyAlembic_pushButton">
+      <property name="text">
+       <string>Copy Alembic Attributes</string>
+      </property>
+     </widget>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_8">

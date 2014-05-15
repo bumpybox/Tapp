@@ -6,17 +6,6 @@ import maya.OpenMayaUI as omui
 
 from .resources import dialog as dialog
 
-'''
-import os
-import Tapp.Maya.animation.tools.resetAttributes.resources.dialog as dialog
-
-#rebuild ui
-import Tapp.utils.pyside.compileUi as upc
-uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
-upc.compileUi(uiPath)
-reload(dialog)
-'''
-
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()

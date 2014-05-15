@@ -145,6 +145,9 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
             cmds.setAttr('%s.createJoints' % nodes[2], 'false', type='string')
 
     def delete_pushButton_released(self):
+
+        cmds.undoInfo(openChunk=True)
+
         for node in (cmds.ls(type='network')):
             if (cmds.attributeQuery('type', n=node, ex=True)) == True and \
             (cmds.getAttr('%s.type' % node)) == 'spherePreview':
@@ -176,6 +179,8 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
                 for child in cmds.listConnections('%s.message' % node,
                                                   type='transform'):
                     cmds.delete(child)
+
+        cmds.undoInfo(closeChunk=True)
 
     def help_pushButton_released(self):
         directory = os.path.dirname(__file__)
