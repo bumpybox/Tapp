@@ -1,6 +1,8 @@
 from operator import itemgetter
 
 import pymel.core as pm
+import maya.cmds as cmds
+from Tapp.Maya.rigging import utils
 
 
 def PlaceOnComponent():
@@ -173,4 +175,17 @@ def createEdgeJoints(edges):
         joints.append(jnt)
     return joints
 
-PlaceOnComponent()
+
+def ParentToJoint():
+    sel = cmds.ls(selection=True)
+    jnts = cmds.ls(type='joint')
+    for node in sel:
+        distances = []
+        for jnt in jnts:
+            distances.append(utils.Distance(node, jnt))
+        minDist = min(distances)
+        print node
+        print minDist
+        print jnt
+
+ParentToJoint()

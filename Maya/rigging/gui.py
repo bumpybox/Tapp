@@ -7,7 +7,7 @@ from PySide import QtGui
 from shiboken import wrapInstance
 
 from .resources import dialog
-from .utils import spherePreview
+from . import spherePreview
 
 
 def maya_main_window():
@@ -47,7 +47,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def sculptInbetweenEditor_pushButton_released(self):
 
-        from .utils.sculptInbetweenEditor import dslSculptInbetweenEditor
+        from .sculptInbetweenEditor import dslSculptInbetweenEditor
         create = dslSculptInbetweenEditor.SculptInbetweenEditor()
         create.ui()
 
@@ -65,7 +65,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def zvRadialBlendshape_pushButton_released(self):
 
-        from .utils import ZvRadialBlendShape as zv
+        from . import ZvRadialBlendShape as zv
 
         zv.ZvRadialBlendShape()
 
@@ -76,20 +76,20 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def on_cylinderPreviewCreate_pushButton_released(self):
 
-        from .utils import cylinderPreview
+        from . import cylinderPreview
         cylinderPreview.Create()
 
     def on_cylinderPreviewDelete_pushButton_released(self):
 
-        from .utils import cylinderPreview
+        from . import cylinderPreview
         cylinderPreview.Delete()
 
     def latticeAdd_pushButton_released(self):
 
-        from .utils import lattice
+        from . import lattice
         lattice.latticeAdd()
 
     def latticeRemove_pushButton_released(self):
 
-        from .utils import lattice
+        from . import lattice
         lattice.latticeRemove()
