@@ -1,8 +1,11 @@
 from operator import itemgetter
+from math import sqrt, pow
 
 import pymel.core as pm
 import maya.cmds as cmds
+
 from Tapp.Maya.rigging import utils
+reload(utils)
 
 
 def PlaceOnComponent():
@@ -177,15 +180,33 @@ def createEdgeJoints(edges):
 
 
 def ParentToJoint():
-    sel = cmds.ls(selection=True)
-    jnts = cmds.ls(type='joint')
-    for node in sel:
+    nodes = cmds.ls(selection=True)
+    jnts = cmds.ls(selection=True, type='joint')
+    nodes = list(set(nodes) - set(jnts))
+    for node in nodes:
         distances = []
         for jnt in jnts:
-            distances.append(utils.Distance(node, jnt))
+            grp = cmds.group(empty=True)
+            cmds.pointConstraint(node, grp)
+            At = cmds.xform(grp, ws=True, q=True, t=True)
+            Ax = At[0]
+            Ay = At[1]
+            Az = At[2]
+            cmds.delete(grp)
+
+            grp = cmds.group(empty=True)
+            cmds.pointConstraint(jnt, grp)
+            Bt = cmds.xform(grp, ws=True, q=True, t=True)
+            Bx = Bt[0]
+            By = Bt[1]
+            Bz = Bt[2]
+            cmds.delete(grp)
+
+            distances.append(sqrt(pow(Ax - Bx, 2) + pow(Ay - By, 2) + pow(Az - Bz, 2)))
+
         minDist = min(distances)
-        print node
-        print minDist
-        print jnt
+        closestJnt = jnts[distances.index(minDist)]
+        cmds.parentConstraint(closestJnt, node, maintainOffset=True)
 
 ParentToJoint()
+

@@ -2,24 +2,30 @@ import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMaya as om
 
-import Tapp.Maya.utils.ZvParentMaster as muz
 
-def Distance(objA,objB ):
+def Distance(objA, objB):
     ''' Returns distance between two nodes. '''
-    
-    from math import sqrt,pow
-    
-    At=cmds.xform(objA,ws=True,q=True,t=True)
-    Ax=At[0]
-    Ay=At[1]
-    Az=At[2]
-    
-    Bt=cmds.xform(objB,ws=True,q=True,t=True)
-    Bx=Bt[0]
-    By=Bt[1]
-    Bz=Bt[2]
- 
-    return sqrt(  pow(Ax-Bx,2) + pow(Ay-By,2) + pow(Az-Bz,2)  )
+
+    from math import sqrt, pow
+
+    grp = cmds.group(empty=True)
+    cmds.pointConstraint(objA, grp)
+    At = cmds.xform(grp, ws=True, q=True, t=True)
+    Ax = At[0]
+    Ay = At[1]
+    Az = At[2]
+    cmds.delete(grp)
+
+    grp = cmds.group(empty=True)
+    cmds.pointConstraint(objB, grp)
+    Bt = cmds.xform(grp, ws=True, q=True, t=True)
+    Bx = Bt[0]
+    By = Bt[1]
+    Bz = Bt[2]
+    cmds.delete(grp)
+
+    return sqrt(pow(Ax - Bx, 2) + pow(Ay - By, 2) + pow(Az - Bz, 2))
+
 
 def CrossProduct(posA,posB,posC):
     ''' Finds the up vector between three points in space.
