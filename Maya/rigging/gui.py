@@ -56,7 +56,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         path = os.path.dirname(__file__)
 
         #sourcing dora util
-        melPath = path + '/utils/DoraSkinWeightImpExp.mel'
+        melPath = path + '/DoraSkinWeightImpExp.mel'
         melPath = melPath.replace('\\', '/')
         mel.eval('source "%s"' % melPath)
 
