@@ -8,6 +8,7 @@ from shiboken import wrapInstance
 
 from .resources import dialog
 from . import spherePreview
+from . import constraints
 
 
 def maya_main_window():
@@ -44,6 +45,22 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
         self.latticeAdd_pushButton.released.connect(self.latticeAdd_pushButton_released)
         self.latticeRemove_pushButton.released.connect(self.latticeRemove_pushButton_released)
+
+        self.constraintsExport_pushButton.released.connect(self.constraintsExport_pushButton_released)
+        self.constraintsImport_pushButton.released.connect(self.constraintsImport_pushButton_released)
+        self.constraintsDelete_pushButton.released.connect(self.constraintsDelete_pushButton_released)
+
+    def constraintsExport_pushButton_released(self):
+
+        constraints.ExportData()
+
+    def constraintsImport_pushButton_released(self):
+
+        constraints.ImportData()
+
+    def constraintsDelete_pushButton_released(self):
+
+        constraints.Delete()
 
     def sculptInbetweenEditor_pushButton_released(self):
 

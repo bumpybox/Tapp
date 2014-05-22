@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/rigging/resources/dialog.ui'
 #
-# Created: Tue Apr 15 22:33:21 2014
+# Created: Thu May 22 11:47:38 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,11 +12,11 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(178, 213)
+        MainWindow.resize(178, 294)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.central_verticalLayout = QtGui.QVBoxLayout()
         self.central_verticalLayout.setObjectName("central_verticalLayout")
         self.horizontalLayout_4 = QtGui.QHBoxLayout()
@@ -91,9 +91,37 @@ class Ui_MainWindow(object):
         self.latticeRemove_pushButton.setObjectName("latticeRemove_pushButton")
         self.horizontalLayout_2.addWidget(self.latticeRemove_pushButton)
         self.central_verticalLayout.addLayout(self.horizontalLayout_2)
-        self.verticalLayout.addLayout(self.central_verticalLayout)
+        self.horizontalLayout_6 = QtGui.QHBoxLayout()
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.line_5 = QtGui.QFrame(self.centralwidget)
+        self.line_5.setFrameShape(QtGui.QFrame.HLine)
+        self.line_5.setFrameShadow(QtGui.QFrame.Sunken)
+        self.line_5.setObjectName("line_5")
+        self.horizontalLayout_6.addWidget(self.line_5)
+        self.label_3 = QtGui.QLabel(self.centralwidget)
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout_6.addWidget(self.label_3)
+        self.line_6 = QtGui.QFrame(self.centralwidget)
+        self.line_6.setFrameShape(QtGui.QFrame.HLine)
+        self.line_6.setFrameShadow(QtGui.QFrame.Sunken)
+        self.line_6.setObjectName("line_6")
+        self.horizontalLayout_6.addWidget(self.line_6)
+        self.central_verticalLayout.addLayout(self.horizontalLayout_6)
+        self.horizontalLayout_7 = QtGui.QHBoxLayout()
+        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
+        self.constraintsExport_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.constraintsExport_pushButton.setObjectName("constraintsExport_pushButton")
+        self.horizontalLayout_7.addWidget(self.constraintsExport_pushButton)
+        self.constraintsImport_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.constraintsImport_pushButton.setObjectName("constraintsImport_pushButton")
+        self.horizontalLayout_7.addWidget(self.constraintsImport_pushButton)
+        self.central_verticalLayout.addLayout(self.horizontalLayout_7)
+        self.constraintsDelete_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.constraintsDelete_pushButton.setObjectName("constraintsDelete_pushButton")
+        self.central_verticalLayout.addWidget(self.constraintsDelete_pushButton)
+        self.verticalLayout_2.addLayout(self.central_verticalLayout)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(spacerItem)
+        self.verticalLayout_2.addItem(spacerItem)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -111,4 +139,8 @@ class Ui_MainWindow(object):
         self.label.setText(QtGui.QApplication.translate("MainWindow", "Lattice", None, QtGui.QApplication.UnicodeUTF8))
         self.latticeAdd_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
         self.latticeRemove_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Remove", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_3.setText(QtGui.QApplication.translate("MainWindow", "Constraints", None, QtGui.QApplication.UnicodeUTF8))
+        self.constraintsExport_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Export", None, QtGui.QApplication.UnicodeUTF8))
+        self.constraintsImport_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Import", None, QtGui.QApplication.UnicodeUTF8))
+        self.constraintsDelete_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
 
