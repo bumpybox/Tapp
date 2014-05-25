@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/Chucky/Documents/GitHub/Tapp\Tapp\Maya\animation\tools\resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/animation/tools/resources/dialog.ui'
 #
-# Created: Sat Nov 30 16:49:40 2013
-#      by: pyside-uic 0.2.14 running on PySide 1.1.1
+# Created: Sun May 25 21:18:50 2014
+#      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(272, 328)
+        MainWindow.resize(272, 357)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -263,6 +263,15 @@ class Ui_MainWindow(object):
         self.localizeImagePlane_pushButton.setMinimumSize(QtCore.QSize(0, 0))
         self.localizeImagePlane_pushButton.setObjectName("localizeImagePlane_pushButton")
         self.gridLayout.addWidget(self.localizeImagePlane_pushButton, 0, 0, 1, 2)
+        self.paie_pushButton = QtGui.QPushButton(self.centralwidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.paie_pushButton.sizePolicy().hasHeightForWidth())
+        self.paie_pushButton.setSizePolicy(sizePolicy)
+        self.paie_pushButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.paie_pushButton.setObjectName("paie_pushButton")
+        self.gridLayout.addWidget(self.paie_pushButton, 1, 1, 1, 2)
         self.rat_pushButton = QtGui.QPushButton(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
@@ -276,16 +285,10 @@ class Ui_MainWindow(object):
         self.collisionDeformer_pushButton.setMinimumSize(QtCore.QSize(0, 0))
         self.collisionDeformer_pushButton.setObjectName("collisionDeformer_pushButton")
         self.gridLayout.addWidget(self.collisionDeformer_pushButton, 1, 0, 1, 1)
-        self.paie_pushButton = QtGui.QPushButton(self.centralwidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.paie_pushButton.sizePolicy().hasHeightForWidth())
-        self.paie_pushButton.setSizePolicy(sizePolicy)
-        self.paie_pushButton.setMinimumSize(QtCore.QSize(0, 0))
-        self.paie_pushButton.setObjectName("paie_pushButton")
-        self.gridLayout.addWidget(self.paie_pushButton, 1, 1, 1, 2)
         self.central_verticalLayout.addLayout(self.gridLayout)
+        self.playblastQueue_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.playblastQueue_pushButton.setObjectName("playblastQueue_pushButton")
+        self.central_verticalLayout.addWidget(self.playblastQueue_pushButton)
         spacerItem2 = QtGui.QSpacerItem(20, 2, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.central_verticalLayout.addItem(spacerItem2)
         self.horizontalLayout_3.addLayout(self.central_verticalLayout)
@@ -324,7 +327,8 @@ class Ui_MainWindow(object):
         self.ghosting_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Ghosting", None, QtGui.QApplication.UnicodeUTF8))
         self.ghostingHelp_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
         self.localizeImagePlane_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Localize Image Plane", None, QtGui.QApplication.UnicodeUTF8))
+        self.paie_pushButton.setText(QtGui.QApplication.translate("MainWindow", "PAIE", None, QtGui.QApplication.UnicodeUTF8))
         self.rat_pushButton.setText(QtGui.QApplication.translate("MainWindow", "RAT", None, QtGui.QApplication.UnicodeUTF8))
         self.collisionDeformer_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Collision Deformer", None, QtGui.QApplication.UnicodeUTF8))
-        self.paie_pushButton.setText(QtGui.QApplication.translate("MainWindow", "PAIE", None, QtGui.QApplication.UnicodeUTF8))
+        self.playblastQueue_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Playblast Queue", None, QtGui.QApplication.UnicodeUTF8))
 

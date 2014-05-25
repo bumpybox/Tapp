@@ -10,20 +10,13 @@ import maya.OpenMayaUI as omui
 
 from .resources import dialog
 from . import setsSelector
+from . import playblastQueue
 from . import resetAttributes
 from ...utils import ZvParentMaster
 from ..utils import ml_breakdownDragger
 from ..utils import ml_hold
 from ..utils import ml_keyValueDragger
 from .. import utils
-
-'''
-#rebuild ui
-import Tapp.utils.pyside.compileUi as upc
-uiPath=os.path.dirname(dialog.__file__)+'/dialog.ui'
-upc.compileUi(uiPath)
-reload(dialog)
-'''
 
 
 def maya_main_window():
@@ -103,6 +96,9 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.collisionDeformer_pushButton.released.connect(
                                                self.collisionDeformer_released)
 
+        self.playblastQueue_pushButton.released.connect(
+                                               self.playblastQueue_released)
+
     def channelBoxLeft(self):
 
         toggle = self.channelBoxLeft_pushButton.isChecked()
@@ -157,6 +153,11 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         else:
 
             self.channelBoxRight_widget.setParent(None)
+
+    def playblastQueue_released(self):
+
+        win = playblastQueue.Window()
+        win.show()
 
     def collisionDeformer_released(self):
 
