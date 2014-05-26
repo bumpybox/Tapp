@@ -36,25 +36,35 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def add_pushButton_released(self):
 
-        filePath = QtGui.QFileDialog.getOpenFileName(self, 'Open Maya File',
-                                                     '../..',
-                                                     'Maya File (*.ma)')
-        filePath = filePath[0]
-        if filePath:
-            utils.SavePrompt()
-            cmds.file(filePath, open=True, force=True)
+        msg = 'Do you want to add an empty row,'
+        msg += ' or open a file to fill in the row?'
+        addRow = cmds.confirmDialog(title='Cameras', message=msg,
+                                    button=['Empty', 'Open File'])
 
-            cameras = []
-            for cam in pm.ls(type='camera'):
-                if not cam.orthographic.get():
-                    cameras.append(str(cam.getParent()))
+        if addRow == 'Open File':
 
-            cameras.append('Close')
-            msg = 'Select camera to add.'
-            camera = cmds.confirmDialog(title='Cameras', message=msg,
-                                        button=cameras)
+            filePath = QtGui.QFileDialog.getOpenFileName(self,
+                                                         'Open Maya File',
+                                                         '../..',
+                                                         'Maya File (*.ma)')
+            filePath = filePath[0]
+            if filePath:
+                utils.SavePrompt()
+                cmds.file(filePath, open=True, force=True)
 
-            self.addRow(filePath, camera)
+                cameras = []
+                for cam in pm.ls(type='camera'):
+                    if not cam.orthographic.get():
+                        cameras.append(str(cam.getParent()))
+
+                cameras.append('Close')
+                msg = 'Select camera to add.'
+                camera = cmds.confirmDialog(title='Cameras', message=msg,
+                                            button=cameras)
+
+                self.addRow(filePath, camera)
+        else:
+            self.addRow('', '')
 
     def remove_pushButton_released(self):
 
