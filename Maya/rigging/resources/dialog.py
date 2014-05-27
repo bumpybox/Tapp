@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/rigging/resources/dialog.ui'
 #
-# Created: Thu May 22 11:47:38 2014
+# Created: Tue May 27 22:16:04 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(178, 294)
+        MainWindow.resize(178, 323)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.centralwidget)
@@ -39,6 +39,9 @@ class Ui_MainWindow(object):
         self.zvRadialBlendshape_pushButton.setMinimumSize(QtCore.QSize(0, 0))
         self.zvRadialBlendshape_pushButton.setObjectName("zvRadialBlendshape_pushButton")
         self.central_verticalLayout.addWidget(self.zvRadialBlendshape_pushButton)
+        self.si_poseDeformer_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.si_poseDeformer_pushButton.setObjectName("si_poseDeformer_pushButton")
+        self.central_verticalLayout.addWidget(self.si_poseDeformer_pushButton)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.line_3 = QtGui.QFrame(self.centralwidget)
@@ -133,6 +136,7 @@ class Ui_MainWindow(object):
         self.ngSkinTools_pushButton.setText(QtGui.QApplication.translate("MainWindow", "ngSkinTools", None, QtGui.QApplication.UnicodeUTF8))
         self.sculptInbetweenEditor_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Sculpt Inbetween Editor", None, QtGui.QApplication.UnicodeUTF8))
         self.zvRadialBlendshape_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Radial Blendshape", None, QtGui.QApplication.UnicodeUTF8))
+        self.si_poseDeformer_pushButton.setText(QtGui.QApplication.translate("MainWindow", "si_poseDeformer", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Cylinder Preview", None, QtGui.QApplication.UnicodeUTF8))
         self.cylinderPreviewCreate_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Create", None, QtGui.QApplication.UnicodeUTF8))
         self.cylinderPreviewDelete_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))

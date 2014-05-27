@@ -41,3 +41,4 @@ You can find all the documentation for the Tapp tools here: https://github.com/B
 - Dora Yuki; Dora SkinWeight
 - Brenton Rayner; fgshooter
 - basicPerlinDeformer; Ken Perlin, Paulalso, Ian Waters
+- si_poseDeformer; Stanislav Ilin

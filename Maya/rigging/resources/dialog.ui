@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>178</width>
-    <height>294</height>
+    <height>323</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -73,6 +73,13 @@
         </property>
         <property name="text">
          <string>Zv Radial Blendshape</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="si_poseDeformer_pushButton">
+        <property name="text">
+         <string>si_poseDeformer</string>
         </property>
        </widget>
       </item>

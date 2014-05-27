@@ -1,0 +1,370 @@
+/* This file downloaded from Highend3d.com
+''  
+''  Highend3d.com File Information:
+''  
+''    Script Name: Pose Space Deformer
+''    Author: DeepFish 
+''    Last Updated: Apr 03, 2007
+''    Update/Change this file at:
+''    http://Highend3d.com/maya/downloads/mel_scripts/character/1294.html
+''  
+''  Please do not alter any information above this line
+''  it is generated dynamically by Highend3d.com and will
+''  be changed automatically on any updates.
+*/
+
+
+
+/*//////////////////////////////////////////////////////////////////////////
+Node Based Pose Space Deformer V.1
+//////////////////////////////////////////////////////////////////////////
+
+////////////////////////// WHO ////////////////////////////////
+
+Stanislav Ilin
+04/2007
+www.3dturntable.com
+
+
+///////////////////////// WHAT ////////////////////////////////
+
+
+This script allows you to base your corrective blendshapes on the pose, rather
+than just a rotation of the joint.
+
+///////////////////////// WHY ////////////////////////////////
+
+This works great for the parts of the body which get a lot of movement in all
+3 axis, such as hips and shoulders. Where you can not isolate just one axis
+of rotation to drive your blendshapes.
+
+This file was inspired by Michael Comet's Plug-in for Maya.
+
+Unfortunately in my production pipeline, 3rd party plug-ins were prohibited,
+which pushed me to create this node based equivalent.
+
+///////////////////////// HOW ////////////////////////////////
+
+Pose your character into the problematic pose, which would require a corrective blend shape.
+
+Select the joint based on which, the blendshapes will be driven.
+
+Type in 
+
+si_poseDeformer;
+
+in command line or script editor.
+
+At this point, the basic setup is done. You can now directly connect the "Weight" attribute on the locator, to the
+"weight" of the corrective blendshape, for the given pose.
+
+
+/////////////////////////// HOW IT WORKS ///////////////////////////////
+
+So when you rotate the joint, the locator is constrained to the joint.  When that locator moves towards the white area, it will gradually
+increase the weight of the blendshape.
+
+As it moves away from white into black, it will decrease the blendshape.
+
+Locator's World position is being translated into UV coordinates of the Sphere through "ClosestPoinOnSurface" node.
+In turn those UV coordinates get the color information ( 0 - 1 ) from a ramp which is assigned to the sphere.
+This gives you a nice fall off which you can change by tweaking the ramp texture.
+
+
+//////////////////////////// ADVANCED ////////////////////////////////
+
+With this setup you can also use either a twist or a motion range of a joint to drive the blenshape in a addition to
+the color falloff of the sphere.
+
+"Type" attribute specifies either "Twist" or "Range"
+
+Connect one of your joint's rotation axis to "Joint".
+
+If you are not going to use either of these, just keep it at "Twist" and the default values of "Min" 0, "Max" 1
+and "Joint" 1.
+
+
+TWIST..........
+
+
+This will drive blendshape from 0 to 1 where your specified "Min" value would be equivalent to 0 and your "Max" will
+be equivalent to 1.
+
+EXAMPLE: "Min" 15, "Max" 45
+
+If your Joint is rotated in whatever axis you connected to "Joint" attribute, by 15 degrees or less, you will
+get 0 for the "Weight". If the joint is then rotated to 45 degrees or more, it will give you 1.
+
+And between 15 and 45 it will give you a value between 0 and 1.
+
+
+RANGE..........
+
+This will drive blendshape from 0 to 1 where your specified "min" value would be equivalent to degree range
+in positive and negative degrees, staying in which will give you 1. And "max" value is the range in degrees
+beyond which you will be getting 0.
+
+EXAMPLE: "Min" 15, "Max" 45
+
+If you joint is rotated in whatever axis you connected to "Joint" attribute, within -15 to 15 degrees you will
+get 1. If the joint rotates above 45 degrees or below -45 it will give you 0.
+
+The range between 15 and 45 OR -15 and -45 will be equivalent to the 1-0 range.
+
+
+/////////////////////////////////////////////////////////////////////////////////////*/
+
+
+
+
+global proc si_poseDeformer()
+
+{
+
+//get joint and its parent and child
+
+
+string $myJoint[0] = `ls -sl -typ joint`;
+string $myJointChild[];
+string $myJointParent[];
+
+
+if (size ($myJoint) == 0)
+{
+warning "No Joints Selected";
+}
+else
+{
+
+string $localJointChild[] = `listRelatives -c $myJoint[0]`;
+string $localJointParent[] = `listRelatives -ap $myJoint[0]`;
+
+$myJointChild[0] = $localJointChild[0];
+$myJointParent[0] = $localJointParent[0];
+
+}
+
+
+
+
+
+//creates sphere and locator
+
+sphere -s 4 -r 1 -nsp 4 -ax 0 90 0 -n poseFallOffSphere;
+string $mySphere[0] = `ls -sl`;
+string $mySphereShape[0] = `listRelatives -s $mySphere[0]`; 
+print $mySphereShape;
+spaceLocator -p 0 1 0 -n poseLocator;
+string $myLoc[0] = `ls -sl`;
+string $myLocShape[0] = `listRelatives -s $myLoc[0]`; 
+
+
+//setup attributes on locator
+
+addAttr -ln type -at "enum" -en "twist:range:"  $myLoc[0];
+setAttr -e -keyable true ($myLoc[0]+".type");
+
+addAttr -ln min -at double  -dv 0 $myLoc[0];
+setAttr -e -keyable true ($myLoc[0]+".min");
+
+addAttr -ln max -at double  -dv 1 $myLoc[0];
+setAttr -e -keyable true ($myLoc[0]+".max");
+
+addAttr -ln joint -at double  -dv 1 $myLoc[0];
+setAttr -e -keyable true ($myLoc[0]+".joint");
+
+addAttr -ln weight -at double  -dv 1 $myLoc[0];
+setAttr -e -keyable true ($myLoc[0]+".weight");
+
+//group sphere an locator
+
+group -n posePositionGRP01 $mySphere[0] $myLoc[0];
+string $myGroup[0] = `ls -sl`;
+print $myGroup;
+move 0 0 0 ($myGroup[0]+".scalePivot") ($myGroup[0]+".rotatePivot") ;
+
+int $myGroupNumber = `match "[0-9]+" $myGroup[0]`;
+
+
+//create ramp and lambert
+
+shadingNode -asTexture ramp -n poseFallOffRamp;
+string $myRamp[0] = `ls -sl`;
+shadingNode -asUtility place2dTexture;
+string $my2dTextures[0] = `ls -sl`;
+connectAttr ($my2dTextures[0]+".outUV") ($myRamp[0]+".uv");
+connectAttr  ($my2dTextures[0]+".outUvFilterSize") ($myRamp[0]+".uvFilterSize");
+
+//setup ramp
+
+removeMultiInstance -break true ($myRamp[0]+".colorEntryList[1]");
+setAttr ($myRamp[0]+".colorEntryList[2].color") -type double3 1 1 1 ;
+setAttr ($myRamp[0]+".colorEntryList[0].color") -type double3 0 0 0 ;
+setAttr ($myRamp[0]+".colorEntryList[2].position") 1;
+setAttr ($myRamp[0]+".colorEntryList[0].position") 0.5;
+setAttr ($myRamp[0]+".interpolation") 4;
+setAttr ($myRamp[0]+".type") 1;
+
+//connect lambert to sphere
+
+shadingNode -asShader lambert -n poseLambert;
+string $myLambert[0] =`ls -sl`;
+connectAttr -force ($myRamp[0]+".outColor") ($myLambert[0]+".color");
+
+//assign ramp to sphere
+
+defaultNavigation -source $myLambert[0] -destination ($mySphereShape[0]+".instObjGroups[0]") -connectToExisting;
+
+///////////////////////////////////////////////////////////////
+
+//building all the shading nodes
+
+shadingNode -asUtility condition -n poseCondition;
+string $myConditions1[0] = `ls -sl`;
+setAttr ($myConditions1[0]+".operation") 2;
+
+
+shadingNode -asUtility condition -n poseCondition;
+string $myConditions2[0] = `ls -sl`;
+
+shadingNode -asUtility condition -n poseCondition;
+string $myConditions3[0] = `ls -sl`;
+setAttr ($myConditions3[0]+".operation") 4;
+
+
+shadingNode -asUtility condition -n poseCondition;
+string $myConditions4[0] = `ls -sl`;
+setAttr ($myConditions4[0]+".operation") 4;
+setAttr ($myConditions4[0]+".colorIfTrueR") 1;
+setAttr ($myConditions4[0]+".colorIfFalseR") 0;
+
+
+shadingNode -asUtility multiplyDivide -n poseMultiply;
+string $myMultiply1[0] = `ls -sl`;
+setAttr ($myMultiply1[0]+".input2X") -1;
+
+shadingNode -asUtility multiplyDivide -n poseMultiply;
+string $myMultiply2[0] = `ls -sl`;
+
+shadingNode -asUtility multiplyDivide -n poseMultiply;
+string $myMultiply3[0] = `ls -sl`;
+
+shadingNode -asUtility setRange -n poseSetRange;
+string $mySetRange1[0] = `ls -sl`;
+setAttr ($mySetRange1[0]+".minX") 1;
+
+
+shadingNode -asUtility setRange -n poseSetRange;
+string $mySetRange2[0] = `ls -sl`;
+
+
+shadingNode -asUtility setRange -n poseSetRange;
+string $mySetRange3[0] = `ls -sl`;
+setAttr ($mySetRange3[0]+".oldMaxX") 4;
+setAttr ($mySetRange3[0]+".oldMaxY") 4;
+setAttr ($mySetRange3[0]+".maxX") 1;
+setAttr ($mySetRange3[0]+".maxY") 1;
+
+
+shadingNode -asUtility clamp -n poseClamp;
+string $myClamp1[0] = `ls -sl`;
+setAttr ($myClamp1[0]+".maxR") 1;
+setAttr ($myClamp1[0]+".maxG") 1;
+
+
+createNode closestPointOnSurface -n poseClosestPointOnSurface;
+string $myPointOnSurface[0] = `ls -sl`;
+
+
+
+//connect everything
+////////////////////////////////////////////////////////////////////////////////////////////
+
+connectAttr -f ($myLoc[0]+".joint") ($myMultiply1[0]+".input1X");
+
+
+connectAttr -f ($myLoc[0]+".joint") ($myConditions1[0]+".colorIfTrueR" );
+connectAttr -f ($myLoc[0]+".joint") ($myConditions1[0]+".firstTerm");
+connectAttr -f ($myMultiply1[0]+".outputX") ($myConditions1[0]+".colorIfFalseR");
+
+
+connectAttr -f ($myLoc[0]+".type")  ($myConditions2[0]+".firstTerm");
+connectAttr -f ($myConditions2[0]+".outColorR") ($myLoc[0]+".weight");
+connectAttr -f ($myClamp1[0]+".outputG")  ($myConditions2[0]+".colorIfFalseR");
+connectAttr -f ($myClamp1[0]+".outputR")  ($myConditions2[0]+".colorIfTrueR");
+
+
+connectAttr -f ($myLoc[0]+".max")  ($myConditions3[0]+".colorIfFalseR");
+connectAttr -f ($myLoc[0]+".max")  ($myConditions3[0]+".colorIfTrueG");
+connectAttr -f ($myLoc[0]+".max")  ($myConditions3[0]+".secondTerm");
+connectAttr -f ($myLoc[0]+".min")  ($myConditions3[0]+".colorIfFalseG");
+connectAttr -f ($myLoc[0]+".min")  ($myConditions3[0]+".colorIfTrueR");
+connectAttr -f ($myLoc[0]+".min")  ($myConditions3[0]+".firstTerm");
+
+
+connectAttr -f ($myLoc[0]+".max")  ($myConditions4[0]+".secondTerm");
+connectAttr -f ($myLoc[0]+".min")  ($myConditions4[0]+".firstTerm");
+
+
+connectAttr -f ($myLoc[0]+".max")  ($mySetRange1[0]+".oldMaxX");
+connectAttr -f ($myLoc[0]+".min")  ($mySetRange1[0]+".oldMinX");
+connectAttr -f ($myConditions1[0]+".outColorR") ($mySetRange1[0]+".valueX");
+
+
+connectAttr -f ($myLoc[0]+".joint")  ($mySetRange2[0]+".valueX");
+connectAttr -f ($myConditions3[0]+".outColorG")  ($mySetRange2[0]+".oldMaxX");
+connectAttr -f ($myConditions3[0]+".outColorG")  ($mySetRange2[0]+".oldMinY");
+connectAttr -f ($myConditions3[0]+".outColorR")  ($mySetRange2[0]+".oldMaxY");
+connectAttr -f ($myConditions3[0]+".outColorR")  ($mySetRange2[0]+".oldMinX");
+connectAttr -f ($myConditions4[0]+".outColorG")  ($mySetRange2[0]+".minX");
+connectAttr -f ($myConditions4[0]+".outColorR")  ($mySetRange2[0]+".maxX");
+
+
+connectAttr -f ($myRamp[0]+".outAlpha") ($myMultiply2[0]+".input2X");
+connectAttr -f ($mySetRange1[0]+".outValueX") ($myMultiply2[0]+".input1X");
+
+
+connectAttr -f ($myRamp[0]+".outAlpha") ($myMultiply3[0]+".input2X");
+connectAttr -f ($mySetRange2[0]+".outValueX") ($myMultiply3[0]+".input1X");
+
+
+connectAttr -f ($myMultiply2[0]+".outputX")  ($myClamp1[0]+".inputG");
+connectAttr -f ($myMultiply3[0]+".outputX")  ($myClamp1[0]+".inputR");
+
+
+connectAttr -f ($myLocShape[0]+".worldPosition[0]")  ($myPointOnSurface[0]+".inPosition");
+connectAttr -f ($mySphereShape[0]+".worldSpace[0]") ($myPointOnSurface[0]+".inputSurface");
+
+
+connectAttr -f ($myPointOnSurface[0]+".parameterU")  ($mySetRange3[0]+".valueX");
+connectAttr -f ($myPointOnSurface[0]+".parameterV")  ($mySetRange3[0]+".valueY");
+
+
+connectAttr -f ($mySetRange3[0]+".outValueX") ($myRamp[0]+".uCoord");
+connectAttr -f ($mySetRange3[0]+".outValueY") ($myRamp[0]+".vCoord");
+
+// Setup Sphere to the joint's rotation and position
+////////////////////////////////////////////////////////////////////////////
+
+
+if ( size ($myJoint) == 1)
+{
+
+pointConstraint -n si_workingPointConstraintToBeDeleted $myJoint[0] $myGroup[0];
+delete si_workingPointConstraintToBeDeleted;
+
+aimConstraint -n si_workingAimConstraintToBeDeleted -offset 0 0 0 -weight 1 -aimVector 0 1 0 -upVector 0 1 0 -worldUpType "vector" -worldUpVector 0 1 0 $myJointChild[0] $myGroup[0];
+delete si_workingAimConstraintToBeDeleted;
+
+orientConstraint -mo -n poseOrientConstraint $myJoint[0] $myLoc[0];
+parentConstraint -mo -n poseOrientConstraint $myJointParent[0] $myGroup[0];
+
+}
+
+int $myGroupNumber = `match "[0-9]+" $myGroup[0]`;
+rename $myLoc ($myLoc[0] + $myGroupNumber);
+rename $mySphere ($mySphere[0] + $myGroupNumber);
+print $myGroupNumber;
+
+
+}

@@ -38,6 +38,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.doraSkin_pushButton.released.connect(self.doraSkin_pushButton_released)
         self.sculptInbetweenEditor_pushButton.released.connect(self.sculptInbetweenEditor_pushButton_released)
         self.zvRadialBlendshape_pushButton.released.connect(self.zvRadialBlendshape_pushButton_released)
+        self.si_poseDeformer_pushButton.released.connect(self.si_poseDeformer_pushButton_released)
         self.ngSkinTools_pushButton.released.connect(self.ngSkinTools_pushButton_released)
 
         self.cylinderPreviewCreate_pushButton.released.connect(self.on_cylinderPreviewCreate_pushButton_released)
@@ -79,6 +80,18 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
         #launching dora gui
         mel.eval('DoraSkinWeightImpExp()')
+
+    def si_poseDeformer_pushButton_released(self):
+
+        path = os.path.dirname(__file__)
+
+        #sourcing dora util
+        melPath = path + '/si_poseDeformer.mel'
+        melPath = melPath.replace('\\', '/')
+        mel.eval('source "%s"' % melPath)
+
+        #launching dora gui
+        mel.eval('si_poseDeformer()')
 
     def zvRadialBlendshape_pushButton_released(self):
 
