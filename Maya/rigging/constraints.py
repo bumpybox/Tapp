@@ -6,7 +6,8 @@ def GetData(nodeFilter='joint'):
     sel = cmds.ls(selection=True, type=nodeFilter)
     dataExport = []
     transforms = ['tx', 'ty', 'tz',
-                  'rx', 'ry', 'rz']
+                  'rx', 'ry', 'rz',
+                  'sx', 'sy', 'sz']
     for node in sel:
         data = {}
         data['name'] = node
@@ -54,6 +55,9 @@ def ImportData(f=None):
 
 
 def SetData(data):
+
+    cmds.undoInfo(openChunk=True)
+
     for node in data:
         for key in node:
             if not key == 'name':
@@ -67,10 +71,20 @@ def SetData(data):
                 if node[key]['type'] == 'pointConstraint':
                     cmds.pointConstraint(targets, node['name'],
                                          maintainOffset=True)
+                if node[key]['type'] == 'scaleConstraint':
+                    cmds.scaleConstraint(targets, node['name'],
+                                         maintainOffset=True)
+
+    cmds.undoInfo(closeChunk=True)
 
 
 def Delete():
+
+    cmds.undoInfo(openChunk=True)
+
     sel = cmds.ls(selection=True, dagObjects=True)
     for node in sel:
         if 'Constraint' in cmds.nodeType(node):
             cmds.delete(node)
+
+    cmds.undoInfo(closeChunk=True)
