@@ -9,6 +9,7 @@ from shiboken import wrapInstance
 from .resources import dialog
 from . import spherePreview
 from . import constraints
+from . import wireColor
 
 
 def maya_main_window():
@@ -40,6 +41,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.zvRadialBlendshape_pushButton.released.connect(self.zvRadialBlendshape_pushButton_released)
         self.si_poseDeformer_pushButton.released.connect(self.si_poseDeformer_pushButton_released)
         self.ngSkinTools_pushButton.released.connect(self.ngSkinTools_pushButton_released)
+        self.wireColor_pushButton.released.connect(self.wireColor_pushButton_released)
 
         self.cylinderPreviewCreate_pushButton.released.connect(self.on_cylinderPreviewCreate_pushButton_released)
         self.cylinderPreviewDelete_pushButton.released.connect(self.on_cylinderPreviewDelete_pushButton_released)
@@ -50,6 +52,10 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.constraintsExport_pushButton.released.connect(self.constraintsExport_pushButton_released)
         self.constraintsImport_pushButton.released.connect(self.constraintsImport_pushButton_released)
         self.constraintsDelete_pushButton.released.connect(self.constraintsDelete_pushButton_released)
+
+    def wireColor_pushButton_released(self):
+
+        wireColor.Selection()
 
     def constraintsExport_pushButton_released(self):
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/rigging/resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:/Users/admin/Documents/GitHub/Tapp/Maya/rigging/resources/dialog.ui'
 #
-# Created: Tue May 27 22:16:04 2014
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Wed Jun 04 23:54:23 2014
+#      by: pyside-uic 0.2.15 running on PySide 1.2.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(178, 323)
+        MainWindow.resize(178, 352)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.centralwidget)
@@ -42,6 +42,9 @@ class Ui_MainWindow(object):
         self.si_poseDeformer_pushButton = QtGui.QPushButton(self.centralwidget)
         self.si_poseDeformer_pushButton.setObjectName("si_poseDeformer_pushButton")
         self.central_verticalLayout.addWidget(self.si_poseDeformer_pushButton)
+        self.wireColor_pushButton = QtGui.QPushButton(self.centralwidget)
+        self.wireColor_pushButton.setObjectName("wireColor_pushButton")
+        self.central_verticalLayout.addWidget(self.wireColor_pushButton)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.line_3 = QtGui.QFrame(self.centralwidget)
@@ -137,6 +140,7 @@ class Ui_MainWindow(object):
         self.sculptInbetweenEditor_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Sculpt Inbetween Editor", None, QtGui.QApplication.UnicodeUTF8))
         self.zvRadialBlendshape_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Zv Radial Blendshape", None, QtGui.QApplication.UnicodeUTF8))
         self.si_poseDeformer_pushButton.setText(QtGui.QApplication.translate("MainWindow", "si_poseDeformer", None, QtGui.QApplication.UnicodeUTF8))
+        self.wireColor_pushButton.setText(QtGui.QApplication.translate("MainWindow", "WireColor", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "Cylinder Preview", None, QtGui.QApplication.UnicodeUTF8))
         self.cylinderPreviewCreate_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Create", None, QtGui.QApplication.UnicodeUTF8))
         self.cylinderPreviewDelete_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
