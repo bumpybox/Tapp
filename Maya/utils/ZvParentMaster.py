@@ -846,9 +846,9 @@ def ZvParentMaster(posX=56, posY=180, width=_defaultSize[0], height=_defaultSize
 	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_attach.xpm',
 					c='import Tapp.Maya.utils as mu;mu.ZvParentMaster.attach()', ann='Attach objects')
 	cmds.popupMenu(mm=True)
-	cmds.menuItem(l='Create parent groups - translation', c=lambda:mu.ZvParentMaster.createParentGroups(True, False), rp='NE')
-	cmds.menuItem(l='Create parent groups - available attrs', c=lambda:mu.ZvParentMaster.createParentGroups(), rp='E')
-	cmds.menuItem(l='Create parent groups - rotation', c=lambda:mu.ZvParentMaster.createParentGroups(False, True), rp='SE')
+	cmds.menuItem(l='Create parent groups - translation', c=lambda x:mu.ZvParentMaster.createParentGroups(True, False), rp='NE')
+	cmds.menuItem(l='Create parent groups - available attrs', c=lambda x:mu.ZvParentMaster.createParentGroups(), rp='E')
+	cmds.menuItem(l='Create parent groups - rotation', c=lambda x:mu.ZvParentMaster.createParentGroups(False, True), rp='SE')
 	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_detach.xpm', c=lambda:mu.ZvParentMaster.detach(), ann='Detach objects')
 	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_destroy.xpm', c=lambda:mu.ZvParentMaster.destroy(), ann='Destroy constraints')
 	cmds.iconTextButton(style='iconOnly', h=34, bgc=(0.3, 0.3, 0.3), image=_pmpath + 'pm_fixsnap.xpm', c=lambda:mu.ZvParentMaster.fixSnap(), ann='Fix snap')
