@@ -97,4 +97,6 @@ class TabSettings(BaseTab):
         
         self.refreshSettingsFromSelection()
         
+        cmds.setParent(parent)
+        
         return self.outerLayout

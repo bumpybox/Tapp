@@ -51,6 +51,7 @@ from ngSkinTools.ui.utilities.weightsClipboardActions import CopyWeights,\
     CutWeights, PasteWeightsAdd, PasteWeightsReplace
 from ngSkinTools.layerUtils import LayerUtils
 from ngSkinTools.ui.tabSettings import TabSettings
+from ngSkinTools.ui.options import PersistentValueModel
 
 log = LoggerFactory.getLogger("MainWindow")
 
@@ -135,12 +136,18 @@ class MainMenu:
     def viewManual(self,*args):
         documentation = HeadlessDataHost.get().documentation
         documentation.openLink(SkinToolsDocs.DOCUMENTATION_ROOT)
+        
+    def openIssueTracker(self,*args):
+        import webbrowser
+        webbrowser.open_new("http://www.ngskintools.com/issue-tracker")
+        
 
     def createHelpMenu(self,actions):
         cmds.menu( label='Help',mnemonic='H' )
         cmds.menuItem( label='View Manual Online',command=self.viewManual )
         cmds.menuItem( label='Check for Updates',command=self.execCheckForUpdates )
         self.createDivider()
+        cmds.menuItem( label='Planned Features and Known Issues',command=self.openIssueTracker)
         cmds.menuItem( label='About ngSkinTools',mnemonic='A',command=self.execAbout )
         
     def createDivider(self):
@@ -210,6 +217,7 @@ class MainUiActions:
 
 class MainWindow(BaseToolWindow):
     WINDOW_NAME = 'ngSkinToolsMainWindow'
+    DOCK_NAME = 'ngSkinToolsMainWindow_dock'
     WINDOW_DEFAULT_WIDTH = 400;
     WINDOW_DEFAULT_HEIGHT = 500;
     
@@ -221,16 +229,23 @@ class MainWindow(BaseToolWindow):
         '''
 
         window = MainWindow.getInstance()
-        window.showWindow()
         
-        # don't know where to fit this in, it's just an utility warning for those trying to run
-        # this on a different maya version
-        if Utils.getMayaVersion()==Utils.MAYAUNSUPPORTEDVERSION:
-            Utils.displayError('unsupported Maya version detected.')
-            
-        Utils.silentCheckForUpdates()
+        if cmds.control(MainWindow.DOCK_NAME,q=True,exists=True):
+            cmds.control(MainWindow.DOCK_NAME,e=True,visible=True)
+        else:
+            cmds.dockControl(MainWindow.DOCK_NAME,l=window.createWindowTitle(),content=MainWindow.WINDOW_NAME,
+                             area='right',allowedArea=['right', 'left'],
+                             width=400,
+                             visibleChangeCommand=window.visibilityChanged)
+        
+            Utils.silentCheckForUpdates()
         
         return window
+    
+    def visibilityChanged(self,*args):
+        r = cmds.dockControl(MainWindow.DOCK_NAME,q=True,r=1)
+        v = cmds.dockControl(MainWindow.DOCK_NAME,q=True,vis=1)
+                
         
     @staticmethod
     def getInstance():
@@ -274,6 +289,7 @@ class MainWindow(BaseToolWindow):
             creates main GUI window and it's contents
         '''
         
+    
         BaseToolWindow.createWindow(self)
         
         self.targetUI = TargetDataDisplay()
@@ -287,14 +303,25 @@ class MainWindow(BaseToolWindow):
 
         # putting tabs in a from targetUiLayout is needed to workaround maya2011 
         # bug with an additional empty tab appearing otherwise
-        form = FormLayout(parent=self.windowName)
         
-        targetUiLayout = self.targetUI.create(form)
-        form.attachForm(targetUiLayout, 0, Constants.MARGIN_SPACING_HORIZONTAL,None,Constants.MARGIN_SPACING_HORIZONTAL)
         
-        self.mainTabLayout = cmds.tabLayout(childResizable=True,parent=form,scrollable=False,innerMarginWidth=3)
-        form.attachControl(self.mainTabLayout, targetUiLayout, Constants.MARGIN_SPACING_VERTICAL, None,None,None)
-        form.attachForm(self.mainTabLayout, None, 0,0,0)
+        self.splitPosition = PersistentValueModel(name="ngSkinTools_mainWindow_splitPosition", defaultValue=50)
+        def updateSplitPosition(*args):
+            size = cmds.paneLayout(horizontalSplit,q=True,paneSize=True)
+            # returns (widht, height, width, height)
+            self.splitPosition.set(size[1])
+        horizontalSplit = cmds.paneLayout(configuration="horizontal2",width=100,height=200,separatorMovedCommand=updateSplitPosition)
+        if Utils.getMayaVersion()>=Utils.MAYA2011:
+            cmds.paneLayout(horizontalSplit,e=True,staticHeightPane=2)
+        cmds.paneLayout(horizontalSplit,e=True,paneSize=(1,100,self.splitPosition.get()))
+        cmds.paneLayout(horizontalSplit,e=True,paneSize=(2,100,100-self.splitPosition.get()))
+        
+        
+        
+        targetUiLayout = self.targetUI.create(horizontalSplit)
+        self.mainTabLayout = cmds.tabLayout(childResizable=True,parent=horizontalSplit,scrollable=False,innerMarginWidth=3)        
+        
+        
         
         self.tabPaint = self.addTab(TabPaint())
         self.tabMirror = self.addTab(TabMirror())
@@ -302,7 +329,6 @@ class MainWindow(BaseToolWindow):
         self.tabAssignWeights = self.addTab(TabAssignWeights())
         self.tabSettings = self.addTab(TabSettings())
         
-
         self.actions.updateEnabledAll()
         
         

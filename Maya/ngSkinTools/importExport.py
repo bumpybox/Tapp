@@ -226,7 +226,7 @@ class LayerData(object):
         self.mll.setCurrentMesh(mesh)
             
         with self.mll.batchUpdateContext():
-            for source,destination in self.mirrorInfluenceAssociationOverrides:
+            for source,destination in self.mirrorInfluenceAssociationOverrides.iteritems():
                 self.mll.addManualMirrorInfluenceAssociation(source, destination)
             
             for layer in reversed(self.layers):

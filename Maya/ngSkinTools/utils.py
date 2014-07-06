@@ -49,13 +49,16 @@ class Utils:
     # constants for maya version
     # earlier maya versions have smaller constant value, so comparisions can be made (e.g. getMayaVersion()<MAYA2011)
     # (new constants must follow this pattern, e.g., "2008 release 2" should be 2008.2 instead of 200802)
-    MAYAUNSUPPORTEDVERSION = 0 # /// special constant for unsupported version. assumed earlier version in code
+    MAYA_UNKNOWN_VERSION = 0 # /// special constant for unknown version. assumed earlier version in code
     MAYA2008 = 2008
     MAYA2009 = 2009
     MAYA2010 = 2010
     MAYA2011 = 2011
     MAYA2012 = 2012
     MAYA2013 = 2013
+    MAYA2014 = 2014
+    MAYA2014_5 = 2014.5
+    MAYA2015 = 2015
     CURRENT_MAYA_VERSION = None
     
     DEBUG_MODE = False # /// set to true to enable debug output
@@ -213,7 +216,7 @@ class Utils:
         if Utils.CURRENT_MAYA_VERSION is None:
             version = cmds.about(v=True)
             
-            Utils.CURRENT_MAYA_VERSION = Utils.MAYAUNSUPPORTEDVERSION
+            Utils.CURRENT_MAYA_VERSION = Utils.MAYA_UNKNOWN_VERSION
             
             
             def testVersion(search,result):
@@ -228,8 +231,9 @@ class Utils:
             testVersion('2010', Utils.MAYA2010) or \
             testVersion('2011', Utils.MAYA2011) or \
             testVersion('2012', Utils.MAYA2012) or \
-            testVersion('2013', Utils.MAYA2012) or \
-            testVersion('2014', Utils.MAYA2013)
+            testVersion('2013', Utils.MAYA2013) or \
+            testVersion('2014', Utils.MAYA2014) or \
+            testVersion('2015', Utils.MAYA2015)
             
         return Utils.CURRENT_MAYA_VERSION
     

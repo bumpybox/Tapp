@@ -26,6 +26,7 @@ from ngSkinTools.ui.layerListsUI import LayerListsUI
 from ngSkinTools.ui.noLayersUI import NoLayersUI
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.ui.events import LayerEvents
+from ngSkinTools.ui.uiWrappers import FormLayout
 
 class TargetDataDisplay:
     '''
@@ -44,10 +45,12 @@ class TargetDataDisplay:
     
     def create(self,parent):
         LayerEvents.layerAvailabilityChanged.addHandler(self.updateUiVisibility,parent)
-        result = self.uiSwitchLayout = cmds.columnLayout('layersOnOffSwitch',parent=parent,adjustableColumn=1)
+        result = self.uiSwitchLayout = FormLayout(parent=parent)
 
         self.noLayersUI.createUI(self.uiSwitchLayout)
+        result.attachForm(self.noLayersUI.baseLayout, 0, 0, 0, 0)
         self.layersUI.createUI(self.uiSwitchLayout)
+        result.attachForm(self.layersUI.baseLayout, 0, 0, 0, 0)
         
         self.noLayersUI.update()
         self.layersUI.update()

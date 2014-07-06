@@ -54,7 +54,6 @@ class TabAssignWeights(BaseTab):
 
     def createClosestJointGroup(self,layout):
         group = self.createUIGroup(layout,"From Closest Joint")
-
         # influence chooser group
         influenceFiltersForm = cmds.formLayout(parent=group)
         l = cmds.text(label='Influences to choose from: ')
@@ -83,6 +82,7 @@ class TabAssignWeights(BaseTab):
         cmds.rowLayout(nc=2,adjustableColumn=2,columnWidth2=[Constants.BUTTON_WIDTH_SMALL,50], columnAttach2=["both","both"],columnAlign2=["center","center"])
         BaseTab.createHelpButton(SkinToolsDocs.ASSIGNWEIGHTS_CLOSESTJOINT_INTERFACE)
         cmds.button(height=Constants.BUTTON_HEIGHT,label='Assign',command=lambda *args:self.execClosestJointAssign())
+        cmds.setParent(layout)
         
     def createMakeUnifyGroup(self,layout):
         group = self.createUIGroup(layout, 'Unify Weights')
@@ -108,6 +108,8 @@ class TabAssignWeights(BaseTab):
         BaseTab.createHelpButton(SkinToolsDocs.ASSIGNWEIGHTS_MAKERIGID_INTERFACE)
         cmds.button(height=Constants.BUTTON_HEIGHT,label='Assign',command=lambda *args:self.execUnifyWeights())
 
+        cmds.setParent(layout)
+
     def createLimitWeightsGroup(self,layout):
         group = self.createUIGroup(layout, 'Limit Weights')
 
@@ -130,6 +132,7 @@ class TabAssignWeights(BaseTab):
         BaseTab.createHelpButton(SkinToolsDocs.ASSIGNWEIGHTS_LIMITWEIGHTS_INTERFACE)
         cmds.button(height=Constants.BUTTON_HEIGHT,label='Assign',command=lambda *args:self.execLimitWeights())
         
+        cmds.setParent(layout)
     
     @Utils.visualErrorHandling
     def execAssignWeights(self,args):
@@ -181,7 +184,7 @@ class TabAssignWeights(BaseTab):
         self.setTitle('Assign Weights')
         result = self.createScrollLayout(parent=parent)        
         self.baseLayout = cmds.columnLayout(adjustableColumn=1)
-        
+
         self.createClosestJointGroup(self.baseLayout)
         self.createMakeUnifyGroup(self.baseLayout)
         #self.createLimitWeightsGroup(self.baseLayout)
