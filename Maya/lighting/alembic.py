@@ -105,7 +105,7 @@ def Connect(connectShapes=True):
     targets = cmds.ls(target, dagObjects=True, long=True)
     for node in targets:
         for abc in alembics:
-            if node.split(':')[-1] == abc.split('|')[-1]:
+            if node.split(':')[-1] == abc.split(':')[-1]:
                 data = getConnectedAttr(abc, connectShapes)
                 if data:
                     for attr in data:
@@ -127,9 +127,9 @@ def Blendshape():
     targets = cmds.ls(target, dagObjects=True, long=True)
     for node in targets:
         for abc in alembics:
-            if node.split(':')[-1] == abc.split('|')[-1]:
+            if node.split(':')[-1] == abc.split(':')[-1]:
                 blendshape = cmds.blendShape(abc, node)[0]
-                cmds.setAttr('%s.%s' % (blendshape, abc.split('|')[-1]), 1)
+                cmds.setAttr('%s.%s' % (blendshape, abc.split(':')[-1]), 1)
 
     cmds.undoInfo(closeChunk=True)
 
@@ -146,7 +146,7 @@ def CopyAttrs():
     targets = cmds.ls(target, dagObjects=True, transforms=True, long=True)
     for node in targets:
         for abc in alembics:
-            if node.split(':')[-1] == abc.split('|')[-1]:
+            if node.split(':')[-1] == abc.split(':')[-1]:
                 t = cmds.xform(abc, q=True, ws=True, translation=True)
                 r = cmds.xform(abc, q=True, ws=True, rotation=True)
                 s = cmds.xform(abc, q=True, ws=True, scale=True)
