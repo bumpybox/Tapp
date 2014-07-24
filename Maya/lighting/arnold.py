@@ -18,29 +18,24 @@ def Subdivision(iterations=2):
 
 def MaskBuild():
 
-    allSets = cmds.ls(set=1)
-    aiMasksSets = []
+    sel = cmds.ls(selection=True)
 
-    for s in allSets:
-        if s[0:6] == 'aiMask':
-            aiMasksSets.append(s)
+    aiMaskSets = []
+    for node in sel:
+        if cmds.nodeType(node) == 'objectSet':
+            aiMaskSets.append(node)
 
-    if aiMasksSets == []:
-        return cmds.warning('No aiMask sets!')
+    if not aiMaskSets:
+        cmds.warning('No sets selected!')
+        return
 
     core.createOptions()
 
-    aiColors = [
-    cmds.shadingNode('aiUserDataColor', asShader=1),
-    cmds.shadingNode('aiUserDataColor', asShader=1),
-    cmds.shadingNode('aiUserDataColor', asShader=1)
-    ]
+    aiColor = cmds.shadingNode('aiUserDataColor', asShader=1)
 
-    cmds.setAttr(aiColors[0] + '.defaultValue', 1, 0, 0, typ='double3')
-    cmds.setAttr(aiColors[1] + '.defaultValue', 0, 1, 0, typ='double3')
-    cmds.setAttr(aiColors[2] + '.defaultValue', 0, 0, 1, typ='double3')
+    cmds.setAttr(aiColor + '.defaultValue', 1, 1, 1, typ='double3')
 
-    for aiSet in xrange(0, len(aiMasksSets), 3):
+    for aiSet in xrange(0, len(aiMaskSets), 3):
 
         tSwitch = cmds.shadingNode('tripleShadingSwitch', au=1)
         cmds.setAttr(tSwitch + '.default', 0, 0, 0, typ='double3')
@@ -49,25 +44,21 @@ def MaskBuild():
         cmds.setAttr(aiUshader + '.shadeMode', 2)
         cmds.connectAttr(tSwitch + '.output', aiUshader + '.color', f=1)
 
-        for n, i in enumerate(aiMasksSets[aiSet:aiSet + 3]):
-            aiColor = aiColors[n % len(aiColors)]
+        for obj in cmds.listRelatives(cmds.sets(aiSet, q=1), pa=1):
+            inpt = cmds.getAttr(tSwitch + '.input', s=1)
+            if cmds.nodeType(obj) == 'mesh':
+                cmds.connectAttr(obj + '.instObjGroups[0]',
+                                 tSwitch + '.input[' + str(inpt) + '].inShape', f=1)
+                cmds.connectAttr(aiColor + '.outColor',
+                                 tSwitch + '.input[' + str(inpt) + '].inTriple', f=1)
 
-            for obj in cmds.listRelatives(cmds.sets(i, q=1), pa=1):
-                inpt = cmds.getAttr(tSwitch + '.input', s=1)
-                if cmds.nodeType(obj) == 'mesh':
-                    cmds.connectAttr(obj + '.instObjGroups[0]',
-                                     tSwitch + '.input[' + str(inpt) + '].inShape', f=1)
-                    cmds.connectAttr(aiColor + '.outColor',
-                                     tSwitch + '.input[' + str(inpt) + '].inTriple', f=1)
-
-        # AOV'S
-
+        #AOV
         aovListSize = cmds.getAttr('defaultArnoldRenderOptions.aovList', s=1)
 
         customAOV = cmds.createNode('aiAOV',
-                                    n='aiAOV_rgbMask' + str(aiSet // 3 + 1),
+                                    n='aiAOV_rgbMask',
                                     skipSelect=True)
-        cmds.setAttr(customAOV + '.name', 'rgbMask' + str(aiSet // 3 + 1),
+        cmds.setAttr(customAOV + '.name', aiSet,
                      type='string')
         cmds.connectAttr(customAOV + '.message',
                          'defaultArnoldRenderOptions.aovList[' + str(aovListSize) + ']',
@@ -82,6 +73,8 @@ def MaskBuild():
         cmds.connectAttr(aiUshader + '.outColor',
                          customAOV + '.defaultValue', f=1)
 
+
+MaskBuild()
 
 def MaskFlush():
 
