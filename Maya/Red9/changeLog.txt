@@ -114,4 +114,29 @@ New - Red9_Audio - new audio handling module, separated from the r9General which
 New - Red9_Audio - new "COMPILE AUDIO" setup which allows you to mix existing audio inside Maya into a single wav track - great for playblasting! - integrates the pydub module.
 New - Red9_Meta - added a new function 'getMirror_oppositeSet' to MetaRig which uses the MirrorIndexes to return an opposite set of nodes to those passed in... ie, you pass in nodes with mirrorIndexes Left[1],Left[4],Right[3],Centre[5] and get back Right[1],Right[4],Left[3],Centre[5] nodes
 New - Red9_Pose - added the ability to load a percentage of a pose via a blend slider in the UI (on the RMB PoseBlender). This basically mixes in x percent of the selected pose. No support for relative poses yet
-Fix - Red9_Anim	- fixed an issue in the MirrorSetup UI. If all channels were left blank and the node had already got custom axis then these weren't getting cleared as they should have been
+
+
+v1.42:
+------
+New - Red9_Audio - added BWav support to the AudioNode. This allows you to inspect and retrieve Timecode data from any broadcast wav
+New - Red9_Audio - added a new 'inspect' item to the Red9 sound menu in the Trax for inspecting the internal properties of the selected sound node
+Mod - Red9_Anim - Stabilizer wasn't respecting the keyer groups when you set it to just track 'rots' or 'trans'
+New - Red9_Anim - CopyKeys now deals with animLayer by pre-merging the data to a temp cache before copying the merged data. The original layers are left in tact!
+New - Red9_Audio - added a function getMediaFileMetaData() which is capable of extracting metaData from most media file types via ffprobe.exe
+Mod - Red9_Pose	- added a filterMap param to the poseCompare call. This can be used as a master core list, only nodes that appear on this will be checked against. Useful for checking core skeleton nodes whilst ingnoring others
+Mod - Red9_Pose - added an ignoreBlocks to the poseCompare call. This allows the code to ignore complete sections of the compare data, we mainly use this for ['missingKeys'] so that the compare skipps them
+Mod - Red9_Anim - modified the AnimUI behaviour such that the 'CTRL' key modifier is now stored with the UI. If you launch the UI with ctrl held it'll toggle between launching as docked or not.
+Mod - Red9_Anim - exposed the snapTranslates and snapRotatesflags to the snap() call in AnimFunctions
+Mod - Red9_Core - Mods to the LockChannels class for better behaviour, set hierarchy flag to false by default.
+NEW - Red9_Meta - new flag exposed at class level '_forceAsMeta'. This forces the code to ALWAYS return instansiated MetaClass objects when dealing with nodes rather than dag paths.
+
+
+v1.43:
+------
+Fix - Red9_Anim - fixes to the poseBlender code so it now handles the undoQueue correctly, as chunks and returns object selection correctly.
+New - Red9_Anim - Pose search now accepts multiple strings, comma separated ie 'walk,run,idle'
+Fix - Red9_Anim - fix's in the way that all the commands wrappers in the UI handle AnimLayers - more info and dialog's added to guide you through.
+New - Red9_Meta - added new call 'getNodeConnections' which will replace the 'getNodeConnectionAttr' in calls, designed to return all connections between a given node and the mNode, with filtering
+Mod - Red9_Core - added double3 handling to the lockChannels call, this was causing issues when passed double3 like 'translate' 
+Fix - Red9_Audio - added correct float conversion to all the timecode and framerate conversion functions
+

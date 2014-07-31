@@ -16,9 +16,6 @@ example of what's expected and what the systems can do on simple data
 
 
 import pymel.core as pm
-#import maya.standalone
-#maya.standalone.initialize(name='python')
-
 import maya.cmds as cmds
 import os
 
@@ -377,6 +374,27 @@ class Test_FilterNode():
                                             '|World_Root|Spine_Ctrl|R_Wrist_Ctrl|R_Pole_AttrMarked_Ctrl']
     
         
+class Test_LockNodes(object):
+    def setup(self):
+        cmds.file(new=True,f=True)
+        self.cube=cmds.ls(cmds.polyCube()[0],l=True)[0]
+        
+    def test_processState(self):
+        assert cmds.listAttr(self.cube, k=True, u=True) == ['visibility', 
+                                                            'translateX', 'translateY', 'translateZ', 
+                                                            'rotateX', 'rotateY', 'rotateZ',
+                                                            'scaleX', 'scaleY', 'scaleZ']
+        r9Core.LockChannels.processState(self.cube, 'visibility', 'lock', hierarchy=False, userDefined=False)
+        assert cmds.getAttr('%s.visibility' % self.cube, lock=True)
+        assert cmds.listAttr(self.cube, k=True, u=True) == ['translateX', 'translateY', 'translateZ', 
+                                                            'rotateX', 'rotateY', 'rotateZ',
+                                                            'scaleX', 'scaleY', 'scaleZ'] 
+        r9Core.LockChannels.processState(self.cube, 'visibility', 'unlock', hierarchy=False, userDefined=False)
+        assert cmds.listAttr(self.cube, k=True, u=True) == ['visibility', 
+                                                            'translateX', 'translateY', 'translateZ', 
+                                                            'rotateX', 'rotateY', 'rotateZ',
+                                                            'scaleX', 'scaleY', 'scaleZ'] 
+        
 class Test_Matching_CoreFuncs(object):
     
 #    def setup(self):
@@ -397,14 +415,3 @@ class Test_Matching_CoreFuncs(object):
         #TODO: Fill Test
         pass#          
     
-    
-class Test_Timeoffset(object):
-    
-    def test_fromSelected(self):
-        pass
-    def test_fullScene(self):
-        pass
-    def test_animCurves(self):
-        pass
-    def test_sound(self):
-        pass
