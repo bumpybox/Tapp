@@ -8,7 +8,7 @@ from PySide import QtGui
 from shiboken import wrapInstance
 
 from .resources import dialog
-from . import alembic
+from Tapp.Maya.lighting.alembic import utils
 
 
 def maya_main_window():
@@ -59,23 +59,23 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def on_exportAlembic_pushButton_released(self):
 
-        alembic.Export()
+        utils.Export()
 
     def on_importAlembic_pushButton_released(self):
 
-        alembic.Import()
+        utils.Import()
 
     def on_connectAlembic_pushButton_released(self):
 
-        alembic.Connect()
+        utils.Connect()
 
     def on_blendshapeAlembic_pushButton_released(self):
 
-        alembic.Blendshape()
+        utils.Blendshape()
 
     def on_copyAlembic_pushButton_released(self):
 
-        alembic.CopyAttrs()
+        utils.CopyAttrs()
 
     def on_addRimLight_pushButton_released(self):
 
@@ -95,7 +95,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def on_addDomeLight_pushButton_released(self):
 
-        #export alembic
+        #export utils
         fileFilter = "HDRI (*.hdr)"
         f = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1, fileMode=1)
 

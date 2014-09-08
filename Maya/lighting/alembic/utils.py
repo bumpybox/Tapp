@@ -10,18 +10,18 @@ def loadAlembic():
     cmds.loadPlugin('AbcImport.mll', quiet=True)
 
 
-def Export():
+def Export(path=None):
 
     loadAlembic()
 
     sel = cmds.ls(selection=True)
 
-    path = []
     if sel:
         #export alembic
-        fileFilter = "Alembic Files (*.abc)"
-        path = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
-                                fileMode=3)
+        if not path:
+            fileFilter = "Alembic Files (*.abc)"
+            path = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+                                    fileMode=3)
 
         if path:
             currentFile = cmds.file(q=True, sn=True)
@@ -109,8 +109,12 @@ def Connect(connectShapes=True):
                 data = getConnectedAttr(abc, connectShapes)
                 if data:
                     for attr in data:
-                        cmds.connectAttr(data[attr], '%s.%s' % (node, attr),
-                                         force=True)
+                        try:
+                            cmds.connectAttr(data[attr],
+                                             '%s.%s' % (node, attr),
+                                             force=True)
+                        except:
+                            pass
 
     cmds.undoInfo(closeChunk=True)
 
