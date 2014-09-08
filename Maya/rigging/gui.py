@@ -101,9 +101,9 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def zvRadialBlendshape_pushButton_released(self):
 
-        from . import ZvRadialBlendShape as zv
+        from . import zvRadialBlendShape as zv
 
-        zv.ZvRadialBlendShape()
+        zv.zvRadialBlendShape()
 
     def ngSkinTools_pushButton_released(self):
 
