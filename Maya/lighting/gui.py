@@ -39,8 +39,6 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.exportAlembic_pushButton.released.connect(self.on_exportAlembic_pushButton_released)
         self.importAlembic_pushButton.released.connect(self.on_importAlembic_pushButton_released)
         self.connectAlembic_pushButton.released.connect(self.on_connectAlembic_pushButton_released)
-        self.blendshapeAlembic_pushButton.released.connect(self.on_blendshapeAlembic_pushButton_released)
-        self.copyAlembic_pushButton.released.connect(self.on_copyAlembic_pushButton_released)
 
         self.arnoldSubdivision_pushButton.released.connect(self.on_arnoldSubdivision_pushButton_released)
         self.arnoldMask_pushButton.released.connect(self.on_arnoldMask_pushButton_released)
@@ -68,14 +66,6 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
     def on_connectAlembic_pushButton_released(self):
 
         utils.Connect()
-
-    def on_blendshapeAlembic_pushButton_released(self):
-
-        utils.Blendshape()
-
-    def on_copyAlembic_pushButton_released(self):
-
-        utils.CopyAttrs()
 
     def on_addRimLight_pushButton_released(self):
 
@@ -144,6 +134,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         import Tapp.Maya.lighting.arnold as mla
         mla.MaskFlush()
         mla.MaskBuild()
+
 
 def show():
     #closing previous dialog

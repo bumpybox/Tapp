@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/lighting/resources/dialog.ui'
+# Form implementation generated from reading ui file 'C:/Users/admin/Documents/GitHub/Tapp/Maya/lighting/resources/dialog.ui'
 #
-# Created: Thu May 15 17:09:12 2014
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Thu Sep 11 21:48:34 2014
+#      by: pyside-uic 0.2.15 running on PySide 1.1.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -187,24 +187,7 @@ class Ui_MainWindow(object):
         self.connectAlembic_pushButton.setFont(font)
         self.connectAlembic_pushButton.setObjectName("connectAlembic_pushButton")
         self.horizontalLayout_10.addWidget(self.connectAlembic_pushButton)
-        self.blendshapeAlembic_pushButton = QtGui.QPushButton(self.centralwidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.blendshapeAlembic_pushButton.sizePolicy().hasHeightForWidth())
-        self.blendshapeAlembic_pushButton.setSizePolicy(sizePolicy)
-        self.blendshapeAlembic_pushButton.setMinimumSize(QtCore.QSize(0, 0))
-        font = QtGui.QFont()
-        font.setPointSize(10)
-        font.setWeight(50)
-        font.setBold(False)
-        self.blendshapeAlembic_pushButton.setFont(font)
-        self.blendshapeAlembic_pushButton.setObjectName("blendshapeAlembic_pushButton")
-        self.horizontalLayout_10.addWidget(self.blendshapeAlembic_pushButton)
         self.verticalLayout.addLayout(self.horizontalLayout_10)
-        self.copyAlembic_pushButton = QtGui.QPushButton(self.centralwidget)
-        self.copyAlembic_pushButton.setObjectName("copyAlembic_pushButton")
-        self.verticalLayout.addWidget(self.copyAlembic_pushButton)
         self.horizontalLayout_8 = QtGui.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.line_7 = QtGui.QFrame(self.centralwidget)
@@ -405,8 +388,6 @@ class Ui_MainWindow(object):
         self.exportAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Export Alembic", None, QtGui.QApplication.UnicodeUTF8))
         self.importAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Import Alembic", None, QtGui.QApplication.UnicodeUTF8))
         self.connectAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Connect Alembic", None, QtGui.QApplication.UnicodeUTF8))
-        self.blendshapeAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Blendshape Alembic", None, QtGui.QApplication.UnicodeUTF8))
-        self.copyAlembic_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Copy Alembic Attributes", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "Arnold", None, QtGui.QApplication.UnicodeUTF8))
         self.arnoldSubdivision_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Set Subdivision", None, QtGui.QApplication.UnicodeUTF8))
         self.arnoldMask_pushButton.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>Makes the selection into a AOV rgb mask.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
