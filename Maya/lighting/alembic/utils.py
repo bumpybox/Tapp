@@ -2,25 +2,26 @@ import os
 
 import maya.cmds as cmds
 import maya.mel as mel
+import pymel.core as pm
 
 
 def loadAlembic():
 
-    cmds.loadPlugin('AbcExport.mll', quiet=True)
-    cmds.loadPlugin('AbcImport.mll', quiet=True)
+    pm.loadPlugin('AbcExport.mll', quiet=True)
+    pm.loadPlugin('AbcImport.mll', quiet=True)
 
 
 def Export(path=None):
 
     loadAlembic()
 
-    sel = cmds.ls(selection=True)
+    sel = pm.ls(selection=True)
 
     if sel:
         #export alembic
         if not path:
             fileFilter = "Alembic Files (*.abc)"
-            path = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+            path = pm.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
                                     fileMode=3)
 
         if path:
@@ -29,12 +30,12 @@ def Export(path=None):
 
             #collecting export objects
             cmd = ''
-            for obj in cmds.ls(selection=True, long=True):
+            for obj in pm.ls(selection=True, long=True):
                 cmd = ' -root ' + obj
 
                 #get time range
-                start = cmds.playbackOptions(q=True, animationStartTime=True)
-                end = cmds.playbackOptions(q=True, animationEndTime=True)
+                start = pm.playbackOptions(q=True, animationStartTime=True)
+                end = pm.playbackOptions(q=True, animationEndTime=True)
 
                 melCmd = 'AbcExport -j \"-frameRange %s %s' % (start, end)
                 melCmd += ' -writeVisibility -uvWrite -worldSpace %s -file' % cmd
@@ -44,10 +45,10 @@ def Export(path=None):
                 melCmd += ' \\\"%s\\\"\";' % (path + '/' + fileName)
                 mel.eval(melCmd)
         else:
-            cmds.warning('No path chosen!')
+            pm.warning('No path chosen!')
 
     else:
-        cmds.warning('No nodes selected!')
+        pm.warning('No nodes selected!')
 
 
 def Import():
@@ -55,7 +56,7 @@ def Import():
     loadAlembic()
 
     fileFilter = "Alembic Files (*.abc)"
-    files = cmds.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+    files = pm.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
                             fileMode=4)
 
     if files:
@@ -67,25 +68,25 @@ def Import():
 
             for node in newNodes:
                 if node == '|NewReference':
-                    cmds.rename('%s:grp' % filename)
+                    pm.rename('%s:grp' % filename)
 
 
 def getConnectedAttr(node, connectShapes=True):
     data = {}
 
     if connectShapes:
-        shapes = cmds.listRelatives(node, shapes=True, fullPath=True)
+        shapes = pm.listRelatives(node, shapes=True, fullPath=True)
         if shapes:
             for shp in shapes:
                 data = getConnectedAttr(shp)
 
     exceptions = ['message', 'instObjGroups']
-    for attr in cmds.listAttr(node, connectable=False):
+    for attr in pm.listAttr(node, connectable=False):
         if attr not in exceptions:
             try:
-                if cmds.listConnections('%s.%s' % (node, attr),
+                if pm.listConnections('%s.%s' % (node, attr),
                                         connections=True):
-                    data[attr] = cmds.listConnections('%s.%s' % (node, attr),
+                    data[attr] = pm.listConnections('%s.%s' % (node, attr),
                                                       plugs=True)[0]
             except:
                 pass
@@ -95,31 +96,31 @@ def getConnectedAttr(node, connectShapes=True):
 
 def Blendshape(source, target):
 
-    blendshape = cmds.blendShape(source, target)[0]
-    cmds.setAttr('%s.%s' % (blendshape, source.split(':')[-1]), 1)
+    blendshape = pm.blendShape(source, target)[0]
+    pm.setAttr('%s.%s' % (blendshape, source.split(':')[-1]), 1)
 
 
 def CopyTransform(source, target):
 
-    t = cmds.xform(source, q=True, ws=True, translation=True)
-    r = cmds.xform(source, q=True, ws=True, rotation=True)
-    s = cmds.xform(source, q=True, ws=True, scale=True)
+    t = pm.xform(source, q=True, ws=True, translation=True)
+    r = pm.xform(source, q=True, ws=True, rotation=True)
+    s = pm.xform(source, q=True, ws=True, scale=True)
 
-    cmds.xform(target, ws=True, translation=t)
-    cmds.xform(target, ws=True, rotation=r)
-    cmds.xform(target, ws=True, scale=s)
+    pm.xform(target, ws=True, translation=t)
+    pm.xform(target, ws=True, rotation=r)
+    pm.xform(target, ws=True, scale=s)
 
 
 def Connect(connectShapes=True):
 
-    cmds.undoInfo(openChunk=True)
+    pm.undoInfo(openChunk=True)
 
-    sel = cmds.ls(selection=True)
+    sel = pm.ls(selection=True)
     alembic = sel[0]
     target = sel[1]
 
-    alembics = cmds.ls(alembic, dagObjects=True, long=True)
-    targets = cmds.ls(target, dagObjects=True, long=True)
+    alembics = pm.ls(alembic, dagObjects=True, long=True)
+    targets = pm.ls(target, dagObjects=True, long=True)
     for node in targets:
         for abc in alembics:
             if node.split(':')[-1] == abc.split(':')[-1]:
@@ -128,7 +129,7 @@ def Connect(connectShapes=True):
                 if data:
                     for attr in data:
                         try:
-                            cmds.connectAttr(data[attr],
+                            pm.connectAttr(data[attr],
                                              '%s.%s' % (node, attr),
                                              force=True)
                         except:
@@ -136,9 +137,25 @@ def Connect(connectShapes=True):
                 #connects any static node
                 else:
                     try:
+                        #getting original shape
+                        sourceShapes = node.getShapes()
+
+                        #copy transform and blendshape to ensure placement
                         CopyTransform(abc, node)
                         Blendshape(abc, node)
+
+                        #getting deformed shape
+                        targets = set(node.getShapes()) - set(sourceShapes)
+                        target = list(targets)[0]
+                        source = list(sourceShapes)[0]
+
+                        #copying attrs from source to target shape
+                        for attr in source.listAttr(userDefined=True):
+                            attrType = pm.getAttr(attr, type=True)
+                            target.addAttr(attr.split('.')[-1],
+                                           attributeType=attrType,
+                                           defaultValue=attr.get())
                     except:
                         pass
 
-    cmds.undoInfo(closeChunk=True)
+    pm.undoInfo(closeChunk=True)
