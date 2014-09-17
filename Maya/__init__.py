@@ -36,9 +36,9 @@ try:
 except:
     pass
 
-#opening command port for sIBL
+#opening command port for ATOM
 try:
-    if cmds.commandPort(':2048', q=True) !=1:
-        cmds.commandPort(n=':2048', eo = False, nr = True)
+    if cmds.commandPort(':7005', q=True) !=1:
+        cmds.commandPort(n=':7005', eo = False, nr = True)
 except:
     pass
