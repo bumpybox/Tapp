@@ -124,7 +124,10 @@ def Connect(connectShapes=True):
     for node in targets:
         for abc in alembics:
             if node.split(':')[-1] == abc.split(':')[-1]:
+
+                #get connection attributes
                 data = getConnectedAttr(abc, connectShapes)
+
                 #connects any animated node
                 if data:
                     for attr in data:
@@ -137,25 +140,24 @@ def Connect(connectShapes=True):
                 #connects any static node
                 else:
                     try:
-                        #getting original shape
-                        sourceShapes = node.getShapes()
-
                         #copy transform and blendshape to ensure placement
                         CopyTransform(abc, node)
                         Blendshape(abc, node)
 
-                        #getting deformed shape
-                        targets = set(node.getShapes()) - set(sourceShapes)
-                        target = list(targets)[0]
-                        source = list(sourceShapes)[0]
-
-                        #copying attrs from source to target shape
-                        for attr in source.listAttr(userDefined=True):
-                            attrType = pm.getAttr(attr, type=True)
-                            target.addAttr(attr.split('.')[-1],
-                                           attributeType=attrType,
-                                           defaultValue=attr.get())
                     except:
                         pass
+
+                #adding user defined attrs to all shapes
+                if node.nodeType() == 'mesh':
+                    shapes = node.getParent().getShapes()
+                    for shp in shapes:
+                        for attr in node.listAttr(userDefined=True):
+                            attrType = pm.getAttr(attr, type=True)
+                            try:
+                                shp.addAttr(attr.split('.')[-1],
+                                               attributeType=attrType,
+                                               defaultValue=attr.get())
+                            except:
+                                pass
 
     pm.undoInfo(closeChunk=True)
