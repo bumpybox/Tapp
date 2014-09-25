@@ -52,6 +52,7 @@ from ngSkinTools.ui.utilities.weightsClipboardActions import CopyWeights,\
 from ngSkinTools.layerUtils import LayerUtils
 from ngSkinTools.ui.tabSettings import TabSettings
 from ngSkinTools.ui.options import PersistentValueModel
+from ngSkinTools.ui.events import MayaEvents, MayaEventsHost, LayerEvents
 
 log = LoggerFactory.getLogger("MainWindow")
 
@@ -218,8 +219,6 @@ class MainUiActions:
 class MainWindow(BaseToolWindow):
     WINDOW_NAME = 'ngSkinToolsMainWindow'
     DOCK_NAME = 'ngSkinToolsMainWindow_dock'
-    WINDOW_DEFAULT_WIDTH = 400;
-    WINDOW_DEFAULT_HEIGHT = 500;
     
     @staticmethod
     @Utils.visualErrorHandling
@@ -235,17 +234,42 @@ class MainWindow(BaseToolWindow):
         else:
             cmds.dockControl(MainWindow.DOCK_NAME,l=window.createWindowTitle(),content=MainWindow.WINDOW_NAME,
                              area='right',allowedArea=['right', 'left'],
-                             width=400,
+                             width=window.preferedWidth.get(),
+                             floating=window.preferedFloating.get(),
                              visibleChangeCommand=window.visibilityChanged)
+            
+            if window.preferedFloating.get():
+                cmds.window(MainWindow.DOCK_NAME,e=True,
+                            topEdge=window.preferedTop.get(),leftEdge=window.preferedLeft.get(),
+                            w=window.preferedWidth.get(),h=window.preferedHeight.get())
         
             Utils.silentCheckForUpdates()
+        
+        # bring tab to front; evaluate lazily as sometimes UI can show other errors and this command somehow fails
+        cmds.evalDeferred(lambda *args: cmds.dockControl(MainWindow.DOCK_NAME,e=True,r=True));
+        
+        # a bit of a fake, but can't find a better place for an infrequent save
+        LayerEvents.layerAvailabilityChanged.addHandler(window.savePrefs, MainWindow.DOCK_NAME)
         
         return window
     
     def visibilityChanged(self,*args):
-        r = cmds.dockControl(MainWindow.DOCK_NAME,q=True,r=1)
-        v = cmds.dockControl(MainWindow.DOCK_NAME,q=True,vis=1)
-                
+        hidden = cmds.control(MainWindow.DOCK_NAME,q=True,isObscured=1)
+            
+        if hidden:
+            self.savePrefs()
+
+    def savePrefs(self):
+        if cmds.dockControl(MainWindow.DOCK_NAME,exists=True):
+            self.preferedFloating.set(cmds.dockControl(MainWindow.DOCK_NAME,q=True,floating=True))
+            self.preferedWidth.set(cmds.dockControl(MainWindow.DOCK_NAME,q=True,w=True))
+
+        if cmds.window(MainWindow.DOCK_NAME,exists=True):
+            self.preferedWidth.set(cmds.window(MainWindow.DOCK_NAME,q=True,w=True))
+            self.preferedHeight.set(cmds.window(MainWindow.DOCK_NAME,q=True,h=True))
+            self.preferedTop.set(cmds.window(MainWindow.DOCK_NAME,q=True,topEdge=True))
+            self.preferedLeft.set(cmds.window(MainWindow.DOCK_NAME,q=True,leftEdge=True))
+        
         
     @staticmethod
     def getInstance():
@@ -272,10 +296,19 @@ class MainWindow(BaseToolWindow):
         
         self.actions = None
         
-        self.defaultWidth = MainWindow.WINDOW_DEFAULT_WIDTH
-        self.defaultHeight = MainWindow.WINDOW_DEFAULT_HEIGHT
+        self.preferedWidth = PersistentValueModel('ngSkinToolsMainWindow_preferedWidth', 400);
+        self.preferedHeight = PersistentValueModel('ngSkinToolsMainWindow_preferedHeight',400);
+        self.preferedTop = PersistentValueModel('ngSkinToolsMainWindow_preferedTop');
+        self.preferedLeft = PersistentValueModel('ngSkinToolsMainWindow_preferedLeft');
+        self.preferedFloating = PersistentValueModel('ngSkinToolsMainWindow_preferedFloating',False)
+        
+        self.useUserPrefSize = False
+        
+        self.defaultWidth = self.preferedWidth.get()
+        self.defaultHeight = self.preferedHeight.get()
         
         self.sizeable = True
+        
 
 
     def createWindowTitle(self):
