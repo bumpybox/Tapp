@@ -97,32 +97,21 @@ class HeadlessDataHost:
         
     def initialize(self):
         log.debug("creating headless data host")
-        self.scriptJobs = []
         
         LayerDataModel.reset()
         restartEvents()
 
         Utils.loadPlugin()
 
-        self.registerScriptJob('SelectionChanged',MayaEvents.nodeSelectionChanged.emit)
-        self.registerScriptJob('Undo',MayaEvents.undoRedoExecuted.emit)
-        self.registerScriptJob('Redo',MayaEvents.undoRedoExecuted.emit)
-        self.registerScriptJob('ToolChanged',MayaEvents.toolChanged.emit)        
+        MayaEvents.registerScriptJobs()
         
         LayerDataModel.getInstance()
         
-    def registerScriptJob(self,jobName,handler):
-        job = cmds.scriptJob(e=[jobName,handler])
-        self.scriptJobs.append(job)
-    
-    
     def cleanup(self):
         '''
         cleanup any acquired resources
         '''
-        #log.debug("cleaning up data host")
-        for i in self.scriptJobs:
-            cmds.scriptJob(kill=i)
+        MayaEvents.deregisterScriptJobs()
             
         log.debug("headless data host cleanup")
 

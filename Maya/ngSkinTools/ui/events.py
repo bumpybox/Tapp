@@ -35,8 +35,11 @@ class Signal:
     TOTAL_HANDLERS = 0
     
     def __init__(self,name=None):
-        self.handlers = []
         self.name = name
+        self.reset();
+        
+    def reset(self):
+        self.handlers = []
         self.executing = False
         
     
@@ -87,12 +90,18 @@ class Signal:
         
 
 
-class LayerEventsHost:
+class EventsHost(object):
+    def restart(self):
+        for _, propertyValue in vars(self).iteritems():
+            if isinstance(propertyValue, Signal):
+                propertyValue.reset()
+
+class LayerEventsHost(EventsHost):
     """
     layer system related events
     """
     
-    def restart(self):
+    def __init__(self):
         self.nameChanged = Signal('layerNameChanged')
         self.layerListModified = Signal('layerDataModified')
         self.currentLayerChanged = Signal('currentLayerChanged')
@@ -104,17 +113,36 @@ class LayerEventsHost:
         self.mirrorCacheStatusChanged = Signal('mirrorCacheStatusChanged')
 
 
-class MayaEventsHost:
+class MayaEventsHost(EventsHost):
     '''
     global maya-specific events
     '''
-    
-    def restart(self):
-        # emits when node selection changes, while main window is open
+    def __init__(self):
+        self.scriptJobs = []
+        
         self.nodeSelectionChanged = Signal('nodeSelectionChanged')
-        # emits when undo or redo is executed
         self.undoRedoExecuted = Signal('undoRedoExecuted')
         self.toolChanged = Signal('toolChanged')
+        self.quitApplication = Signal('quitApplication')
+        
+    def registerScriptJob(self,jobName,handler):
+        job = cmds.scriptJob(e=[jobName,handler])
+        self.scriptJobs.append(job)
+        
+    def deregisterScriptJobs(self):
+        for i in self.scriptJobs:
+            cmds.scriptJob(kill=i)
+        self.scriptJobs = []
+            
+    def registerScriptJobs(self):
+        self.registerScriptJob('SelectionChanged',self.nodeSelectionChanged.emit)
+        self.registerScriptJob('Undo',self.undoRedoExecuted.emit)
+        self.registerScriptJob('Redo',self.undoRedoExecuted.emit)
+        self.registerScriptJob('ToolChanged',self.toolChanged.emit)        
+        self.registerScriptJob('quitApplication',self.quitApplication.emit)    
+        
+    
+    
 
 
 def restartEvents():

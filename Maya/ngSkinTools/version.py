@@ -47,7 +47,7 @@ class Version:
         '''
         
         # automatically updated value: do not edit 
-        pluginVersion_doNotEdit = "1.0beta.878"
+        pluginVersion_doNotEdit = "1.0beta.881"
         return pluginVersion_doNotEdit;
     
     @staticmethod
@@ -57,7 +57,7 @@ class Version:
         will be set by a build system.
         '''
         
-        buildWatermark_doNotEdit = "bf1494b0dee8c7aaaa2cce9ea8db29a3fcf37830"
+        buildWatermark_doNotEdit = "409522977d9dfa67e601188518c7b67cb371b2a4"
         return buildWatermark_doNotEdit;
     
     @staticmethod
