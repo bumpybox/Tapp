@@ -5,6 +5,8 @@ import maya.cmds as cmds
 
 import shutil
 
+#testing ATOM
+
 #import statement
 print 'Tapp.Maya imported!'
 
