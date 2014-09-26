@@ -135,6 +135,7 @@ def Connect(connectShapes=True):
                             pm.connectAttr(data[attr],
                                              '%s.%s' % (node, attr),
                                              force=True)
+                            CopyTransform(abc, node)
                         except:
                             pass
                 #connects any static node
