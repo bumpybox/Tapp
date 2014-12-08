@@ -111,16 +111,12 @@ def CopyTransform(source, target):
     pm.xform(target, ws=True, scale=s)
 
 
-def Connect(connectShapes=True):
+def Connect(alembicRoot, targetRoot, connectShapes=True):
 
     pm.undoInfo(openChunk=True)
 
-    sel = pm.ls(selection=True)
-    alembic = sel[0]
-    target = sel[1]
-
-    alembics = pm.ls(alembic, dagObjects=True, long=True)
-    targets = pm.ls(target, dagObjects=True, long=True)
+    alembics = pm.ls(alembicRoot, dagObjects=True, long=True)
+    targets = pm.ls(targetRoot, dagObjects=True, long=True)
     for node in targets:
         for abc in alembics:
             if node.split(':')[-1] == abc.split(':')[-1]:
@@ -162,3 +158,56 @@ def Connect(connectShapes=True):
                                 pass
 
     pm.undoInfo(closeChunk=True)
+
+def SetupAlembic(alembicFile, shaderFile):
+    
+    #reference alembic file
+    filename = os.path.basename(alembicFile)
+    newNodes = cmds.file(alembicFile, reference=True, namespace=filename,
+                         groupReference=True, groupName='NewReference',
+                         returnNewNodes=True)
+
+    alembicRoot = None
+    for node in newNodes:
+        if node == '|NewReference':
+            alembicRoot = pm.PyNode(node)
+            cmds.rename('%s:grp' % filename)
+
+    #reference shader file
+    filename = os.path.basename(shaderFile)
+    newNodes = cmds.file(shaderFile, reference=True, namespace=filename,
+                         groupReference=True, groupName='NewReference',
+                         returnNewNodes=True)
+
+    shaderRoot = None
+    for node in newNodes:
+        if node == '|NewReference':
+            shaderRoot = pm.PyNode(node)
+            cmds.rename('%s:grp' % filename)
+    
+    #connecting shader to alembic
+    Connect(alembicRoot, shaderRoot)
+    alembicRoot.v.set(0)
+
+def SetupAlembicInput():
+    
+    loadAlembic()
+
+    fileFilter = 'Alembic Files (*.abc)'
+    title = 'Select Alembic caches'
+    files = pm.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+                            fileMode=4, caption=title)
+
+    data = {}
+    if files:
+        for f in files:
+            fileFilter = 'Maya Files (*.ma *.mb)'
+            title = 'Select shader file for %s' % os.path.basename(f)
+            maFile = pm.fileDialog2(fileFilter=fileFilter, dialogStyle=1,
+                                    fileMode=1, caption=title)
+            
+            if maFile:
+                data[f] = maFile[0]
+
+    for k in data:
+        SetupAlembic(k, data[k])
