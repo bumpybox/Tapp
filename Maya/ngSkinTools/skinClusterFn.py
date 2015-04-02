@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -21,7 +20,6 @@
 #    of this source code package.
 #    
 
-from maya import cmds
 from maya import OpenMayaAnim as oma
 from maya import OpenMaya as om
 from ngSkinTools.utils import Utils, MessageException
@@ -56,4 +54,5 @@ class SkinClusterFn(object):
         
         return result
     
+
     

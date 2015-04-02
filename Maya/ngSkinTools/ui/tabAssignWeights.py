@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -27,9 +26,12 @@ from ngSkinTools.ui.basetab import BaseTab
 from ngSkinTools.doclink import SkinToolsDocs
 from ngSkinTools.ui.intensityslider import IntensitySlider
 from ngSkinTools.ui.uiWrappers import IntField, CheckBoxField,\
-    RadioButtonField
+    RadioButtonField, FloatField
 from ngSkinTools.ui.constants import Constants
 from ngSkinTools.ui.softSelectionRow import SoftSelectionRow
+from ngSkinTools.ui.layerDataModel import LayerDataModel
+from ngSkinTools.ui.events import MayaEvents, LayerEvents
+from ngSkinTools.mllInterface import MllInterface
 
      
 
@@ -46,6 +48,7 @@ class TabAssignWeights(BaseTab):
     INFO_INTERSECTION_CHECK = 'when on, selects influence to which the closest path has the least amount of intersections'
     
     VAR_RIGID_PREFIX = VAR_ASSIGNWEIGHTS_PREFIX+'UnifyWeights'
+    VAR_PRUNE_PREFIX = VAR_ASSIGNWEIGHTS_PREFIX+'PruneWeights'
     VAR_LW_PREFIX = VAR_ASSIGNWEIGHTS_PREFIX+'LimitWeights'
     
     def __init__(self):
@@ -53,7 +56,7 @@ class TabAssignWeights(BaseTab):
         
 
     def createClosestJointGroup(self,layout):
-        group = self.createUIGroup(layout,"From Closest Joint")
+        group = self.createUIGroup(layout,"Assign Weights From Closest Joint")
         # influence chooser group
         influenceFiltersForm = cmds.formLayout(parent=group)
         l = cmds.text(label='Influences to choose from: ')
@@ -109,6 +112,8 @@ class TabAssignWeights(BaseTab):
         cmds.button(height=Constants.BUTTON_HEIGHT,label='Assign',command=lambda *args:self.execUnifyWeights())
 
         cmds.setParent(layout)
+        
+        
 
     def createLimitWeightsGroup(self,layout):
         group = self.createUIGroup(layout, 'Limit Weights')
@@ -179,15 +184,62 @@ class TabAssignWeights(BaseTab):
         self.controls.limitWeightsSoftSelection.addToArgs(args)
         self.execAssignWeights(args)
         
+
+    def createMakePruneWeightsGroup(self,layout):
+        self.controls.pruneWeightsGroup = group = self.createUIGroup(layout, 'Prune Small Weights')
+
+        self.createFixedTitledRow(group, title="Prune elements")
+        self.controls.pruneWeights = CheckBoxField(self.VAR_PRUNE_PREFIX+"pruneWeights",
+                    "Influence weights", True);
+        self.controls.pruneMask = CheckBoxField(self.VAR_PRUNE_PREFIX+"pruneMask",
+                    "Mask", True);
+
+        self.createFixedTitledRow(group, title="Prune influences below")
+        self.controls.pruneWeightsThreshold = FloatField(self.VAR_PRUNE_PREFIX+'pruneWeightsThreshold', minValue=0, maxValue=1,step=0.001,defaultValue=0.01, 
+                annotation='Influence weights lower than this value will be set to zero')
         
+        
+        self.createFixedTitledRow(group, title="Prune mask below")
+        self.controls.pruneMaskThreshold = FloatField(self.VAR_PRUNE_PREFIX+'pruneMaskThreshold', minValue=0, maxValue=1,step=0.001,defaultValue=0.01, 
+                annotation='Mask values lower than this value will be set to zero')
+
+        cmds.setParent(group)
+
+        cmds.rowLayout(nc=2,adjustableColumn=2,columnWidth2=[Constants.BUTTON_WIDTH_SMALL,50], columnAttach2=["both","both"],columnAlign2=["center","center"])
+        BaseTab.createHelpButton(SkinToolsDocs.ASSIGNWEIGHTS_MAKERIGID_INTERFACE)
+        cmds.button(height=Constants.BUTTON_HEIGHT,label='Prune',command=lambda *args:self.execPruneWeights())
+
+        cmds.setParent(layout)  
+        
+    def updateUiEnabled(self):
+        layersAvailable = LayerDataModel.getInstance().getLayersAvailable(); 
+        cmds.control(self.controls.pruneWeightsGroup,e=True,enable=layersAvailable)
+
+        
+    @Utils.visualErrorHandling
+    @Utils.undoable
+    def execPruneWeights(self):
+        ldm = LayerDataModel.getInstance()
+        for layerId in ldm.layerListsUI.getSelectedLayers():
+            if self.controls.pruneWeights.getValue():
+                ldm.mll.pruneWeights(layerId=layerId,threshold=self.controls.pruneWeightsThreshold.getValue())
+            if self.controls.pruneMask.getValue():
+                ldm.mll.pruneMask(layerId=layerId,threshold=self.controls.pruneMaskThreshold.getValue())
+    
     def createUI(self,parent):
-        self.setTitle('Assign Weights')
+        self.setTitle('Edit Weights')
         result = self.createScrollLayout(parent=parent)        
         self.baseLayout = cmds.columnLayout(adjustableColumn=1)
 
         self.createClosestJointGroup(self.baseLayout)
         self.createMakeUnifyGroup(self.baseLayout)
+        self.createMakePruneWeightsGroup(self.baseLayout)
         #self.createLimitWeightsGroup(self.baseLayout)
         
+        LayerEvents.layerAvailabilityChanged.addHandler(self.updateUiEnabled, result)
+        
+        self.updateUiEnabled()
+        
         return result
+    
     

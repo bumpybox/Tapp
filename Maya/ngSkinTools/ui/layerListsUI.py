@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -312,7 +311,7 @@ class LayerListsUI:
 
         
         self.controls.layerDisplay.setItems(newItems,currLayer)
-        LayerEvents.layerListUpdated.emit()
+        LayerEvents.layerListUIUpdated.emit()
         
     def updateInfluenceList(self):
         if not self.data.layerDataAvailable:
@@ -377,6 +376,8 @@ class LayerListsUI:
         actions.newLayer.newMenuItem("New Layer...")
         actions.duplicateLayer.newMenuItem("Duplicate Selected Layer(s)")
         actions.deleteLayer.newMenuItem("Delete Selected Layer(s)")
+        cmds.menuItem( divider=True)
+        actions.mergeLayerDown.newMenuItem("Merge Layer Down")
         cmds.menuItem( divider=True)
         actions.moveLayerUp.newMenuItem("Move Current Layer Up")
         actions.moveLayerDown.newMenuItem("Move Current Layer Down")

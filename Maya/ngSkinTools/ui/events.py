@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -21,9 +20,12 @@
 #    of this source code package.
 #    
 
-from ngSkinTools.utils import Utils
 from maya import cmds
+from ngSkinTools.utils import Utils
+from ngSkinTools.log import LoggerFactory
 
+
+log = LoggerFactory.getLogger("events")
 
 class Signal:
     '''
@@ -55,7 +57,10 @@ class Signal:
         self.executing = True
         try:
             for i in self.handlers:
-                i(*args)
+                try:
+                    i(*args)
+                except Exception,err:
+                    import traceback;traceback.print_exc()
         finally:
             self.executing = False
             
@@ -66,7 +71,7 @@ class Signal:
         itself after when associated UI is deleted
         '''
         def __init__(self,handler,ownerUI,deactivateHandler):
-            cmds.scriptJob(uiDeleted=[ownerUI,self.deactivate])
+            scriptJobs.scriptJob(uiDeleted=[ownerUI,self.deactivate])
             self.handler=handler
             self.deactivateHandler=deactivateHandler
         
@@ -79,14 +84,23 @@ class Signal:
             
             
     def addHandler(self,handler,ownerUI=None):
-        # if there's owning UI, wrap everything into self-deactivating handler
         if (ownerUI!=None):
             handler=self.UiBoundHandler(handler,ownerUI,self.removeHandler)
             
         self.handlers.append(handler)
 
     def removeHandler(self,handler):
-        self.handlers.remove(handler)
+        
+        # if handler was wrapped, try finding the wrapper first
+        for i in self.handlers:
+            if isinstance(i, self.UiBoundHandler) and i.handler==handler:
+                handler = i
+                
+        try:
+            self.handlers.remove(handler)
+        except ValueError:
+            # not found in list? no biggie.
+            pass
         
 
 
@@ -107,7 +121,7 @@ class LayerEventsHost(EventsHost):
         self.currentLayerChanged = Signal('currentLayerChanged')
         self.currentInfluenceChanged = Signal('currentInfluenceChanged')
         self.layerSelectionChanged = Signal('layerSelectionChanged')
-        self.layerListUpdated = Signal('layerListUpdated')
+        self.layerListUIUpdated = Signal('layerListUIUpdated')
         self.layerAvailabilityChanged = Signal('layerAvailabilityChanged')
         self.influenceListChanged = Signal('influenceListChanged')
         self.mirrorCacheStatusChanged = Signal('mirrorCacheStatusChanged')
@@ -118,7 +132,6 @@ class MayaEventsHost(EventsHost):
     global maya-specific events
     '''
     def __init__(self):
-        self.scriptJobs = []
         
         self.nodeSelectionChanged = Signal('nodeSelectionChanged')
         self.undoRedoExecuted = Signal('undoRedoExecuted')
@@ -126,13 +139,14 @@ class MayaEventsHost(EventsHost):
         self.quitApplication = Signal('quitApplication')
         
     def registerScriptJob(self,jobName,handler):
-        job = cmds.scriptJob(e=[jobName,handler])
-        self.scriptJobs.append(job)
+        def mockHandler(*args,**kwargs):
+            log.debug("running script job "+jobName)
+            handler(*args,**kwargs)
+            
         
-    def deregisterScriptJobs(self):
-        for i in self.scriptJobs:
-            cmds.scriptJob(kill=i)
-        self.scriptJobs = []
+        job = scriptJobs.scriptJob(e=[jobName,mockHandler if Utils.DEBUG_MODE else handler])
+        
+
             
     def registerScriptJobs(self):
         self.registerScriptJob('SelectionChanged',self.nodeSelectionChanged.emit)
@@ -152,6 +166,28 @@ def restartEvents():
     MayaEvents.restart()
     LayerEvents.restart()
 
+
+class ScriptJobHost:
+    def __init__(self):
+        self.scriptJobs = []
+        
+    def scriptJob(self,*args,**kwargs):
+        '''
+        a proxy on top of cmds.scriptJob for scriptJob creation;
+        will register a script job in a global created script jobs list
+        '''
+        job = cmds.scriptJob(*args,**kwargs)
+        self.scriptJobs.append(job)
+    
+    def deregisterScriptJobs(self):
+        for i in self.scriptJobs:
+            try:
+                cmds.scriptJob(kill=i)
+            except:
+                pass
+        self.scriptJobs = []
+        
+scriptJobs = ScriptJobHost()
 
 MayaEvents = MayaEventsHost()
 LayerEvents = LayerEventsHost() 

@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -50,10 +49,12 @@ from maya import OpenMaya as om
 from maya import OpenMayaAnim as oma
 from ngSkinTools import utils
 from ngSkinTools.skinClusterFn import SkinClusterFn
+from ngSkinTools.meshDataExporter import MeshDataExporter
+from itertools import izip
 
 class Influence(object):
     '''
-    Single influence in skin layer data.
+    Single influence in a layer
     '''
     
     def __init__(self):
@@ -103,9 +104,27 @@ class Layer(object):
     def __repr__(self):
         return "[Layer %r %r %r %r]" % (self.name, self.opacity, self.enabled, self.influences)
     
+class MeshInfo(object):
+    def __init__(self):
+        # vertex positions for each vertex, listing x y z for first vertex, then second, etc.
+        # total 3*(number of vertices) values
+        self.verts = []
         
+        # vertex IDs for each triangle, listing three vertex indexes for first triangle, then second, etc
+        # total 3*(number of triangles) values
+        self.triangles = []
         
+
+class InfluenceInfo(object):
+    def __init__(self,pivot=None,path=None,logicalIndex=None):
+        self.pivot = pivot
+        self.path = path
+        self.logicalIndex = logicalIndex
         
+    def __repr__(self):
+        return "[InflInfo %r %r %r]" % (self.logicalIndex,self.path,self.pivot)
+         
+
 class LayerData(object):
     '''
     Intermediate data object between ngSkinTools core and importers/exporters,
@@ -116,9 +135,15 @@ class LayerData(object):
         #: layers list
         self.layers = []
         self.mll = MllInterface()
+
+        self.meshInfo = MeshInfo()
+        
+        self.influences = []
         
         # a map [sourceInfluenceName] -> [destinationInfluenceName]
-        self.mirrorInfluenceAssociationOverrides = {}
+        self.mirrorInfluenceAssociationOverrides = None
+        
+        self.skinClusterFn = None
         
     def addMirrorInfluenceAssociationOverride(self,sourceInfluence,destinationInfluence=None,selfReference=False,bidirectional=True):
         '''
@@ -126,6 +151,9 @@ class LayerData(object):
         Self reference creates a source<->source association, bidirectional means that destination->source 
         link is added as well
         '''
+        
+        if self.mirrorInfluenceAssociationOverrides is None:
+            self.mirrorInfluenceAssociationOverrides = {}
         
         if selfReference:
             self.mirrorInfluenceAssociationOverrides[sourceInfluence] = sourceInfluence
@@ -154,7 +182,10 @@ class LayerData(object):
             raise MessageException("node %s was not found" % nodeName)
         
         return result[0]
-        
+    
+    def loadInfluenceInfo(self):    
+        self.influences = self.mll.listInfluenceInfo()
+    
     def loadFrom(self, mesh):
         '''
         loads data from actual skin cluster and prepares it for exporting.
@@ -163,8 +194,23 @@ class LayerData(object):
         
         self.mll.setCurrentMesh(mesh)
         
+        meshExporter = MeshDataExporter()
+        self.meshInfo = MeshInfo()
+        if mesh!=MllInterface.TARGET_REFERENCE_MESH:
+            mesh,skinCluster = self.mll.getTargetInfo()
+            meshExporter.setTransformMatrixFromNode(mesh)
+            meshExporter.useSkinClusterInputMesh(skinCluster)
+            self.meshInfo.verts,self.meshInfo.triangles = meshExporter.export()
+        else:
+            self.meshInfo.verts = self.mll.getReferenceMeshVerts()
+            self.meshInfo.triangles = self.mll.getReferenceMeshTriangles()
+
+        self.loadInfluenceInfo()
+        
         for layerID, layerName in self.mll.listLayers():
-            self.mirrorInfluenceAssociationOverrides = self.mll.listManualMirrorInfluenceAssociations() 
+            self.mirrorInfluenceAssociationOverrides = self.mll.getManualMirrorInfluences()
+            if len(self.mirrorInfluenceAssociationOverrides)==0:
+                self.mirrorInfluenceAssociationOverrides = None
             
             layer = Layer()
             layer.name = layerName
@@ -176,27 +222,35 @@ class LayerData(object):
             
             layer.mask = self.mll.getLayerMask(layerID)
             
-            for inflName, logicalIndex in self.mll.listLayerInfluences(layerID):
+            for inflName, logicalIndex in self.mll.listLayerInfluences(layerID,activeInfluences=True):
+                if inflName=='':
+                    inflName = None
                 influence = Influence()
-                influence.influenceName = self.getFullNodePath(inflName)
+                if inflName is not None:
+                    influence.influenceName = self.getFullNodePath(inflName)
                 influence.logicalIndex = logicalIndex
                 layer.addInfluence(influence)
                 
                 influence.weights = self.mll.getInfluenceWeights(layerID, logicalIndex)
                 
     def __validate(self):
+        
         numVerts = self.mll.getVertCount()
-        for layer in reversed(self.layers):
+        
+        def validateVertCount(count,message):
+                if count!=numVerts:
+                    raise Exception(message) 
+        
+        for layer in self.layers:
             maskLen = len(layer.mask)
-            if maskLen != 0 and maskLen != numVerts:
-                raise Exception("Invalid vertex count for mask in layer '%s': expected size is %d" % (layer.name, numVerts))
+            if maskLen != 0:
+                validateVertCount(maskLen, "Invalid vertex count for mask in layer '%s': expected size is %d" % (layer.name, numVerts))
             
             for influence in layer.influences:
-                weightsLen = len(influence.weights) 
-                if weightsLen != numVerts:
-                    raise Exception("Invalid weights count for influence '%s' in layer '%s': expected size is %d" % (influence.influenceName, layer.name, numVerts))
+                validateVertCount(len(influence.weights), "Invalid weights count for influence '%s' in layer '%s': expected size is %d" % (influence.influenceName, layer.name, numVerts))
                 
-                influence.logicalIndex = self.skinClusterFn.getLogicalInfluenceIndex(influence.influenceName)
+                if self.skinClusterFn:
+                    influence.logicalIndex = self.skinClusterFn.getLogicalInfluenceIndex(influence.influenceName)
                 
         
     @Utils.undoable        
@@ -207,7 +261,10 @@ class LayerData(object):
         
         # set target to whatever was provided
         self.mll.setCurrentMesh(mesh)
-        
+
+        if mesh==MllInterface.TARGET_REFERENCE_MESH:
+            self.mll.setWeightsReferenceMesh(self.meshInfo.verts, self.meshInfo.triangles)
+            
         
         if not self.mll.getLayersAvailable():
             self.mll.initLayers()
@@ -216,9 +273,11 @@ class LayerData(object):
             raise Exception("could not initialize layers")
         
 
-        mesh, self.skinCluster = self.mll.getTargetInfo()
-        self.skinClusterFn = SkinClusterFn()
-        self.skinClusterFn.setSkinCluster(self.skinCluster)
+        # is skin cluster available?
+        if mesh!=MllInterface.TARGET_REFERENCE_MESH:
+            mesh, self.skinCluster = self.mll.getTargetInfo()
+            self.skinClusterFn = SkinClusterFn()
+            self.skinClusterFn.setSkinCluster(self.skinCluster)
         
         self.__validate()
         
@@ -226,8 +285,8 @@ class LayerData(object):
         self.mll.setCurrentMesh(mesh)
             
         with self.mll.batchUpdateContext():
-            for source,destination in self.mirrorInfluenceAssociationOverrides.iteritems():
-                self.mll.addManualMirrorInfluenceAssociation(source, destination)
+            if self.mirrorInfluenceAssociationOverrides:
+                self.mll.setManualMirrorInfluences(self.mirrorInfluenceAssociationOverrides)
             
             for layer in reversed(self.layers):
                 layerId = self.mll.createLayer(name=layer.name, forceEmpty=True)
@@ -269,12 +328,13 @@ class XmlExporter:
         self.layerElement = None
         self.influenceElement = None
         
-    def processInfluence(self, influence):
+    def processLayerInfluence(self, influence):
         self.influenceElement = self.document.createElement("influence")
         self.layerElement.appendChild(self.influenceElement)
         
         self.influenceElement.setAttribute("index", str(influence.logicalIndex))
-        self.influenceElement.setAttribute("name", str(influence.influenceName))
+        if influence.influenceName is not None:
+            self.influenceElement.setAttribute("name", str(influence.influenceName))
         self.floatArrayToAttribute(self.influenceElement, "weights", influence.weights)
         
     def processLayer(self, layer):
@@ -287,7 +347,17 @@ class XmlExporter:
         self.floatArrayToAttribute(self.layerElement, "mask", layer.mask)
         
         for influence in layer.influences:
-            self.processInfluence(influence)
+            self.processLayerInfluence(influence)
+            
+    def processInfluences(self, influences):
+        root = self.document.createElement("influences")
+        self.baseElement.appendChild(root)
+        for i in influences:
+            influenceElement = self.document.createElement("influence")
+            root.appendChild(influenceElement)
+            influenceElement.setAttribute("index", str(i.logicalIndex))
+            influenceElement.setAttribute("path", str(i.path))
+            self.floatArrayToAttribute(influenceElement, "pivot", i.pivot)
     
     def process(self, layerDataModel):
         '''
@@ -297,11 +367,21 @@ class XmlExporter:
         self.baseElement.setAttribute("version", "1.0")
         self.document.appendChild(self.baseElement)
         
-        for source,destination in layerDataModel.mirrorInfluenceAssociationOverrides.items():
-            assoc = self.document.createElement("mirrorInfluenceAssociation")
-            self.baseElement.appendChild(assoc)
-            assoc.setAttribute("source",source)
-            assoc.setAttribute("destination",destination)
+        if layerDataModel.influences!=None and len(layerDataModel.influences)>0:
+            self.processInfluences(layerDataModel.influences)
+        
+        if layerDataModel.meshInfo is not None and len(layerDataModel.meshInfo.verts)>0:
+            meshInfoElement = self.document.createElement("meshInfo")
+            self.baseElement.appendChild(meshInfoElement)
+            self.floatArrayToAttribute(meshInfoElement, "vertices", layerDataModel.meshInfo.verts)
+            self.arrayToAttribute(meshInfoElement, "triangles", layerDataModel.meshInfo.triangles,str)
+
+        if layerDataModel.mirrorInfluenceAssociationOverrides:
+            for source,destination in layerDataModel.mirrorInfluenceAssociationOverrides.items():
+                assoc = self.document.createElement("mirrorInfluenceAssociation")
+                self.baseElement.appendChild(assoc)
+                assoc.setAttribute("source",source)
+                assoc.setAttribute("destination",destination)
         
         for layer in layerDataModel.layers:
             self.processLayer(layer)
@@ -309,7 +389,10 @@ class XmlExporter:
         return self.document.toprettyxml(encoding="UTF-8")
             
     def floatArrayToAttribute(self, node, attrName, values):
-        node.setAttribute(attrName, " ".join(map(self.formatFloat, values)))
+        self.arrayToAttribute(node, attrName, values, self.formatFloat)
+
+    def arrayToAttribute(self, node, attrName, values, itemCallable):
+        node.setAttribute(attrName, " ".join(map(itemCallable, values)))
             
     def formatFloat(self, value):
         # up to 15 digits after comma, no trailing zeros if present
@@ -323,12 +406,15 @@ class XmlImporter:
             if i.nodeName == name:
                 yield i
                 
-    def attributeToFloatList(self, node, attribute):
+    def attributeToList(self, node, attribute, itemCallable):
         value = node.getAttribute(attribute).strip()
         if len(value) == 0:
             return []
         
-        return map(float, value.split(" "))
+        return map(itemCallable, value.split(" "))
+
+    def attributeToFloatList(self, node, attribute):
+        return self.attributeToList(node, attribute, float)
     
     def process(self, xml):
         'transforms XML to LayerDataModel'
@@ -337,10 +423,14 @@ class XmlImporter:
         from xml.dom import minidom
         self.dom = minidom.parseString(xml)
         
-        
+       
         for layersNode in self.iterateChildren(self.dom, "ngstLayerData"):
+            for meshData in self.iterateChildren(layersNode, "meshInfo"):
+                self.model.meshInfo.verts = self.attributeToFloatList(meshData, "vertices")
+                self.model.meshInfo.triangles = self.attributeToList(meshData, "triangles",int)
+
             for node in self.iterateChildren(layersNode, "mirrorInfluenceAssociation"):
-                self.model.mirrorInfluenceAssociationOverrides[node.getAttribute("source")]=node.getAttribute("destination")
+                self.model.addMirrorInfluenceAssociationOverride(node.getAttribute("source"), node.getAttribute("destination"), selfReference=False, bidirectional=False)
             
             for layerNode in self.iterateChildren(layersNode, "layer"):
                 layer = Layer()
@@ -361,7 +451,6 @@ class XmlImporter:
         return self.model
         
 class JsonExporter:
-    
     def __influenceToDictionary(self, influence):
         result = {}
         result['name'] = influence.influenceName
@@ -380,43 +469,75 @@ class JsonExporter:
             result['influences'].append(self.__influenceToDictionary(infl))
             
         return result
+
+    def __meshInfoToDictionary(self,meshInfo):
+        result = {}
+        result['verts'] = meshInfo.verts
+        result['triangles'] = meshInfo.triangles
+        return result
     
     def __modelToDictionary(self, model):
         result = {}
-        if len(model.mirrorInfluenceAssociationOverrides)>0:
+        result['meshInfo'] = self.__meshInfoToDictionary(model.meshInfo)
+        if model.mirrorInfluenceAssociationOverrides:
             result['manualInfluenceOverrides'] = dict(model.mirrorInfluenceAssociationOverrides.items())
         result['layers'] = []
         for layer in model.layers:
             result['layers'].append(self.__layerToDictionary(layer))
             
+        if model.influences:
+            result['influences'] = self.__serializeInfluences(model.influences)
+            
+        return result
+    
+    def __serializeInfluences(self, influences):
+        result = {}
+        for i in influences:
+            result[i.logicalIndex] = {'path':i.path,'index':i.logicalIndex,'pivot': i.pivot}
         return result
     
     def process(self, layerDataModel):
         '''
         transforms LayerDataModel to JSON
         '''
-        import json
-        return json.dumps(self.__modelToDictionary(layerDataModel))
+        modelDictionary = self.__modelToDictionary(layerDataModel);
+        import json    
+        import re
+        exportOutput = json.dumps(modelDictionary,indent=2)
+        # remove line break if next line is "whitespace + closing bracket or positive/negative number"
+        exportOutput = re.sub(r'\n\s+(\]|\-?\d)',r"\1",exportOutput)
+        return exportOutput    
     
     
 class JsonImporter:
+    
     def process(self, jsonDocument):
         '''
-        transform JSON document into layerDataModel
+        transform JSON document (provided as valid json string) into layerDataModel
         '''
         import json
         self.document = json.loads(jsonDocument)
         
         model = LayerData()
         
-        if self.document.has_key("manualInfluenceOverrides"):
-            model.mirrorInfluenceAssociationOverrides = self.document['manualInfluenceOverrides']
+        meshInfo = self.document.get('meshInfo')
+        if meshInfo:
+            model.meshInfo.verts = meshInfo['verts']
+            model.meshInfo.triangles = meshInfo['triangles']
+        
+        model.mirrorInfluenceAssociationOverrides = self.document.get("manualInfluenceOverrides")
+        
+        influences = self.document.get('influences')
+        if influences:
+            model.influences = []
+            for i in influences.values():
+                model.influences.append(InfluenceInfo(pivot=i['pivot'], path=i['path'], logicalIndex=i['index'])) 
         
         for layerData in self.document["layers"]:
             layer = Layer()
             model.addLayer(layer)        
             layer.enabled = layerData['enabled']
-            layer.mask = layerData['mask']
+            layer.mask = layerData.get('mask')
             layer.name = layerData['name']
             layer.opacity = layerData['opacity']
             layer.influences = []
@@ -435,7 +556,24 @@ class Format:
         self.title = ""
         self.exporterClass = None
         self.importerClass = None
+        
+        # recommended file extensions for UI, e.g. file dialog
         self.recommendedExtensions = ()    
+        
+    def export(self,mesh):
+        '''
+        returns file contents that was produced with 
+        '''
+        model = LayerData()
+        model.loadFrom(mesh)
+        return self.exporterClass().process(model)
+    
+    def import_(self,fileContents,mesh):
+        '''
+        parses fileContents with importerClass and loads data onto given mesh
+        '''
+        model = self.importerClass().process(fileContents)
+        model.saveTo(mesh)
     
 class Formats:
     
@@ -463,9 +601,8 @@ class Formats:
         '''
         returns iterator to available exporters
         '''
-        yield Formats.getXmlFormat()
-        if Utils.getMayaVersion() > Utils.MAYA2010:
-            yield Formats.getJsonFormat()
+        #yield Formats.getXmlFormat()
+        yield Formats.getJsonFormat()
         
         
     

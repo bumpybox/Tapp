@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -109,3 +108,11 @@ class Options:
         
 Options.OPTION_CHECKFORUPDATES = PersistentValueModel(Options.VAR_OPTION_PREFIX+'checkForUpdates',defaultValue=1)
 Options.OPTION_USETREEVIEW_LAYERS = PersistentValueModel(Options.VAR_OPTION_PREFIX+'useTreeviewLayers',defaultValue=1)
+
+def deleteCustomOptions():
+    variablePrefix = "ngSkinTools"
+    for varName in cmds.optionVar(list=True):
+        if varName.startswith(variablePrefix):
+            cmds.optionVar(remove=varName)  
+        
+    cmds.windowPref('MirrorWeightsWindow',ra=True)  

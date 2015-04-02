@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -25,7 +24,8 @@ from maya import cmds
 from ngSkinTools.ui.basetab import BaseTab
 from ngSkinTools.ui.uiWrappers import FloatField, CheckBoxField, DropDownField
 from ngSkinTools.doclink import SkinToolsDocs
-from ngSkinTools.ui.initTransferWindow import InitTransferWindow
+from ngSkinTools.ui.initTransferWindow import InitTransferWindow,\
+    MirrorWeightsWindow
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.ui.events import LayerEvents
 from ngSkinTools.log import LoggerFactory
@@ -64,7 +64,7 @@ class TabMirror(BaseTab):
         '''
         Show init transfer window
         '''
-        t = InitTransferWindow.getInstance()
+        t = MirrorWeightsWindow.getInstance()
         t.showWindow()
         return t
         

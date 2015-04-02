@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -27,10 +26,11 @@ from ngSkinTools.ui.events import Signal, LayerEvents, MayaEvents
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.ui.dlgLayerProperties import LayerPropertiesDialog
 from ngSkinTools.ui.basedialog import BaseDialog
-from ngSkinTools.utils import Utils
+from ngSkinTools.utils import Utils, MessageException
 from ngSkinTools.ui.basetoolwindow import BaseToolWindow
-from ngSkinTools.importExport import JsonExporter, XmlExporter, Formats
 from ngSkinTools.log import LoggerFactory
+from ngSkinTools.ui.options import deleteCustomOptions
+from ngSkinTools.mllInterface import MllInterface
 
 log = LoggerFactory.getLogger("actions")
 
@@ -38,7 +38,7 @@ log = LoggerFactory.getLogger("actions")
 class BaseAction(object):
     def __init__(self,ownerUI):
         self.ownerUI = ownerUI
-        self.onExecuted = Signal("influence filter visibility changed")
+        self.onExecuted = Signal("action executed")
         self.updateControls = []
 
     def addUpdateControl(self,control,menu=False):
@@ -244,7 +244,13 @@ class MirrorLayerWeightsAction(BaseLayerAction):
         button handler for "Mirror Skin Weights"
         '''
         from ngSkinTools.ui.mainwindow import MainWindow
-        from ngSkinTools.ui.tabMirror import TabMirror
+
+        # any problems? maybe cache is not initialized/outdated?
+        layerData = LayerDataModel.getInstance() 
+        layerData.updateMirrorCacheStatus()
+        if not layerData.mirrorCache.isValid:
+            Utils.displayError(layerData.mirrorCache.message)
+            return False
 
         try:
             mirrorTab = MainWindow.getInstance().tabMirror
@@ -254,7 +260,6 @@ class MirrorLayerWeightsAction(BaseLayerAction):
                 mirrorDirection = self.DIRECTION_GUESS;
             if mirrorTab.controls.mirrorDirection.getValue()==2: # negative to positive
                 mirrorDirection = self.DIRECTION_NEGATIVETOPOSITIVE;
-                
             
             with LayerDataModel.getInstance().mll.batchUpdateContext():
                 for layerId in LayerDataModel.getInstance().layerListsUI.getSelectedLayers():
@@ -268,17 +273,11 @@ class MirrorLayerWeightsAction(BaseLayerAction):
             # if layer list is filtered, might be handy to refresh influence list now - not that it costs much
             LayerEvents.influenceListChanged.emit()
             
+            return True
         except:
-            # any problems? maybe cache is not initialized/outdated?
-            layerData = LayerDataModel.getInstance() 
-            layerData.updateMirrorCacheStatus()
-            if not layerData.mirrorCache.isValid:
-                Utils.displayError(layerData.mirrorCache.message)
-                return
-            else:
-                Utils.displayError("unknown error")
-                # we're not sure what's wrong in this case, just re-raise
-                raise        
+            Utils.displayError("unknown error")
+            # we're not sure what's wrong in this case, just re-raise
+            raise        
 
 
 
@@ -290,10 +289,7 @@ class RemovePreferencesAction(BaseAction):
         
         BaseToolWindow.closeAllWindows()
         
-        variablePrefix = "ngSkinTools"
-        for varName in cmds.optionVar(list=True):
-            if varName.startswith(variablePrefix):
-                cmds.optionVar(remove=varName)
+        deleteCustomOptions()
         
         mu.executeDeferred(MainWindow.open)
         
@@ -309,21 +305,14 @@ class BaseImportExportAction(BaseLayerAction):
         '''
         shows UI for file selection; returns file name or None 
         '''
-        extensionList = ";".join(map(lambda a: "*.%s" % a,self.ioFormat.recommendedExtensions))
+        extensionList = " ".join(map(lambda a: "*.%s" % a,self.ioFormat.recommendedExtensions))
         caption = ('Export as %s' if forSave else 'Import from %s') %self.ioFormat.title
         fileFilter = 'Layer data in %s format (%s);;All Files (*.*)' % (self.ioFormat.title,extensionList)
         
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            result = cmds.fileDialog2(dialogStyle=1,caption=caption,fileFilter=fileFilter,fileMode=0 if forSave else 1,returnFilter=True)
-            if result is None:
-                return None
-            return result[0]
-        else:
-            result = cmds.fileDialog(title=caption,directoryMask=extensionList,mode=1 if forSave else 0);
-            if result=="":
-                return None
-            
-            return result
+        result = cmds.fileDialog2(dialogStyle=1,caption=caption,fileFilter=fileFilter,fileMode=0 if forSave else 1,returnFilter=True)
+        if result is None:
+            return None
+        return result[0]
             
     def getTargetMesh(self):            
         return LayerDataModel.getInstance().getLayersCandidateFromSelection()[0]
@@ -357,14 +346,11 @@ class ExportAction(BaseImportExportAction):
         finally:
             f.close();
             
-class ImportOptions:
-    def __init__(self):
-        self.keepExistingLayers = True            
-            
 class ImportAction(BaseImportExportAction):
     
     def isEnabled(self):
-        return self.getMll().getTargetInfo()!=None
+        self.targetInfo = self.getMll().getTargetInfo() 
+        return self.targetInfo !=None
     
     def getFileContents(self,fileName):
         f = open(fileName,'r')
@@ -374,26 +360,6 @@ class ImportAction(BaseImportExportAction):
             f.close();
             
         return contents
-    
-    def getImportOptions(self):
-        options = ImportOptions()
-        
-        if self.getMll().getLayersAvailable():
-            if Utils.confirmDialog(
-                    icon='question',
-                    title='Import', 
-                    message='Do you want to keep existing layers?', 
-                    button=['Yes','No'], defaultButton='Yes')=='No':
-                options.keepExistingLayers = False
-                
-        return options
-    
-    def __deleteExistingLayers(self):
-        if not self.getMll().getLayersAvailable():
-            return
-        
-        for layerId, _  in self.getMll().listLayers():
-            self.getMll().deleteLayer(layerId)
     
     @Utils.undoable
     def execute(self):
@@ -409,17 +375,52 @@ class ImportAction(BaseImportExportAction):
         importer = self.ioFormat.importerClass()
         model = importer.process(self.getFileContents(fileName))
         
-        options = self.getImportOptions()
-        if not options.keepExistingLayers:
-            self.__deleteExistingLayers()
+        from ngSkinTools.ui.initTransferWindow import TransferWeightsWindow
+        window = TransferWeightsWindow.getInstance()
+        window.showWindow()
+        window.content.dataModel.setSourceData(model)
+        window.content.dataModel.setDestinationMesh(self.targetInfo[0])
         
-        model.saveTo(self.getTargetMesh())
         
-        self.getDataModel().updateLayerAvailability()
-        LayerEvents.layerListModified.emit()
+        
+class TransferWeightsAction(BaseAction):
+    
+    def isEnabled(self):
+        return True
+    
+    @Utils.visualErrorHandling
+    @Utils.undoable
+    def execute(self):
+        meshes = cmds.ls(sl=True)
+        if meshes==None or len(meshes)!=2:
+            raise MessageException("select two skinned meshes with layers initialized to perform this operation")
+        
+        for mesh in meshes:
+            if not MllInterface(mesh=meshes[0]).getLayersAvailable():
+                raise MessageException("'%s' is not a valid selection (no skin layers available)" % mesh)
 
-        
-        
-
+        from ngSkinTools.ui.initTransferWindow import TransferWeightsWindow
+        window = TransferWeightsWindow.getInstance()
+        window.showWindow()
+        window.content.dataModel.setSourceMesh(meshes[0])
+        window.content.dataModel.setDestinationMesh(meshes[1])
                     
         
+class MergeLayerDownAction(BaseLayerAction):
+    
+    @Utils.visualErrorHandling
+    @Utils.undoable
+    def execute(self):
+        ldm = LayerDataModel.getInstance()
+        for layerId in ldm.layerListsUI.getSelectedLayers():
+            if ldm.mll.getLayerIndex(layerId)==0:
+                Utils.displayError("Cannot merge lowest layer")
+                return
+            
+            ldm.mll.layerMergeDown(layerId)
+            
+            
+        
+            
+        LayerEvents.layerListModified.emit()
+        self.onExecuted.emit()

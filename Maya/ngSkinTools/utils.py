@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -91,16 +90,11 @@ class Utils:
         '''
         displays error in script editor and in a dialog box
         '''
+        
         message = str(message)
         om.MGlobal.displayError('[NgSkinTools] '+message)
         Utils.confirmDialog( title='NgSkinTools: Error', message=str(message), button=['Ok'], defaultButton='Ok')
         
-        if log.isEnabledFor(logging.DEBUG):
-            import traceback;
-            trace = traceback.format_exc()
-            if trace!='None\n':
-                om.MGlobal.displayError(trace)
-                log.debug(trace)
         
     @staticmethod
     def visualErrorHandling(function):
@@ -118,7 +112,13 @@ class Utils:
                 Utils.displayError(err.message)
             except Exception, err:
                 Utils.displayError(str(err))
-        return result       
+
+                import traceback;
+                trace = traceback.format_exc()
+                if trace!='None\n':
+                    om.MGlobal.displayError(trace)
+                
+        return result
     
     @staticmethod
     def preserveSelection(function):
@@ -248,7 +248,6 @@ class Utils:
         try:
             return mel.eval(melSource)
         except Exception,err:
-            print "Error executing mel: "+melSource
             raise err
         
     @staticmethod
@@ -362,13 +361,21 @@ class Utils:
                 cmds.undoInfo(closeChunk=True)
         
         return result
-    
+
     @staticmethod
     def getMObjectForNode(nodeName):
         sel = om.MSelectionList();
         sel.add(nodeName)
         obj = om.MObject()
         sel.getDependNode(0,obj)
+        return obj            
+
+    @staticmethod
+    def getDagPathForNode(nodeName):
+        sel = om.MSelectionList();
+        sel.add(nodeName)
+        obj = om.MDagPath()
+        sel.getDagPath(0,obj)
         return obj            
         
     @staticmethod

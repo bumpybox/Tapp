@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -38,12 +37,12 @@ from ngSkinTools.ui.actions import InfluenceFilterAction, NewLayerAction,\
     DeleteLayerAction, MoveLayerAction, LayerPropertiesAction,\
     ConvertMaskToTransparencyAction, ConvertTransparencyToMaskAction,\
     MirrorLayerWeightsAction, BaseAction, RemovePreferencesAction,\
-    EnableDisableLayerAction, ExportAction, ImportAction
+    EnableDisableLayerAction, ExportAction, ImportAction, TransferWeightsAction,\
+    MergeLayerDownAction
 from ngSkinTools.ui.basetoolwindow import BaseToolWindow
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.importExport import Formats
 from ngSkinTools.ui.utilities.importInfluencesUi import ImportInfluencesAction
-from ngSkinTools.utilities.duplicateLayers import DuplicateLayers
 from ngSkinTools.ui.utilities.duplicateLayerAction import DuplicateLayersAction
 from ngSkinTools.ui.headlessDataHost import HeadlessDataHost
 from ngSkinTools.doclink import SkinToolsDocs
@@ -80,9 +79,6 @@ class MainMenu:
         
         LayerDataModel.getInstance().cleanCustomNodes()
         
-    def execClose(self,*args):
-        MainWindow.getInstance().closeWindow()
-        
     def execAbout(self,*args):
         AboutDialog().execute()
         
@@ -98,24 +94,24 @@ class MainMenu:
             action.newMenuItem("From "+action.ioFormat.title+" ...")
         cmds.setParent("..",menu=True)
         
+    def createFileMenu(self,actions):
+        cmds.menu( label='File',mnemonic='F' )
+        self.createImportSubmenu()
+        self.createExportSubmenu()
+
     def createLayersMenu(self,actions):
         cmds.menu( label='Layers',mnemonic='L' )
         actions.newLayer.newMenuItem("New Layer...")
         actions.duplicateLayer.newMenuItem("Duplicate Selected Layer(s)")
         actions.deleteLayer.newMenuItem("Delete Selected Layer(s)")
         self.createDivider()
+        actions.mergeLayerDown.newMenuItem("Merge Layer Down")
+        self.createDivider()
         actions.moveLayerUp.newMenuItem("Move Current Layer Up")
         actions.moveLayerDown.newMenuItem("Move Current Layer Down")
 
-        # import/export        
-        self.createDivider()
-        self.createExportSubmenu()
-        self.createImportSubmenu()
-        
         self.createDivider()
         actions.layerProperties.newMenuItem("Properties...")
-        self.createDivider()
-        cmds.menuItem( label='Close',mnemonic='C',command=self.execClose )
         
     def createEditMenu(self,actions):
         cmds.menu( label='Edit',mnemonic='E' )
@@ -133,6 +129,7 @@ class MainMenu:
     def createToolsMenu(self,actions):
         cmds.menu( label='Tools',mnemonic='T' )
         actions.importInfluences.newMenuItem("Import Influences...")
+        actions.transferWeights.newMenuItem("Transfer Weights...")
         
     def viewManual(self,*args):
         documentation = HeadlessDataHost.get().documentation
@@ -158,6 +155,7 @@ class MainMenu:
     def create(self):
         actions = MainWindow.getInstance().actions
         
+        self.createFileMenu(actions)
         self.createLayersMenu(actions)
         self.createEditMenu(actions)
         self.createToolsMenu(actions)
@@ -184,8 +182,11 @@ class MainUiActions:
         self.enableDisableLayer = EnableDisableLayerAction(ownerUI)
         
         self.importInfluences = ImportInfluencesAction(ownerUI)
+        self.transferWeights = TransferWeightsAction(ownerUI)
         
         self.duplicateLayer = DuplicateLayersAction(ownerUI)
+        
+        self.mergeLayerDown = MergeLayerDownAction(ownerUI)
         
         self.copyWeights = CopyWeights(ownerUI)
         self.cutWeights = CutWeights(ownerUI)

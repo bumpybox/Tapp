@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -60,7 +59,7 @@ class LayerProperties:
         
     def createUI(self,tab,parent):
         LayerEvents.currentLayerChanged.addHandler(self.update,parent)
-        LayerEvents.layerListUpdated.addHandler(self.update,parent)
+        LayerEvents.layerListUIUpdated.addHandler(self.update,parent)
         MayaEvents.undoRedoExecuted.addHandler(self.update,parent)
 
         group = tab.createUIGroup(parent, "Layer Properties")

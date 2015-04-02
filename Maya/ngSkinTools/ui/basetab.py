@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -80,7 +79,7 @@ class BaseTab(object):
     
     
     
-    VAR_GROUP_COLLAPSE = 'nguitab_group%s_collapse'
+    VAR_GROUP_COLLAPSE = 'ngSkinTools_group%s_collapse'
     
     log = LoggerFactory.getLogger("BaseToolWindow")
     
@@ -129,10 +128,12 @@ class BaseTab(object):
         group = cmds.frameLayout(label=title, marginWidth=Constants.MARGIN_SPACING_HORIZONTAL,marginHeight=Constants.MARGIN_SPACING_VERTICAL, collapsable=True,
                                  expandCommand=self.saveOptions,collapseCommand=self.saveOptions,
                                  borderStyle='etchedIn')
+        self.lastCreatedGroup = group
+        
         self.controls.groups.append(group)
         cmds.frameLayout(group,e=True,collapse = Options.loadOption(self.getGroupVariable(group), 0))
         return cmds.columnLayout(adjustableColumn=1,rowSpacing=Constants.MARGIN_SPACING_VERTICAL)
-    
+
     def createUI(self,parent):
         '''
         override this method to implement gui creation

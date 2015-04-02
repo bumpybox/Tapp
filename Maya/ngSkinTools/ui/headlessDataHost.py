@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -24,7 +23,7 @@
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.utils import Utils
 from maya import cmds
-from ngSkinTools.ui.events import MayaEvents, restartEvents
+from ngSkinTools.ui.events import MayaEvents, restartEvents, scriptJobs
 from ngSkinTools.doclink import SkinToolsDocs
 from ngSkinTools.log import LoggerFactory
 
@@ -111,7 +110,7 @@ class HeadlessDataHost:
         '''
         cleanup any acquired resources
         '''
-        MayaEvents.deregisterScriptJobs()
+        scriptJobs.deregisterScriptJobs()
             
         log.debug("headless data host cleanup")
 

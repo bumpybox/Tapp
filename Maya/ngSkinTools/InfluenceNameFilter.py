@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -38,14 +37,14 @@ class InfluenceNameFilter:
     def __init__(self):
         self.matchers = None
         
-    def setFilterString(self,filter):
+    def setFilterString(self,filterString):
         
         def createPattern(expression):
             expression = "".join([char for char in expression if char.lower() in "abcdefghijklmnopqrstuvwxyz0123456789_*"])
             expression = expression.replace("*", ".*")
             return re.compile(expression,re.I)
         
-        self.matchers = [createPattern(i.strip()) for i in filter.split() if i.strip()!='']
+        self.matchers = [createPattern(i.strip()) for i in filterString.split() if i.strip()!='']
         return self
         
     def isMatch(self,value):

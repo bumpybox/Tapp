@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -43,7 +42,7 @@ class AboutDialog(BaseDialog):
         labelTitle = cmds.text(label=Version.getReleaseName(), font='boldLabelFont')
         
         logoFrame = cmds.tabLayout(parent=layout,tv=False,childResizable=True,scrollable=False,width=130,height=130,innerMarginWidth=10)
-        imgLogo = cmds.image(image=os.path.join(os.path.dirname(__file__),'images','logo.jpg'))
+        cmds.image(image=os.path.join(os.path.dirname(__file__),'images','logo.jpg'))
         layout.attachForm(logoFrame,10,10,None,None)
         
         cmds.setParent(layout)

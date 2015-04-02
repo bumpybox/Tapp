@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -24,7 +23,6 @@
 from maya import cmds,mel
 from ngSkinTools.layerUtils import LayerUtils
 from ngSkinTools.ui.events import LayerEvents, MayaEvents
-from ngSkinTools.utils import Utils
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.mllInterface import MllInterface
 from ngSkinTools.utilities.weightsClipboard import WeightsClipboard
@@ -88,7 +86,6 @@ class LayerDataModel:
         self.layerDataAvailable = self.mll.getLayersAvailable()
         if self.layerDataAvailable!=oldValue:
             LayerEvents.layerAvailabilityChanged.emit()
-        
         self.updateMirrorCacheStatus()
             
     def updateMirrorCacheStatus(self):
@@ -98,6 +95,7 @@ class LayerDataModel:
             self.mirrorCache.message = message
             self.mirrorCache.isValid = newStatus
             self.mirrorCache.mirrorAxis = axis
+
             if change:
                 self.log.info("mirror cache status changed to %s." % self.mirrorCache.message)
                 LayerEvents.mirrorCacheStatusChanged.emit()        
@@ -119,23 +117,23 @@ class LayerDataModel:
         
             
     def addLayer(self,name):
-        id = self.mll.createLayer(name)
+        layerId = self.mll.createLayer(name)
         
-        if id is None:
+        if layerId is None:
             return
         LayerEvents.layerListModified.emit()
         
-        self.setCurrentLayer(id)
+        self.setCurrentLayer(layerId)
         
-    def removeLayer(self,id):
-        cmds.ngSkinLayer(rm=True,id=id)
+    def removeLayer(self,layerId):
+        cmds.ngSkinLayer(rm=True,id=layerId)
         LayerEvents.layerListModified.emit()
         LayerEvents.currentLayerChanged.emit()
         
         
-    def setCurrentLayer(self,id):
+    def setCurrentLayer(self,layerId):
         
-        cmds.ngSkinLayer(cl=id)
+        cmds.ngSkinLayer(cl=layerId)
         LayerEvents.currentLayerChanged.emit()
         
     def getCurrentLayer(self):
@@ -159,24 +157,24 @@ class LayerDataModel:
         
         self.updateLayerAvailability()
         
-    def getLayerName(self,id):
-        return mel.eval('ngSkinLayer -id %d -q -name' % id)       
+    def getLayerName(self,layerId):
+        return mel.eval('ngSkinLayer -id %d -q -name' % layerId)       
     
-    def setLayerName(self,id,name):
-        cmds.ngSkinLayer(e=True,id=id,name=name)
+    def setLayerName(self,layerId,name):
+        self.mll.setLayerName(layerId,name)
         LayerEvents.nameChanged.emit()   
 
-    def getLayerOpacity(self,id):
-        return mel.eval('ngSkinLayer -id %d -q -opacity' % id)
+    def getLayerOpacity(self,layerId):
+        return mel.eval('ngSkinLayer -id %d -q -opacity' % layerId)
 
-    def getLayerEnabled(self,id):
-        return mel.eval('ngSkinLayer -id %d -q -enabled' % id)
+    def getLayerEnabled(self,layerId):
+        return mel.eval('ngSkinLayer -id %d -q -enabled' % layerId)
     
-    def setLayerEnabled(self,id,enabled):
-        cmds.ngSkinLayer(e=True,id=id,enabled=1 if enabled else 0)
+    def setLayerEnabled(self,layerId,enabled):
+        cmds.ngSkinLayer(e=True,id=layerId,enabled=1 if enabled else 0)
         
-    def toggleLayerEnabled(self,id):
-        self.setLayerEnabled(id, not self.getLayerEnabled(id))
+    def toggleLayerEnabled(self,layerId):
+        self.setLayerEnabled(layerId, not self.getLayerEnabled(layerId))
             
     def getLayersCandidateFromSelection(self):
         '''

@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -22,15 +21,12 @@
 #    
 
 import threading
-from ngSkinTools.version import Version
 from ngSkinTools.utils import Utils
 from maya import cmds
-import maya.utils as mutils
 from ngSkinTools.ui.uiWrappers import CheckBoxField
 from ngSkinTools.ui.options import Options
 from ngSkinTools.ui.constants import Constants
 from ngSkinTools.ui.basetoolwindow import BaseToolWindow
-from ngSkinTools.versioncheck import VersionChecker, HttpPostTransport
 from datetime import datetime
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.context import applicationContext
@@ -125,6 +121,9 @@ class UpdateCheckWindow(BaseToolWindow):
         this method also ensures that two concurent threads can't be launched, as first 
         launched has to complete before second one can be created
         '''
+        
+        if Utils.DEBUG_MODE:
+            return
         
         if UpdateCheckWindow.UPDATE_THREAD is None or not UpdateCheckWindow.UPDATE_THREAD.isAlive():
             UpdateCheckWindow.UPDATE_THREAD = UpdateCheckThread(silent)

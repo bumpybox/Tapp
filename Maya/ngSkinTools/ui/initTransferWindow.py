@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -25,9 +24,9 @@ from ngSkinTools.ui.basetoolwindow import BaseToolWindow
 from maya import cmds
 from ngSkinTools.ui.basetab import BaseTab
 from ngSkinTools.doclink import SkinToolsDocs
-from ngSkinTools.ui.events import LayerEvents
+from ngSkinTools.ui.events import LayerEvents, MayaEvents
 from ngSkinTools.ui.uiWrappers import TextLabel, FloatField, StoredTextEdit,\
-    DropDownField, FormLayout, CheckBoxField
+    DropDownField, FormLayout, CheckBoxField, RadioButtonField
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.ui.constants import Constants
 from ngSkinTools.utils import Utils
@@ -36,117 +35,20 @@ from ngSkinTools.ui.basedialog import BaseDialog
 from ngSkinTools.ui.actions import BaseAction
 from ngSkinTools.ui.options import ValueModel
 from ngSkinTools.log import LoggerFactory
+from ngSkinTools.influenceMapping import InfluenceMapping
+from ngSkinTools.mllInterface import MllInterface
 
 
 log = LoggerFactory.getLogger("initTransferWindow")
 
-class AddPairDialog(BaseDialog):
-    CTRL_PREFIX = 'ngSkinToolsAddPairDialog_'
-    
-    def __init__(self):
-        BaseDialog.__init__(self)
-        self.title = "Add Influences Association"
-        self.sourceValue = ValueModel()
-        self.destinationValue = ValueModel()
-        self.buttons = [self.BUTTON_OK,self.BUTTON_CANCEL]
-        
-    def updateEnabled(self):
-        cmds.layout(self.destinationRow,e=True,enable=not self.chkSelfReference.getValue())
-        self.chkBidirectional.setEnabled(not self.chkSelfReference.getValue())
-        
-    def getAvailableInfluences(self):
-        result = []
-        layerInfluences = cmds.ngSkinLayer(q=True,listLayerInfluences=True) 
-        for index,i in enumerate(layerInfluences):
-            if index%2!=0:
-                result.append(i)
-        return result
-        
-    def createInnerUi(self,parent):
-        
-        #container = BaseTab.createScrollLayout(parent)
-        rows=cmds.columnLayout(parent=parent,
-            adjustableColumn=1,rowSpacing=Constants.MARGIN_SPACING_VERTICAL,
-            width=400)
-        
-        BaseTab.createFixedTitledRow(rows, "Influence names")
-        self.chkLongNames = CheckBoxField(AddPairDialog.CTRL_PREFIX+'longNames',label="Longer, where ambiguous",annotation="Show long names in drop down boxes")
-        self.chkLongNames.changeCommand.addHandler(self.updateInfluenceLabels)
-        
-        BaseTab.createFixedTitledRow(rows, "Source influence")
-        
-        
-        self.sourceDropdown = DropDownField(self.sourceValue)
-
-        BaseTab.createFixedTitledRow(rows, None)
-
-        self.chkSelfReference = CheckBoxField(AddPairDialog.CTRL_PREFIX+'selfReference',label="Self reference",annotation="Don't map to another influence, mirror on the same influence")
-        self.chkSelfReference.changeCommand.addHandler(self.updateEnabled)
-        self.chkBidirectional = CheckBoxField(AddPairDialog.CTRL_PREFIX+'bidirectional',label="Bidirectional association")
-            
- 
-        self.destinationRow = BaseTab.createTitledRow(rows, "Destination influence")
-        self.destinationDropdown = DropDownField(self.destinationValue)
-        
-        self.updateEnabled()
-        self.updateInfluenceLabels()
-        self.sourceDropdown.updateModel()
-        self.destinationDropdown.updateModel()
-        return rows
-    
-    def updateInfluenceLabels(self):
-        self.influences = self.getAvailableInfluences()
-        self.sourceDropdown.clear()
-        self.destinationDropdown.clear()
-        
-        if self.chkLongNames.getValue():
-            nameProcessor = lambda name: cmds.ls(name)[0]
-        else:
-            nameProcessor = InfluencesListEntry.shortName
-        
-        for i in self.influences:
-            self.sourceDropdown.addOption(nameProcessor(i))
-        for i in self.influences:
-            self.destinationDropdown.addOption(nameProcessor(i))
-            
-    def getSourceInfluence(self):
-        return self.influences[self.sourceDropdown.model.get()]
-    
-    def getDestinationInfluence(self):
-        return self.influences[self.destinationDropdown.model.get()]
-        
-class AddPairAction(BaseAction):
-    
-    def execute(self):
-        dlg = AddPairDialog()
-        if dlg.execute(parentWindow=self.ownerUI)!=AddPairDialog.BUTTON_OK:
-            return
-        
-        InitTransferWindow.getInstance().content.addManualPair(
-                    dlg.getSourceInfluence(),
-                    dlg.getDestinationInfluence() if not dlg.chkSelfReference.getModelValue() else dlg.getSourceInfluence(),
-                    dlg.chkBidirectional.getModelValue())
-        
-        
-class RemovePairAction(BaseAction):
-    def execute(self):
-        tab = InitTransferWindow.getInstance().content
-        tab.removePairs([i for i in tab.getSelectedPairs() if not i.automatic])
-    
-    def isEnabled(self):
-        for i in InitTransferWindow.getInstance().content.getSelectedPairs():
-            if not i.automatic:
-                return True
-            
-        return False;
-                
-        
 class InfluencesListEntry:
-    def __init__(self):
-        self.source = None
-        self.destination = None
+    def __init__(self,source=None,destination=None,specialValue=None,automatic=True):
+        self.source = source
+        self.destination = destination
         self.bidirectional = False
-        self.automatic = True
+        self.automatic = automatic
+        self.targetAndDestinationIsSameMesh = False
+        self.specialValue = specialValue
     
     @staticmethod    
     def shortName(longName):
@@ -156,26 +58,37 @@ class InfluencesListEntry:
         return longName
     
     def asLabel(self):
+        if self.specialValue is not None:
+            return self.specialValue
         
-        if self.source==self.destination:
-            result = self.shortName(self.source)+": itself"
-        else: 
+        prefix = "[M] " if not self.automatic else ""
+        
+        if self.isSelfReference():
+            return prefix+self.shortName(self.source.path)+": itself"
+        
+        if self.source is not None and self.destination is not None: 
             mask = "%s -> %s"
             if self.bidirectional:
                 mask = "%s <-> %s"
-            result = mask % (self.shortName(self.source),self.shortName(self.destination))
+            return prefix+mask % (self.shortName(self.source.path),self.shortName(self.destination.path))
+        
+        if self.source is not None:
+            return prefix+self.shortName(self.source.path)
                 
-        if not self.automatic:
-            result = "[M] "+result
-            
-        return result 
+        if self.destination is not None:
+            return prefix+self.shortName(self.destination.path)
+                
+        return "Could not format item" 
     
     def isSelfReference(self):
-        return self.source==self.destination
+        return self.specialValue is None and self.targetAndDestinationIsSameMesh and self.source.path==self.destination.path
+    
+    def isConnectedElsewhere(self):
+        return self.source!=None and self.destination!=None and self.source.path!=self.destination.path
     
     
     def highlight(self):
-        SelectHelper.replaceHighlight([self.source,self.destination])
+        SelectHelper.replaceHighlight([self.source.path,self.destination.path])
         
     def __repr__(self):
         return self.asLabel()
@@ -185,92 +98,153 @@ class TransferWeightsTab(BaseTab):
     log = LoggerFactory.getLogger("Transfer Weights Tab")
     VAR_PREFIX = 'ngSkinToolsTransferTab_'
     
+    axisValues = ('X','Y','Z')
+    
     def __init__(self):
         BaseTab.__init__(self)
         self.items = []
-        self.manualItems = []
-    
-    def addManualPair(self,source,destination,bidirectional):
-        self.getMll().addManualMirrorInfluenceAssociation(source,destination)
-        if bidirectional:
-            self.getMll().addManualMirrorInfluenceAssociation(destination,source)
-            
-        self.execInitMirrorData()
+        self.dataModel = None
+        self.currentSelection = None
+        self.currentInfluencesSelection = []
+        self.manualOverrides = {}
+        self.mirrorMode = True
         
-    def getMll(self):
-        return LayerDataModel.getInstance().mll 
-
-        
-    def removePairs(self,pairList):
-        changed = False
-        for i in pairList:
-            changed = True
-            
-            self.getMll().removeManualMirrorInfluenceAssociation(i.source,i.destination)
-            if i.bidirectional:
-                self.getMll().removeManualMirrorInfluenceAssociation(i.destination,i.source)
-            
-        if changed:
-            self.execInitMirrorData()
-            
+    def setDataModel(self,dataModel):
+        self.dataModel = dataModel
+        self.dataModel.parent = self
     
     def createUI(self, parent):
-        # base layout
-        self.addPairAction = AddPairAction(self.parentWindow.windowName)
-        self.removePairAction = RemovePairAction(parent)
-        
         buttons = []
-        buttons.append(('Initialize', self.doInitAssociations,''))
-        buttons.append(('Close', self.closeWindow,''))
+        buttons.append(('Done', self.execContinue,''))
+        buttons.append(('Cancel', self.closeWindow,''))
         
         self.cmdLayout = self.createCommandLayout(buttons,SkinToolsDocs.INITWEIGHTTRANSFER_INTERFACE)
         
-        self.createInitializationGroup()
-        self.createCacheContentsGroup()
+        if self.mirrorMode:
+            self.createMirrorOptionsGroup()
+        
+        if not self.mirrorMode:
+            self.createTransferOptionsGroup()
+        self.createInfluenceMappingGroup()
 
-        self.updateCacheInfo()
-        self.updateLayoutEnabled()
         LayerEvents.layerAvailabilityChanged.addHandler(self.updateLayoutEnabled,self.cmdLayout.outerLayout)
-        LayerEvents.mirrorCacheStatusChanged.addHandler(self.updateCacheInfo,self.cmdLayout.outerLayout)
+        LayerEvents.mirrorCacheStatusChanged.addHandler(self.updateUIValues,self.cmdLayout.outerLayout)
+        MayaEvents.nodeSelectionChanged.addHandler(self.updateUIValues, self.cmdLayout.outerLayout)
+
+        self.updateLayoutEnabled()
+        self.updateUIValues()
+        self.updatePreferedValues()
         
         
+    def releaseUI(self):
+        LayerEvents.layerAvailabilityChanged.removeHandler(self.updateLayoutEnabled)
+        LayerEvents.mirrorCacheStatusChanged.removeHandler(self.updateUIValues)
+        MayaEvents.nodeSelectionChanged.removeHandler(self.updateUIValues)
+        
+    def updatePreferedValues(self):
+        if self.mirrorMode:
+            preferedMirrorAxis = LayerDataModel.getInstance().mirrorCache.mirrorAxis
+            if preferedMirrorAxis is None:
+                preferedMirrorAxis = 'X'
+            self.controls.mirrorAxis.setValue(TransferWeightsTab.axisValues.index(preferedMirrorAxis.upper()))
+        
+        if self.mirrorMode and LayerDataModel.getInstance().layerDataAvailable:
+            self.manualOverrides = LayerDataModel.getInstance().mll.getManualMirrorInfluences()
+        else:
+            self.manualOverrides = {}
+            
+            
+    def updateUIValues(self):
+        # when selection changes between update UI calls, overwrite UI with preferred values in the mesh
+        selection = cmds.ls(sl=True)
+        if selection!=self.currentSelection:
+            self.updatePreferedValues()
+        self.currentSelection = selection
+        self.previewInfluenceMapping()
+        
 
-    def createInitializationGroup(self):
-        group = self.createUIGroup(self.cmdLayout.innerLayout, 'Initialization')
+    def createMirrorOptionsGroup(self):
+        group = self.createUIGroup(self.cmdLayout.innerLayout, 'Mirror Options')
 
-        self.createFixedTitledRow(group, 'Infl. Distance Error')
-        self.controls.influenceDistanceError = FloatField(self.VAR_PREFIX+'distanceError', minValue=0, maxValue=None, step=0.01, defaultValue=0.001, 
-                                    annotation='Defines maximum inaccuracy between left and right influence positions')
-
-        self.createTitledRow(group, 'Influence Prefixes')
-        self.controls.influencePrefixes = StoredTextEdit(self.VAR_PREFIX+'inflPrefix', annotation='Defines maximum inaccuracy between left and right influence positions')
 
         self.createFixedTitledRow(group, 'Mirror Axis')
         cmds.columnLayout()
         self.controls.mirrorAxis = DropDownField(self.VAR_PREFIX+'mirrorAxis')
         self.controls.mirrorAxis.beginRebuildItems()
-        self.controls.mirrorAxis.addOption("X");
-        self.controls.mirrorAxis.addOption("Y");
-        self.controls.mirrorAxis.addOption("Z");
+        
+        
+        for i in TransferWeightsTab.axisValues:
+            self.controls.mirrorAxis.addOption(i);
         self.controls.mirrorAxis.endRebuildItems()
+        self.controls.mirrorAxis.changeCommand.addHandler(self.previewInfluenceMapping, group)
+
+    def createTransferOptionsGroup(self):
+        group = self.createUIGroup(self.cmdLayout.innerLayout, 'Transfer Options')
+        self.createTitledRow(parent=group, title=None)
+        self.controls.keepExistingLayers = CheckBoxField(self.VAR_PREFIX+'KeepExistingLayers',label="Keep existing layers",
+                annotation='when unselected, will delete existing layers in destination',defaultValue=1)
+        self.createTitledRow(parent=group, title=None)
+        self.controls.ignoreNamespaces = CheckBoxField(self.VAR_PREFIX+'IgnoreNamespaces',label="Ignore namespaces when matching by name",
+                annotation='ignore namespaces when matching by name',defaultValue=1)
+        self.controls.ignoreNamespaces.changeCommand.addHandler(self.previewInfluenceMapping,ownerUI=group)
+        
+
+    def ignoreModeChanged(self):
+        if not self.mirrorMode:
+            return
+                
+        self.controls.prefixesGroup.setVisible(self.isPrefixIgnoreMode())
+        self.controls.suffixesGroup.setVisible(not self.isPrefixIgnoreMode())
+        self.previewInfluenceMapping()
+        
+    def isPrefixIgnoreMode(self):
+        return self.controls.ignorePrefixes.getValue()==1
+
+    def createInfluenceMappingGroup(self):
+        group = self.createUIGroup(self.cmdLayout.innerLayout, 'Influence Mapping')
+        
+        self.createFixedTitledRow(group, 'Infl. Distance Error')
+        self.controls.influenceDistanceError = FloatField(self.VAR_PREFIX+'distanceError', minValue=0, maxValue=None, step=0.01, defaultValue=0.001, 
+                                    annotation='Defines maximum inaccuracy between left and right influence positions')
+        self.controls.influenceDistanceError.changeCommand.addHandler(self.previewInfluenceMapping, group)
+
+        if self.mirrorMode:
+            self.createTitledRow(group, 'Ignore')
+            cmds.radioCollection()
+            for index,i in enumerate(['Prefixes','Suffixes']):
+                ctrl = self.controls.__dict__['ignore'+i] = RadioButtonField(self.VAR_PREFIX+'ignoreMode'+i,defaultValue=1 if index==0 else 0,label=i)
+                ctrl.changeCommand.addHandler(self.ignoreModeChanged)        
 
 
-    def createCacheContentsGroup(self):
-        group = self.createUIGroup(self.cmdLayout.innerLayout, 'Cache Contents')
-        self.createTitledRow(group, 'Current status')
-        self.controls.labelCacheInfo = TextLabel(align='left')
-        self.controls.labelCacheInfo.setBold()
+            self.controls.prefixesGroup = self.createTitledRow(group, 'Influence Prefixes')
+            self.controls.influencePrefixes = StoredTextEdit(self.VAR_PREFIX+'inflPrefix', annotation='Specifies influence prefixes to be ignored when matching by name;\nUsually you would put your left/right influence prefixes here;\nseparate them with commas, e.g. "L_, R_"')
+            self.controls.influencePrefixes.changeCommand.addHandler(self.previewInfluenceMapping, group)
+            
+            self.controls.suffixesGroup = self.createTitledRow(group, 'Influence Suffixes')
+            self.controls.influenceSuffixes = StoredTextEdit(self.VAR_PREFIX+'inflSuffix', annotation='Specifies influence suffixes to be ignored when matching by name;\nUsually you would put your left/right influence suffixes here;\nseparate them with commas, e.g. "_Lf, _Rt"')
+            self.controls.influenceSuffixes.changeCommand.addHandler(self.previewInfluenceMapping, group)
+        
         
         
         influencesLayout = cmds.columnLayout(parent=group,adjustableColumn=1,rowSpacing=Constants.MARGIN_SPACING_VERTICAL)
-        self.createTitledRow(influencesLayout, "Influence Associations")
-        self.controls.influencesList = cmds.textScrollList(parent=influencesLayout, height=100, numberOfRows=5, allowMultiSelection=True,
+        cmds.text(parent=influencesLayout,label="Influence mapping to be used:",align='left')
+        self.controls.influencesList = cmds.textScrollList(parent=influencesLayout, height=200, numberOfRows=5, allowMultiSelection=True,
                                                            selectCommand=self.onInfluenceSelected,
-                                                           deleteKeyCommand=self.removePairAction.execute)
+                                                           deleteKeyCommand=lambda *args: self.removeSelectedManualMappings())
         
-        self.controls.influencesMenu = cmds.popupMenu(parent=self.controls.influencesList)
-        self.addPairAction.newMenuItem("Add manual association...")
-        self.removePairAction.newMenuItem("Remove manual association...")
+        manualGroup = self.createUIGroup(self.cmdLayout.innerLayout, 'Manual influence mapping')
+        cmds.rowLayout(parent=manualGroup,nc=3) 
+        
+        
+        buttonWidth = 110
+        cmds.button('Disconnect link',width=buttonWidth,command=lambda *args: self.doDisconnectMapping(),annotation='Disconnect two associated influences, and make each influence point to itself')
+        if self.mirrorMode:
+            cmds.button('Link, both ways',width=buttonWidth,command=lambda *args: self.doConnectMapping(bidirectional=True),annotation='Connect two selected influences and link them both ways')
+        cmds.button('Link, one way' if self.mirrorMode else "Link",width=buttonWidth,command=lambda *args: self.doConnectMapping(bidirectional=False),annotation='Connect two selected influences and link on source to destination')
+        cmds.rowLayout(parent=manualGroup,nc=2) 
+        cmds.button('Remove manual rule',width=buttonWidth,command=lambda *args: self.removeSelectedManualMappings(),annotation='Remove manual rule; influence will be a subject to automatic matching')
+
+        self.ignoreModeChanged()
         
         cmds.setParent(group)
         
@@ -282,50 +256,55 @@ class TransferWeightsTab(BaseTab):
                 yield self.items[i-1]
     
         
-    def doInitAssociations(self,*args):
-        self.execInitMirrorData()
-    
     def closeWindow(self,*args):
         self.parentWindow.closeWindow()
-
-
-    def execInitMirrorData(self):
-        kargs = {};
-        kargs["initMirrorData"] = True;
-        kargs["influenceAssociationDistance"] = self.controls.influenceDistanceError.getValue()
-        kargs["mirrorAxis"] = self.controls.mirrorAxis.getSelectedText()
-
-
-        # create a comma-delimited prefix string, stripping away any spaces 
-        # that might be specified in the user input        
-        prefixes = self.controls.influencePrefixes.getValue()
-        kargs["influenceAssociationPrefix"] = ",".join([prefix.strip() for prefix in prefixes.split(",")])
         
-        cmds.ngSkinLayer(**kargs)
-        
-        LayerDataModel.getInstance().updateMirrorCacheStatus()
-
-        self.updateInfluenceList()
-        
+    def buildInfluenceMappingEngine(self):
+        result = self.dataModel.buildInfluenceMappingEngine(self.controls)
+        result.manualOverrides = self.manualOverrides
+        return result
+    
+    
+    def previewInfluenceMapping(self):
+        if not self.dataModel.isEnabled():
+            return
+        engine = self.buildInfluenceMappingEngine()
+        engine.calculate()
+        self.contructInfluenceList()
+        self.currentInfluencesSelection = []
         
 
-    def updateCacheInfo(self):
-        '''
-        updates UI according to new mirror cache status
-        '''
+
+    def execContinue(self,*args):
+        self.previewInfluenceMapping()
+        self.dataModel.execute()
+        self.closeWindow()
         
-        self.controls.labelCacheInfo.setLabel(LayerDataModel.getInstance().mirrorCache.message)
-        self.updateInfluenceList()
-        
+
     def onInfluenceSelected(self,*args):
+        newSelection = list(self.getSelectedPairs())
+
         newHighlight = []
-        for i in self.getSelectedPairs():
-            newHighlight.append(i.source)
-            newHighlight.append(i.destination)
+        for i in newSelection:
+            if i.source is not None:
+                newHighlight.append(i.source.path)
+            if i.destination is not None:
+                newHighlight.append(i.destination.path)
             
         SelectHelper.replaceHighlight(newHighlight)
         
-        self.removePairAction.updateEnabled()
+        
+        # the weird way of forming this currentInfluencesSelection like that
+        # is because we want the items to be ordered in first to last selected order
+        # when new selection happens, first all items that are not selected anymore 
+        # are removed from the current selection cache,
+        # then all new items that are selected are added at the end.
+        for i in self.currentInfluencesSelection[:]:
+            if i not in newSelection:
+                self.currentInfluencesSelection.remove(i)
+        for i in newSelection:
+            if i not in self.currentInfluencesSelection:
+                self.currentInfluencesSelection.append(i)
         
     @staticmethod
     def findAssociation(list,source,destination,automatic):
@@ -333,60 +312,96 @@ class TransferWeightsTab(BaseTab):
             if i.automatic!=automatic:
                 continue
             
-            if i.source==source and i.destination==destination:
+            if i.source.path==source and i.destination.path==destination:
                 return i
-            if i.bidirectional and i.destination==source and i.source==destination:
+            if i.bidirectional and i.destination.path==source and i.source.path==destination:
                 return i
             
         return None
+    
+    def influencesListSort(self,entry1,entry2):
+        # priority for non-automatic entries
+        if entry1.automatic!=entry2.automatic:
+            return 1 if entry1.automatic else -1
+
+        # priority for non-self references
+        if entry1.isSelfReference()!=entry2.isSelfReference():
+            return 1 if entry1.isSelfReference() else -1
+            
+        # priority for bidirectional entries
+        if entry1.bidirectional!=entry2.bidirectional:
+            return 1 if not entry1.bidirectional else -1
         
-    def updateInfluenceList(self):
-        influenceAssociations = cmds.ngSkinLayer(q=True,mirrorCacheInfluences=True)
-        if influenceAssociations is None:
-            influenceAssociations = []
-            
+        if entry1.source is not None and entry2.source is not None:
+            return cmp(entry1.source.path, entry2.source.path)
+        
+        if entry1.destination is not None and entry2.destination is not None:
+            return cmp(entry1.destination.path, entry2.destination.path)
+        
+        return 0    
+        
+    def contructInfluenceList(self):
         self.items = []
+
+        mapper = self.dataModel.mapper
+        
+        unmatchedSources = mapper.sourceInfluences[:]
+        unmatchedDestinations = mapper.destinationInfluences[:]
+        
+        
+        sourceInfluencesMap = dict((i.logicalIndex,i) for i in mapper.sourceInfluences)
+        destinationInfluencesMap = dict((i.logicalIndex,i) for i in mapper.destinationInfluences)
+        
+        
+        def isSourceAutomatic(source):
+            return source.logicalIndex not in self.manualOverrides.keys()
+
+        for source,destination in mapper.mapping.items():
+            source = sourceInfluencesMap[source]
+            destination = None if destination is None else destinationInfluencesMap[destination]
             
-        while len(influenceAssociations)!=0:
-            source = influenceAssociations.pop(0)
-            destination = influenceAssociations.pop(0)
-            automatic = int(influenceAssociations.pop(0))==0
-            item=self.findAssociation(self.items, destination, source,automatic)
+            if source is None or destination is None:
+                continue
+
+            if source in unmatchedSources:
+                unmatchedSources.remove(source)
+
+            if destination in unmatchedDestinations:
+                unmatchedDestinations.remove(destination)
+
+            
+            
+            automatic = isSourceAutomatic(source)
+            item = None
+            if self.mirrorMode and destination is not None:
+                item=self.findAssociation(self.items, destination.path, source.path,automatic)
             if item is not None:
                 item.bidirectional = True
             else:
                 item = InfluencesListEntry()
+                item.targetAndDestinationIsSameMesh = self.mirrorMode
                 item.source = source
                 item.destination = destination
                 item.bidirectional = False
                 self.items.append(item)
                 item.automatic = automatic
-                
-        def defaultSort(entry1,entry2):
-            # priority for non-automatic entries
-            if entry1.automatic!=entry2.automatic:
-                return 1 if entry1.automatic else -1
-
-            # priority for non-self references
-            if entry1.isSelfReference()!=entry2.isSelfReference():
-                return 1 if entry1.isSelfReference() else -1
-                
-            # priority for bidirectional entries
-            if entry1.bidirectional!=entry2.bidirectional:
-                return 1 if not entry1.bidirectional else -1
-            
-            return cmp(entry1.source, entry2.source)
-                
         
-        self.items = sorted(self.items,defaultSort) 
+        self.items = sorted(self.items,self.influencesListSort)
+         
+        if len(unmatchedSources)>0 and not self.mirrorMode:
+            self.items.append(InfluencesListEntry(specialValue="Unmatched source influences:"))
             
+            for source in unmatchedSources:
+                self.items.append(InfluencesListEntry(source=source,automatic=isSourceAutomatic(source)))
+                
+        if len(unmatchedDestinations)>0 and not self.mirrorMode:
+            self.items.append(InfluencesListEntry(specialValue="Unmatched destination influences:"))
             
-        newLabels = []
-        for i in self.items:
-            newLabels.append(i.asLabel())
-        
-        
-        cmds.textScrollList(self.controls.influencesList,e=True,removeAll=True,append=newLabels)
+            for destination in unmatchedDestinations:
+                self.items.append(InfluencesListEntry(destination=destination))
+                
+        cmds.textScrollList(self.controls.influencesList,e=True,removeAll=True,
+                            append=[i.asLabel() for i in self.items])
         
         
 
@@ -394,9 +409,127 @@ class TransferWeightsTab(BaseTab):
         '''
         updates UI enabled/disabled flag based on layer data availability
         '''
-        enabled = LayerDataModel.getInstance().layerDataAvailable==True
+        enabled = self.dataModel.isEnabled()
         cmds.layout(self.cmdLayout.innerLayout,e=True,enable=enabled)
         cmds.layout(self.cmdLayout.buttonForm,e=True,enable=enabled)
+    
+    def addManualInfluenceMapping(self,source,destination):
+        self.manualOverrides[source.logicalIndex] = None if destination is None else destination.logicalIndex    
+    
+    def doDisconnectMapping(self):
+        for mapping in self.currentInfluencesSelection:
+            if mapping.source is None:
+                continue
+            
+            if mapping.destination is None:
+                continue
+            
+            if mapping.source == mapping.destination:
+                continue
+            
+            # for both source and destination, create a mapping for just itself
+            self.addManualInfluenceMapping(mapping.source, mapping.source if mapping.targetAndDestinationIsSameMesh else None)
+            if mapping.bidirectional:
+                self.addManualInfluenceMapping(mapping.destination, mapping.destination)
+                
+        self.previewInfluenceMapping()
+        
+    def doConnectMapping(self,bidirectional=True):
+        if len(self.currentInfluencesSelection)<2:
+            return
+        
+        if bidirectional and len(self.currentInfluencesSelection)!=2:
+            return
+
+        validSources = []
+        
+        for item in self.currentInfluencesSelection[:-1]:
+            if item.isConnectedElsewhere() or item.source is None:
+                continue
+            validSources.append(item)
+        
+        # second selected list item
+        destinationItem = self.currentInfluencesSelection[-1]
+        if destinationItem.isConnectedElsewhere():
+            return
+        
+        destination = destinationItem.destination if destinationItem.destination is not None else destinationItem.source
+        if destination is None:
+            return
+        
+        destination = destination.logicalIndex
+        for sourceItem in validSources:
+            source = sourceItem.source.logicalIndex
+            self.manualOverrides[source] = destination
+            if bidirectional:
+                self.manualOverrides[destination] = source
+        
+        self.previewInfluenceMapping()
+             
+    def removeSelectedManualMappings(self):
+        for item in self.currentInfluencesSelection:
+            if item.source.logicalIndex in self.manualOverrides:
+                del self.manualOverrides[item.source.logicalIndex]
+            if item.bidirectional and item.destination.logicalIndex in self.manualOverrides:
+                del self.manualOverrides[item.destination.logicalIndex]
+        self.previewInfluenceMapping() 
+        
+class TransferDataModel(object):
+    def __init__(self):
+        self.parent = None
+        
+    def isEnabled(self):
+        return True
+    
+    def buildInfluenceMappingEngine(self,controls):
+        self.controls = controls
+        
+        self.mapper = InfluenceMapping()
+        
+        def parseCommaValue(values):
+            return [value.strip() for value in values.split(",")]
+        
+        if hasattr(self.controls, 'ignorePrefixes'):
+            if self.controls.ignorePrefixes.getValue()==1:
+                self.mapper.nameMatchRule.setPrefixes(*parseCommaValue(controls.influencePrefixes.getValue()))
+            else:
+                self.mapper.nameMatchRule.setSuffixes(*parseCommaValue(controls.influenceSuffixes.getValue()))
+
+        if hasattr(self.controls, 'mirrorAxis'):
+            self.mapper.distanceMatchRule.mirrorAxis = TransferWeightsTab.axisValues.index(controls.mirrorAxis.getSelectedText())
+        self.mapper.distanceMatchRule.maxThreshold = float(controls.influenceDistanceError.getValue());
+        return self.mapper
+    
+    
+class MirrorTransferModel(TransferDataModel):
+    
+    def isEnabled(self):
+        return LayerDataModel.getInstance().layerDataAvailable==True
+
+    def buildInfluenceMappingEngine(self,controls):
+        '''
+        builds influence transfer mapping, using parameters from UI
+        '''
+        mapping = TransferDataModel.buildInfluenceMappingEngine(self,controls)
+        mapping.sourceInfluences = LayerDataModel.getInstance().mll.listInfluenceInfo();
+            
+        mapping.mirrorMode = True
+        
+        mapping.manualOverrides = LayerDataModel.getInstance().mll.getManualMirrorInfluences()
+        
+        return mapping
+
+    def execute(self):
+        influencesMapping = MllInterface.influencesMapToList(self.mapper.mapping)
+        mirrorAxis = TransferWeightsTab.axisValues[self.mapper.distanceMatchRule.mirrorAxis]
+        
+        cmds.ngSkinLayer(initMirrorData=True, influencesMapping=influencesMapping, mirrorAxis=mirrorAxis)
+        
+        LayerDataModel.getInstance().mll.setManualMirrorInfluences(self.mapper.manualOverrides)
+        
+        LayerDataModel.getInstance().updateMirrorCacheStatus()
+                
+        
 
 
 
@@ -404,27 +537,127 @@ class TransferWeightsTab(BaseTab):
 class InitTransferWindow(BaseToolWindow):
     def __init__(self,windowName):
         BaseToolWindow.__init__(self,windowName)
+        self.useUserPrefSize = False
         self.windowTitle = 'Init Skin Transfer'
         self.sizeable = True
-        self.defaultHeight = 350
-        self.defaultWidth = 300
+        self.defaultHeight = 600
+        self.defaultWidth = 450
+        self.content = TransferWeightsTab()
+        self.content.parentWindow = self
         
     @staticmethod
     def getInstance():
         return BaseToolWindow.getWindowInstance('InitTransferWindow', InitTransferWindow)
         
-        
-        
     def createWindow(self):
         BaseToolWindow.createWindow(self)
         
-        self.content = TransferWeightsTab()
-        self.content.parentWindow = self
         self.content.createUI(self.windowName)
         
+    def onWindowDeleted(self):
+        self.content.releaseUI()
+        return BaseToolWindow.onWindowDeleted(self)
+    
+class MirrorWeightsWindow(InitTransferWindow):
+    def __init__(self, windowName):
+        InitTransferWindow.__init__(self, windowName)
+        self.windowTitle = 'Init Weights Mirror'
+        self.content.setDataModel(MirrorTransferModel())
+    
+    @staticmethod
+    def getInstance():
+        return BaseToolWindow.rebuildWindow('MirrorWeightsWindow', MirrorWeightsWindow)
+    
+
+class CopyWeightsModel(TransferDataModel):
+    
+    def __init__(self):
+        TransferDataModel.__init__(self)
+        self.sourceModel = None
+        self.sourceMesh = None
+        self.targetMesh = None
+    
+    def isEnabled(self):
+        return (self.sourceModel is not None or self.sourceMesh is not None) and (self.targetMesh is not None)
+
+    def buildInfluenceMappingEngine(self,controls):
+        '''
+        builds influence transfer mapping, using parameters from UI
+        '''
+        
+        mapping = TransferDataModel.buildInfluenceMappingEngine(self,controls)
+        
+        mapping.nameMatchRule.ignoreNamespaces = self.parent.controls.ignoreNamespaces.getValue()==1
+        
+        mapping.rules = [mapping.distanceMatchRule,mapping.nameMatchRule]
+        if self.sourceModel is not None:
+            mapping.sourceInfluences = self.sourceModel.influences;
+        else:
+            mapping.sourceInfluences = MllInterface(mesh=self.sourceMesh).listInfluenceInfo();
+        
+        mapping.destinationInfluences = MllInterface(mesh=self.targetMesh).listInfluenceInfo()
+            
+        mapping.mirrorMode = False
+        return mapping
+    
+    @Utils.undoable
+    def execute(self):
+        targetMll = MllInterface(mesh=self.targetMesh)
+
+        if not targetMll.getLayersAvailable():
+            targetMll.initLayers()
+
+        previousLayerIds = [layerId for layerId, _  in targetMll.listLayers()]
+
+
+        sourceMesh = self.sourceMesh        
+        if self.sourceModel is not None:
+            self.sourceModel.saveTo(MllInterface.TARGET_REFERENCE_MESH)
+            sourceMesh = MllInterface.TARGET_REFERENCE_MESH
         
         
+        sourceMll = MllInterface(mesh=sourceMesh)
+        sourceMll.transferWeights(self.targetMesh,influencesMapping=self.mapper.mapping)
+
+        if self.parent.controls.keepExistingLayers.getValue()!=1:
+            for layerId in previousLayerIds:
+                targetMll.deleteLayer(layerId)
+
+        LayerDataModel.getInstance().updateLayerAvailability()
+        LayerEvents.layerListModified.emit()
         
-def test():
-    t = InitTransferWindow.getInstance()
-    t.showWindow()
+
+    def inputValuesChanged(self):
+        self.parent.updateLayoutEnabled()
+        self.parent.previewInfluenceMapping()
+        
+    def setSourceData(self,model):
+        '''
+        use LayerData model as source 
+        '''
+        self.sourceModel = model
+        self.inputValuesChanged()
+        
+    def setSourceMesh(self,mesh):
+        self.sourceMesh = mesh
+        self.inputValuesChanged()
+        
+    def setDestinationMesh(self,mesh):
+        self.targetMesh = mesh
+        targetMll = MllInterface(mesh=self.targetMesh)
+        if not targetMll.getLayersAvailable():
+            targetMll.initLayers()
+        
+        self.inputValuesChanged()
+        
+class TransferWeightsWindow(InitTransferWindow):
+    def __init__(self, windowName):
+        InitTransferWindow.__init__(self, windowName)
+        self.windowTitle = 'Transfer Weights'
+        self.content.setDataModel(CopyWeightsModel())
+        self.content.mirrorMode = False
+
+    @staticmethod
+    def getInstance():
+        return BaseToolWindow.rebuildWindow('TransferWeightsWindow', TransferWeightsWindow)
+    

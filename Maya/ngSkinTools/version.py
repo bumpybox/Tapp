@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -28,7 +27,7 @@ from ngSkinTools.ui.options import Options, PersistentValueModel
 
 class Version:
     RELEASE_NAME = "ngSkinTools %(version)s"
-    COPYRIGHT = "Copyright \xA9 2009-2013 Viktoras Makauskas"
+    COPYRIGHT = "Copyright \xA9 2009-2015 Viktoras Makauskas"
     PRODUCT_URL = "http://www.ngskintools.com"
     
     
@@ -47,7 +46,7 @@ class Version:
         '''
         
         # automatically updated value: do not edit 
-        pluginVersion_doNotEdit = "1.0beta.881"
+        pluginVersion_doNotEdit = "1.0beta.920"
         return pluginVersion_doNotEdit;
     
     @staticmethod
@@ -57,7 +56,7 @@ class Version:
         will be set by a build system.
         '''
         
-        buildWatermark_doNotEdit = "409522977d9dfa67e601188518c7b67cb371b2a4"
+        buildWatermark_doNotEdit = "7750f58544de1a69271cbb356769232bdffcbd2d"
         return buildWatermark_doNotEdit;
     
     @staticmethod

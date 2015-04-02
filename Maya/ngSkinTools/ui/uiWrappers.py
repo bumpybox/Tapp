@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -283,6 +282,7 @@ class DropDownField(ModelUIWrapper):
 
     def menuSelected(self,item):
         self.updateModel()
+        self.changeCommand.emit()
         
     def beginRebuildItems(self):
         self.clear()
@@ -300,6 +300,10 @@ class Layout():
     @staticmethod
     def setEnabled(layout,enabled):        
         cmds.layout(layout,e=True,enable=enabled)
+
+    @staticmethod        
+    def setVisible(layout,visible):        
+        cmds.layout(layout,e=True,visible=visible)
         
 class FormLayout:
     def __init__(self,useExisting=None,**kargs):
@@ -310,6 +314,9 @@ class FormLayout:
             
     def setEnabled(self,enabled):
         Layout.setEnabled(self.layout, enabled)
+
+    def setVisible(self,enabled):
+        Layout.setVisible(self.layout, enabled)
         
     def repeatTBLR(self,function,top,right,bottom,left):
         '''

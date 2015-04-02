@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -26,6 +25,7 @@ import maya.mel as mel
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.utils import MessageException
 from ngSkinTools.layerUtils import LayerUtils
+from itertools import izip
 
 class MllInterface(object):
     '''
@@ -52,6 +52,8 @@ class MllInterface(object):
     '''
     
     log = LoggerFactory.getLogger("MllInterface")
+    
+    TARGET_REFERENCE_MESH = 'ngSkinTools#TargetRefMesh'
 
 
     def __init__(self,mesh=None):
@@ -62,7 +64,7 @@ class MllInterface(object):
         Set mesh we'll be working on with in this wrapper. Use None to operate on current selection instead. 
         '''
         self.mesh = mesh
-
+        
     def initLayers(self):
         '''
         initializes layer data node setup for target mesh
@@ -123,9 +125,17 @@ class MllInterface(object):
         
     
     def getLayerName(self,layerId):
+        '''
+        get layer name by ID
+        '''
         return self.ngSkinLayerCmdMel("-id %d -q -name" % layerId)    
     
-        
+    def setLayerName(self,layerId,name):
+        '''
+        set layer name by ID
+        '''
+        self.ngSkinLayerCmd(e=True,id=layerId,name=name)
+                
     def getLayerOpacity(self,layerId):
         '''
         Returns layer opacity as float between ``0.0`` and ``1.0``
@@ -174,17 +184,27 @@ class MllInterface(object):
         for j in xrange((len(influences)-1)/2):
             yield influences[j*2+1],int(influences[j*2+2])
 
-    def __asFloatList(self,result):
+    
+    def __asTypeList(self,_type,result):
         if result is None:
             return []
         
-        return map(float,result)
+        return map(_type,result)
+    
+    def __asFloatList(self,result):
+        return self.__asTypeList(float, result)
+
+    def __asIntList(self,result):
+        return self.__asTypeList(int, result)
     
     def __floatListAsString(self,floatList):
         def formatFloat(value):
             return str(value)
         
         return ",".join(map(formatFloat, floatList))
+
+    def __intListAsString(self,values):
+        return ",".join(map(str,values))
         
 
     def getLayerMask(self,layerId):
@@ -213,16 +233,22 @@ class MllInterface(object):
         '''
         self.ngSkinLayerCmd(e=True,id=int(layerId),paintTarget='influence',iid=int(influenceLogicalIndex),w=self.__floatListAsString(weights))
     
-    def ngSkinLayerCmd(self,**kwargs):
-        args = (self.mesh,) if self.mesh is not None else ()
-        
+    def ngSkinLayerCmd(self,*args,**kwargs):
+        if self.mesh is not None:
+            if self.mesh==self.TARGET_REFERENCE_MESH:
+                kwargs['targetReferenceMesh'] = True
+            else:
+                args = (self.mesh,)+args
         return cmds.ngSkinLayer(*args,**kwargs)
             
     
     def ngSkinLayerCmdMel(self,melCmd):
         melCmd = "ngSkinLayer "+melCmd
         if self.mesh is not None:
-            melCmd = melCmd + " " + self.mesh
+            if self.mesh==MllInterface.TARGET_REFERENCE_MESH:
+                melCmd += " -targetReferenceMesh"
+            else:  
+                melCmd += " " + self.mesh
         
         self.log.info(melCmd)
         return mel.eval(melCmd)
@@ -326,6 +352,37 @@ class MllInterface(object):
         
         return BatchUpdateContext(self)
     
+    def setWeightsReferenceMesh(self,vertices,triangles):
+        '''
+        create an in-memory reference mesh with layer manager initialized;
+        this mesh and layer info can be accessed later by setting target mesh to 
+        MllInterface.TARGET_REFERENCE_MESH.
+        
+        
+        vertices is a float array, listing x y z for first vertex, then second, etc;
+        triangles is an int array, listing vertex IDs for first triangle, then second, etc.
+        '''
+        
+        self.ngSkinLayerCmd(e=True,
+                    referenceMeshVertices=self.__floatListAsString(vertices),
+                    referenceMeshTriangles=self.__intListAsString(triangles)
+                    )
+        
+    def getReferenceMeshVerts(self):
+        '''
+        returns a list of floats, where each three values is a vertex XYZ for reference mesh vertices
+        '''
+        return self.ngSkinLayerCmd(q=True,
+                    referenceMeshVertices=True)
+        
+    def getReferenceMeshTriangles(self):
+        '''
+        returns a list of ints, where each three values describe mesh vert IDs that make up a triangle in the reference mesh
+        '''
+        return self.ngSkinLayerCmd(q=True,
+                    referenceMeshTriangles=True)
+        
+
     def addManualMirrorInfluenceAssociation(self,source,destination):
         '''
         adds an override to mirror influence association, a rule specifying that "source" influence weights
@@ -339,13 +396,6 @@ class MllInterface(object):
         self.ngSkinLayerCmd(removeMirrorInfluenceAssociation=source+","+destination)
         
         
-    def listManualMirrorInfluenceAssociations(self):
-        '''
-        returns a dictionary "source influence name"->"destination influence name"
-        '''
-        influenceAssociations = self.ngSkinLayerCmd(q=True,mirrorInfluenceAssociation=True)
-        return dict(zip(influenceAssociations[0::2],influenceAssociations[1::2]))
-    
     def getInfluenceLimitPerVertex(self):
         return self.ngSkinLayerCmd(q=True,influenceLimitPerVertex=True)
     
@@ -354,10 +404,83 @@ class MllInterface(object):
             limit=0
         self.ngSkinLayerCmd(e=True,influenceLimitPerVertex=limit)
         
+    def listInfluenceIndexes(self):
+        return self.ngSkinLayerCmd(q=True,influenceIndexes=True)
+
+    def listInfluencePaths(self):
+        return self.ngSkinLayerCmd(q=True,influencePaths=True)
+    
+    def listInfluencePivots(self):
+        return self.ngSkinLayerCmd(q=True,influencePivots=True)
+    
+    def listInfluenceInfo(self):  
+        from importExport import InfluenceInfo  
+
+        influenceIndexes = self.listInfluenceIndexes()
+        if not influenceIndexes:
+            return [] 
+        
+        influences = []
+        
+        influencePaths = self.listInfluencePaths()
+        influencePivots = self.listInfluencePivots()
+        influencePivots = izip(influencePivots[0::3],influencePivots[1::3],influencePivots[2::3])
+        for index,path,pivot in izip(influenceIndexes,influencePaths,influencePivots):
+            influence = InfluenceInfo()
+            influence.pivot = pivot
+            influence.path = path
+            influence.logicalIndex = index
+            influences.append(influence)
+        
+        return influences
+
+    @staticmethod
+    def influencesMapToList(influencesMapping):
+        return ','.join(str(k)+","+str(v) for (k,v) in influencesMapping.items())
+    
+    def transferWeights(self,targetMesh,influencesMapping):
+        self.ngSkinLayerCmd(targetMesh,transferSkinData=True,influencesMapping=self.influencesMapToList(influencesMapping))
+        
+    def setManualMirrorInfluences(self,sourceDestinationMap):
+        self.ngSkinLayerCmd(manualInfluenceMappings=self.influencesMapToList(sourceDestinationMap))
+        
+    def getManualMirrorInfluences(self):
+        values = self.ngSkinLayerCmd(q=True,manualInfluenceMappings=True)
+        if values is None:
+            return {}
+        return dict(zip(values[0::2],values[1::2]))
+    
+    def layerMergeDown(self,layerId):
+        self.ngSkinLayerCmd(e=True,layerId=layerId,layerMergeDown=True)
+        
+    def getLayerIndex(self,layerId):
+        return self.ngSkinLayerCmdMel("-id %d -q -layerIndex" % layerId)
+    
+    def pruneWeights(self,layerId=None,threshold=0.01):
+        '''
+        remove weights in influence weights lower than provided threshold;
+        upscale remaining weights, preserving transparency of the layer. 
+        '''
+        self.ngSkinLayerCmd(e=True,layerId=layerId,pruneWeights=True,pruneWeightsThreshold=threshold)
+    
+    def pruneMask(self,layerId=None,threshold=0.01):
+        '''
+        remove weights in layer mask lower than provided threshold;
+        '''
+        self.ngSkinLayerCmd(e=True,layerId=layerId,pruneMask=True,pruneWeightsThreshold=threshold)
+    
+    def setPruneWeightsFilter(self,threshold):
+        self.ngSkinLayerCmd(e=True,pruneWeightsFilterThreshold=threshold)
+
+    def getPruneWeightsFilter(self):
+        return self.ngSkinLayerCmd(q=True,pruneWeightsFilterThreshold=True)
+        
+        
         
 class BatchUpdateContext:
     '''
-    A helper class for MllInterface.batchUpdateContext() method.
+    A helper class for MllInterface.batchUpdateContext() method, helping 
+    implement "with" statement setup/teardown functionality
     '''
     def __init__(self,mll):
         self.mll = mll
@@ -366,6 +489,5 @@ class BatchUpdateContext:
         self.mll.beginDataUpdate()
         return self.mll
     
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, _type, value, traceback):
         self.mll.endDataUpdate()
-        

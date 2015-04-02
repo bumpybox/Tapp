@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -22,9 +21,9 @@
 #    
 
 from maya import cmds
-from ngSkinTools.utils import Utils
 from ngSkinTools.ui.headlessDataHost import HeadlessDataHost
 from ngSkinTools.log import LoggerFactory
+from ngSkinTools.ui.events import scriptJobs
 
 class BaseToolWindow(object):
     log = LoggerFactory.getLogger("BaseToolWindow")
@@ -58,15 +57,17 @@ class BaseToolWindow(object):
         if windowClass is None:
             return None
         
+        return BaseToolWindow.rebuildWindow(windowName, windowClass)
+        
+    @staticmethod
+    def rebuildWindow(windowName,windowClass):
         BaseToolWindow.destroyWindow(windowName);
         instance = windowClass(windowName)
         instance.createWindow()
-        return instance
-        
+        return instance        
     
     def createWindow(self):
         self.log.debug("creating window "+self.windowName)
-        
         if self.windowExists(self.windowName):
             raise Exception("window %s already opened" % self.windowName)
         if not self.useUserPrefSize:
@@ -86,7 +87,7 @@ class BaseToolWindow(object):
                                    menuBar=self.menuBar)
         
         
-        cmds.scriptJob(uiDeleted=[self.windowName,self.onWindowDeleted])
+        scriptJobs.scriptJob(uiDeleted=[self.windowName,self.onWindowDeleted])
         
         HeadlessDataHost.HANDLE.addReference(self)
         

@@ -1,11 +1,10 @@
 #
 #    ngSkinTools
-#    Copyright (c) 2009-2013 Viktoras Makauskas. 
+#    Copyright (c) 2009-2014 Viktoras Makauskas. 
 #    All rights reserved.
 #    
 #    Get more information at 
 #        http://www.ngskintools.com
-#        http://www.neglostyti.com
 #    
 #    --------------------------------------------------------------------------
 #
@@ -68,6 +67,10 @@ class SelectHelper:
         # include selected objects that were in previous hilite
         newHilite = [i for i in hilite if i in selection]
         newHilite.extend(newHiglightItems)
+        
+        # make sure we can hilite stuff...
+        newHilite = [i for i in newHilite if cmds.objExists(i)]
+        
         
         
         # remove previous hilite
