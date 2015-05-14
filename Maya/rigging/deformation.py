@@ -35,7 +35,7 @@ def CombineDeform(nodes, attributes, values, interval=10.0):
 
             pm.currentTime(currentTime + interval, update=True)
 
-            pm.setKeyframe(nodes, attribute=attr, value=value)
+            pm.setKeyframe(nodes, attribute=attr, value=(value/len(nodes)))
 
             for zeroAttr in attributes:
                 if attr != zeroAttr:
