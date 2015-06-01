@@ -62,7 +62,7 @@ class NoLayersUI:
         
         attachPoint = self.data.getLayersCandidateFromSelection()
         
-        attachPossible = len(attachPoint)!=0
+        attachPossible = bool(attachPoint)
         selection = cmds.ls(sl=True,o=True)
         selectionAvailable = selection is not None and len(selection)>0
         

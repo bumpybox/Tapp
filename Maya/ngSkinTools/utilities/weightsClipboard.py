@@ -23,11 +23,15 @@
 from ngSkinTools.mllInterface import MllInterface
 from ngSkinTools.utils import MessageException
 from ngSkinTools.log import LoggerFactory
-from ngSkinTools.layerUtils import LayerUtils
+from ngSkinTools.layerUtils import LayerUtils, NamedPaintTarget
+from ngSkinTools.mllInterface import MllInterface
 
 log = LoggerFactory.getLogger("WeightsClipboard")
 class WeightsClipboard:
     def __init__(self,mllInterface):
+        '''
+        :param MllInterface mllInterface: 
+        '''
         self.copiedWeights = None
         self.mll = mllInterface
         self.layer = None
@@ -42,8 +46,10 @@ class WeightsClipboard:
         return self
     
     def getPaintTargetWeights(self,paintTarget):
-        if paintTarget==LayerUtils.PAINT_TARGET_MASK:
+        if paintTarget==NamedPaintTarget.MASK:
             return self.mll.getLayerMask(self.layer)
+        elif paintTarget==NamedPaintTarget.DUAL_QUATERNION:
+            return self.mll.getDualQuaternionWeights(self.layer)
         else:
             return self.mll.getInfluenceWeights(self.layer,paintTarget)
 
@@ -70,10 +76,13 @@ class WeightsClipboard:
         newWeights =self.copiedWeights
         if not replace: 
             prevWeights = self.getPaintTargetWeights(self.influence)
-            newWeights = [a+b for a,b in zip(newWeights,prevWeights)]
+            if prevWeights: # only sum if previous weights existed
+                newWeights = [a+b for a,b in zip(newWeights,prevWeights)]
         
-        if self.influence==LayerUtils.PAINT_TARGET_MASK:
+        if self.influence==NamedPaintTarget.MASK:
             self.mll.setLayerMask(self.layer, newWeights)
+        if self.influence==NamedPaintTarget.DUAL_QUATERNION:
+            self.mll.setDualQuaternionWeights(self.layer, newWeights)
         else:
             self.mll.setInfluenceWeights(self.layer, self.influence, newWeights)
         

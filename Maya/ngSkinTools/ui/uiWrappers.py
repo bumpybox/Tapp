@@ -25,6 +25,7 @@ from ngSkinTools.utils import Utils
 from ngSkinTools.ui.options import Options, PersistentValueModel, ValueModel
 from ngSkinTools.ui.constants import Constants
 from ngSkinTools.ui.events import Signal
+from functools import partial
 
 class BaseUIWrapper(object):
     '''
@@ -44,6 +45,10 @@ class BaseUIWrapper(object):
         
     def __str__(self):
         return self.field
+    
+    @property
+    def enabled(self):
+        return self.queryUI(enable=True)
         
     def setEnabled(self,enabled):
         self.editUI(enable=enabled)
@@ -278,8 +283,10 @@ class DropDownField(ModelUIWrapper):
         return self.texts[self.getValue()]
 
     def setValue(self, value):
+        if isinstance(value, basestring):
+            value = self.texts.index(value)
         ModelUIWrapper.setValue(self, self.texts[value])
-
+        
     def menuSelected(self,item):
         self.updateModel()
         self.changeCommand.emit()
@@ -350,3 +357,9 @@ class FormLayout:
             
     def __str__(self):
         return self.layout
+
+def frameLayout(*args,**kwargs):
+    if Utils.CURRENT_MAYA_VERSION>=Utils.MAYA2016:
+        kwargs.pop("bs",None)
+        kwargs.pop("borderStyle",None)
+    return cmds.frameLayout(*args,**kwargs)

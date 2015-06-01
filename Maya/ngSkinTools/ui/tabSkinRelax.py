@@ -159,7 +159,7 @@ class TabSkinRelax(BaseTab):
     def createUI(self,parent):
         self.setTitle('Relax')
         
-        self.cmdLayout = self.createCommandLayout([('Relax', self.execRelax,'Executes relax on a current vertices selection.')], SkinToolsDocs.WEIGHTSRELAX_INTERFACE)
+        self.cmdLayout = self.createCommandLayout([('Relax', self.execRelax,'Executes relax on a current vertices selection.')], SkinToolsDocs.UI_TAB_RELAX)
         
         self.createPrecisionControlGroup(self.cmdLayout.innerLayout)
         self.createVolumeAssociationGroup(self.cmdLayout.innerLayout)

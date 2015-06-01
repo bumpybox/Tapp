@@ -69,10 +69,9 @@ class TabPaint(BaseTab):
 
         newHighlightItems = []
         if includeInfluence:
-            currentInfluence = cmds.ngSkinLayer(q=True,ci=True)
-            # returns influence path, if current paint target has any
-            if (len(currentInfluence)>1):
-                newHighlightItems.append(currentInfluence[1])
+            currentInfluencePath = LayerDataModel.getInstance().mll.getPaintTargetPath();
+            if currentInfluencePath:
+                newHighlightItems.append(currentInfluencePath)
                 
             
         SelectHelper.replaceHighlight(newHighlightItems)
@@ -228,9 +227,7 @@ class TabPaint(BaseTab):
             def __call__(self,*args):
                 self.parent.brushButtonClicked(self.number)
                 
-        newIcons = ['circleGaus.png','circlePoly.png','circleSolid.png','rect.png']
-        oldIcons = ['circleGaus.xpm','circlePoly.xpm','circleSolid.xpm','rect.xpm']
-        icons = newIcons if Utils.getMayaVersion()>=Utils.MAYA2011 else oldIcons
+        icons = ['circleGaus.png','circlePoly.png','circleSolid.png','rect.png']
         for index,i in enumerate(icons):
             btn = cmds.symbolCheckBox(w=33,h=36,i=i,changeCommand=ButtonClickHandler(index,self),value=index==self.brushShape.get())
             self.controls.brushShapeButtons.append(btn)
@@ -279,7 +276,7 @@ class TabPaint(BaseTab):
             yield ('Mirror',MainWindow.getInstance().actions.mirrorWeights,'')
             yield ('Paint',self.execPaint,'')
 
-        self.cmdLayout = self.createCommandLayout(commandButtons(), SkinToolsDocs.MIRRORWEIGHTS_INTERFACE)
+        self.cmdLayout = self.createCommandLayout(commandButtons(), SkinToolsDocs.UI_TAB_PAINT)
         
         self.createBrushSettingsGroup(self.cmdLayout.innerLayout)
 

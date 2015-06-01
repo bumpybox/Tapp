@@ -56,7 +56,7 @@ class Signal:
         
         self.executing = True
         try:
-            for i in self.handlers:
+            for i in self.handlers[:]:
                 try:
                     i(*args)
                 except Exception,err:

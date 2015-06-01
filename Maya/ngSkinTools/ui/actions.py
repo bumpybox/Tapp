@@ -30,7 +30,7 @@ from ngSkinTools.utils import Utils, MessageException
 from ngSkinTools.ui.basetoolwindow import BaseToolWindow
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.ui.options import deleteCustomOptions
-from ngSkinTools.mllInterface import MllInterface
+from ngSkinTools.mllInterface import MllInterface, MirrorDirection
 
 log = LoggerFactory.getLogger("actions")
 
@@ -223,9 +223,7 @@ class ConvertMaskToTransparencyAction(BaseLayerAction):
         cmds.ngSkinLayer(mtt=True)
         
 class MirrorLayerWeightsAction(BaseLayerAction):
-    DIRECTION_NEGATIVETOPOSITIVE = 0;
-    DIRECTION_POSITIVETONEGATIVE = 1;
-    DIRECTION_GUESS = 2;
+
     
     def __init__(self, ownerUI):
         BaseLayerAction.__init__(self, ownerUI)
@@ -255,11 +253,11 @@ class MirrorLayerWeightsAction(BaseLayerAction):
         try:
             mirrorTab = MainWindow.getInstance().tabMirror
             
-            mirrorDirection = self.DIRECTION_POSITIVETONEGATIVE
+            mirrorDirection = MirrorDirection.DIRECTION_POSITIVETONEGATIVE
             if mirrorTab.controls.mirrorDirection.getValue()==0: # guess
-                mirrorDirection = self.DIRECTION_GUESS;
+                mirrorDirection = MirrorDirection.DIRECTION_GUESS;
             if mirrorTab.controls.mirrorDirection.getValue()==2: # negative to positive
-                mirrorDirection = self.DIRECTION_NEGATIVETOPOSITIVE;
+                mirrorDirection = MirrorDirection.DIRECTION_NEGATIVETOPOSITIVE;
             
             with LayerDataModel.getInstance().mll.batchUpdateContext():
                 for layerId in LayerDataModel.getInstance().layerListsUI.getSelectedLayers():
@@ -267,6 +265,7 @@ class MirrorLayerWeightsAction(BaseLayerAction):
                             mirrorWidth=mirrorTab.controls.mirrorWidth.getValue(),
                             mirrorLayerWeights=mirrorTab.controls.mirrorWeights.getValue(),
                             mirrorLayerMask=mirrorTab.controls.mirrorMask.getValue(),
+                            mirrorDualQuaternion=mirrorTab.controls.mirrorDq.getValue(),
                             mirrorDirection=mirrorDirection
                         )
             
@@ -275,6 +274,7 @@ class MirrorLayerWeightsAction(BaseLayerAction):
             
             return True
         except:
+            import traceback;traceback.print_exc();
             Utils.displayError("unknown error")
             # we're not sure what's wrong in this case, just re-raise
             raise        

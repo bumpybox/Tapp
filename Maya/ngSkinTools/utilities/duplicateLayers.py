@@ -81,6 +81,7 @@ class DuplicateLayers:
         self.mll.setLayerEnabled(newLayer, self.mll.isLayerEnabled(layerId))
         self.mll.setLayerOpacity(newLayer, self.mll.getLayerOpacity(layerId))
         self.mll.setLayerMask(newLayer, self.mll.getLayerMask(layerId))
+        self.mll.setDualQuaternionWeights(newLayer, self.mll.getDualQuaternionWeights(layerId))
         for _,influenceIndex in self.mll.listLayerInfluences(layerId):
             weights = self.mll.getInfluenceWeights(layerId, influenceIndex)
             self.mll.setInfluenceWeights(newLayer, influenceIndex, weights)

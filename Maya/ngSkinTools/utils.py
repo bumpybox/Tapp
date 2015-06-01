@@ -49,15 +49,13 @@ class Utils:
     # earlier maya versions have smaller constant value, so comparisions can be made (e.g. getMayaVersion()<MAYA2011)
     # (new constants must follow this pattern, e.g., "2008 release 2" should be 2008.2 instead of 200802)
     MAYA_UNKNOWN_VERSION = 0 # /// special constant for unknown version. assumed earlier version in code
-    MAYA2008 = 2008
-    MAYA2009 = 2009
-    MAYA2010 = 2010
     MAYA2011 = 2011
     MAYA2012 = 2012
     MAYA2013 = 2013
     MAYA2014 = 2014
     MAYA2014_5 = 2014.5
     MAYA2015 = 2015
+    MAYA2016 = 2016
     CURRENT_MAYA_VERSION = None
     
     DEBUG_MODE = False # /// set to true to enable debug output
@@ -75,12 +73,10 @@ class Utils:
     @staticmethod
     def confirmDialog(**kwargs):
         '''
-        a safer way to call confirm dialog, as maya 2009 does not support "icon"
+        used to be a pre-2011 Maya compatibility wrapper 
+        of cmds.confirmDialog. Keeping for now
         '''
         
-        if Utils.getMayaVersion()<Utils.MAYA2011:
-            kwargs.pop("icon",None)
-            
         return cmds.confirmDialog(**kwargs)
         
         
@@ -111,13 +107,9 @@ class Utils:
             except MessageException, err:
                 Utils.displayError(err.message)
             except Exception, err:
+                import traceback;traceback.print_exc()
                 Utils.displayError(str(err))
 
-                import traceback;
-                trace = traceback.format_exc()
-                if trace!='None\n':
-                    om.MGlobal.displayError(trace)
-                
         return result
     
     @staticmethod
@@ -226,14 +218,12 @@ class Utils:
                 return False
 
                         
-            testVersion('2008', Utils.MAYA2008) or \
-            testVersion('2009', Utils.MAYA2009) or \
-            testVersion('2010', Utils.MAYA2010) or \
             testVersion('2011', Utils.MAYA2011) or \
             testVersion('2012', Utils.MAYA2012) or \
             testVersion('2013', Utils.MAYA2013) or \
             testVersion('2014', Utils.MAYA2014) or \
-            testVersion('2015', Utils.MAYA2015)
+            testVersion('2015', Utils.MAYA2015) or \
+            testVersion('2016', Utils.MAYA2016)
             
         return Utils.CURRENT_MAYA_VERSION
     

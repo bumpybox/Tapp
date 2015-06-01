@@ -91,7 +91,7 @@ class HeadlessDataHost:
         return HeadlessDataHost.HANDLE.getCurrentInstance() 
     
     def __init__(self):
-        self.documentation = SkinToolsDocs()
+        self.documentation = SkinToolsDocs
         
         
     def initialize(self):

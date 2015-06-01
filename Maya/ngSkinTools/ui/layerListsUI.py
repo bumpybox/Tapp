@@ -23,7 +23,7 @@
 from maya import cmds
 from ngSkinTools.ui.uiWrappers import FormLayout, TextEdit, RadioButtonField
 from ngSkinTools.ui.constants import Constants
-from ngSkinTools.layerUtils import LayerUtils
+from ngSkinTools.layerUtils import NamedPaintTarget
 from ngSkinTools.ui.layerDataModel import LayerDataModel
 from ngSkinTools.ui.events import LayerEvents, Signal, MayaEvents
 from ngSkinTools.utils import Utils
@@ -31,23 +31,37 @@ from ngSkinTools.ui.options import Options, PersistentValueModel
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.InfluenceNameTransforms import InfluenceNameTransform
 from ngSkinTools.InfluenceNameFilter import InfluenceNameFilter
-from ngSkinTools.ui.basetab import BaseTab
+from ngSkinTools.ui import uiWrappers
 
 log = LoggerFactory.getLogger("layerListsUI")
 
 
-class IdToNameEntry:
-    def __init__(self,id=None,name=None,displayName=None,suffix=None):
-        self.id = id
+class IdToNameEntry(object):
+    def __init__(self,itemId=None,name=None,displayName=None,suffix=None):
+        if displayName is None:
+            displayName = name
+            
+        self.internalId = None
+        self.id = itemId
+        
         self.name = name
-        self.displayName = displayName if displayName is not None else name
+        self.displayName = displayName
         self.suffix = suffix
         
+    @property
+    def id(self):
+        return self.__id
+    
+    @id.setter
+    def id(self,id):
+        self.__id = id
+        self.internalId = str(id)
+        
     def __repr__(self):
-        return "IdToNameEntry(%d:%s,%s)" % (self.id,self.name,self.suffix)
+        return "IdToNameEntry({0},{1})".format(self.internalId,self.name)
 
     
-class TreeViewIDList:
+class TreeViewIDList(object):
     def __init__(self,allowMultiSelection=True):
         self.items = []
         selectCommand = self.selectionChanged
@@ -59,120 +73,153 @@ class TreeViewIDList:
             
         self.control = cmds.treeView(numberOfButtons=0, height=100, selectCommand=selectCommand, editLabelCommand=editCommand)
         
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            cmds.treeView(self.control,e=True,enableKeys=True)
+        cmds.treeView(self.control,e=True,enableKeys=True)
         
-        self.selectedID = None
-        self.selectedItems = set()
+        # list of selected IDs
+        self.selectedItems = []
         self.onSelectionChanged = Signal()
         
         self.__selectionChanging = False
         self.__itemNameChanging = False
 
-    def setItems(self,newItems,selectedID=None):
-        if selectedID is None:
-            selectedID = self.getSelectedID()
+    def setItems(self,newItems,selectedID):
+        '''
+        sets new items in the ID list;
+        :param list newItems: list of IdToNameEntry
+        :param selectedID: item to select in the list after setting the items 
+        '''
+        
+        log.debug("set items: {0},selected id: {1}".format(newItems,selectedID))
             
         if self.items!=newItems:
-            self.doSetItems(newItems)
+            if self.__selectionChanging:
+                raise Exception("cannot change items while selection is changing")
+            if self.__itemNameChanging:
+                # raise Exception("cannot change items while item name is changing")
+                # silently exit: should be no harm ignoring new items as the only thing that changed
+                # is label name, and we already reflect that in UI 
+                return
+            
+            self.selectedItems = []
+            
+            cmds.treeView(self.control,e=True,clearSelection=True)
+            cmds.treeView(self.control,e=True,removeAll=True)
+            for i in newItems:
+                cmds.treeView(self.control,e=True,addItem=(i.id,''))
+                cmds.treeView(self.control,e=True,displayLabel=(i.id,i.displayName),displayLabelSuffix=(i.id,i.suffix))
             
         self.items = newItems
         self.selectByID(selectedID)
+        
+    def getIdByInternalId(self,internalId):
+        '''
+        given item ID (internal UI label), return actual item ID from the item.
+        '''
+        
+        for i in self.items:
+            if i.internalId==internalId:
+                return i.id
+            
+        raise Exception("invalid internal ID: {!r}".format(internalId))
 
-    def selectionChanged(self,item,selected):
+    def selectionChanged(self,internalId,selected):
+        '''
+        UI event handler for when selection is changed
+        there are events fired for items being unselected (``selected`` is 0)
+        and for items being selected (``selected`` is 1)
+        '''
+        item = self.getIdByInternalId(internalId)
+        
         self.__selectionChanging = True
         try:
-            selected = int(selected)
-            
-            item = int(item)
             if selected:
-                self.selectedItems.add(item)
-                self.selectedID = item
-                self.onSelectionChanged.emit()
+                if item not in self.selectedItems:
+                    self.selectedItems.append(item)
+                    self.onSelectionChanged.emit()
             else:
-                self.selectedItems.discard(item)
-            
+                if item in self.selectedItems:
+                    self.selectedItems.remove(item)
+                    self.onSelectionChanged.emit()
         finally:
             self.__selectionChanging = False
-
+            
         return True
         
     
     def internalEditLabelCommand(self,item,newName):
         '''
         indirectly executed by treeview inplace editor;
-        return non empty string to let treeView know that rename succeeded 
+        return non empty string to let treeView know that rename succeeded
+        
+        :return: True, if rename was successful; false otherwise. 
         '''
-        return ''
+        return False
     
-    def editLabelCommand(self,item,newName):
+    def editLabelCommand(self,internalId,newName):
         '''
+        UI event handler for when user edits item label;
+        
         subclasses should override internalEditLabelCommand instead
         '''
         self.__itemNameChanging = True
         try:
-            return self.internalEditLabelCommand(item, newName)
+            item = self.getIdByInternalId(internalId)
+            renameSuccessful = self.internalEditLabelCommand(item, newName)
+            if not renameSuccessful:
+                return ''
+            return internalId
         finally:
             self.__itemNameChanging = False
             
 
-    def doSetItems(self,newItems):
-        if self.__selectionChanging:
-            raise Exception("cannot change items while selection is changing")
-        if self.__itemNameChanging:
-            # raise Exception("cannot change items while item name is changing")
-            # silently exit: should be no harm ignoring new items as the only thing that changed
-            # is label name, and we already reflect that in UI 
-            return
-        
-        self.selectedID = None
-        self.selectedItems.clear()
-        
-        #cmds.treeView(self.control,e=True,clearSelection=True)
-        cmds.treeView(self.control,e=True,removeAll=True)
-        for i in newItems:
-            cmds.treeView(self.control,e=True,addItem=(i.id,''))
-            cmds.treeView(self.control,e=True,displayLabel=(i.id,i.displayName),displayLabelSuffix=(i.id,i.suffix))
+    def getSelectedNames(self):
+        '''
+        :return: names of all currently selected items 
+        '''
+        return [i.name for i in self.items if (i.id in self.selectedItems)]
     
     
     def getSelectedID(self):
-        return self.selectedID
-    
-    def getSelectedNames(self):
-        return [i.name for i in self.items if (i.id in self.selectedItems)]
-    
+        '''
+        :return: ID of currently selected item
+        '''
+        return None if not self.selectedItems else self.selectedItems[-1]
+
     def getSelectedIDs(self):
-        return list(self.selectedItems)
+        '''
+        :return: IDs of selected items
+        '''
+        return self.selectedItems
         
 
     
     def selectByID(self,id):
+        log.debug("selecting by ID: {0}".format(id))
         if self.__selectionChanging:
             return
         
-        
-        if self.selectedID==id:
+        if self.selectedItems == [id]:
             return
-        
-        self.selectedItems.add(id)
+
+        self.selectedItems = [id]
         
         
         for i in self.items:
-            cmds.treeView(self.control,e=True,si=(i.id,int(i.id==id)))
+            cmds.treeView(self.control,e=True,si=(i.internalId,int(i.id==id)))
         
         
 class LayersTreeView(TreeViewIDList):
-    def internalEditLabelCommand(self, item, newName):
+    def internalEditLabelCommand(self, layerId, newName):
         '''
         implements layer in-place rename
         '''
         # do not allow empty layer names
         if newName.strip()=='':
-            return ''
+            return False
         
-        LayerDataModel.getInstance().setLayerName(int(item),newName)
-        cmds.treeView(self.control,e=True,displayLabel=(item,newName))
-        return item
+        LayerDataModel.getInstance().setLayerName(layerId,newName)
+        #cmds.treeView(self.control,e=True,displayLabel=(item,newName))
+        return True
 
 
     
@@ -186,7 +233,7 @@ class InfluenceFilterUi:
         self.isVisible = PersistentValueModel(Options.VAR_OPTION_PREFIX+"_InfluenceFilterVisible", False)
     
     def createUI(self,parent):
-        result = group = self.mainLayout = cmds.frameLayout(parent=parent,label="Influence Filter", marginWidth=Constants.MARGIN_SPACING_HORIZONTAL,marginHeight=Constants.MARGIN_SPACING_VERTICAL, collapsable=True,
+        result = group = self.mainLayout = uiWrappers.frameLayout(parent=parent,label="Influence Filter", marginWidth=Constants.MARGIN_SPACING_HORIZONTAL,marginHeight=Constants.MARGIN_SPACING_VERTICAL, collapsable=True,
                                  expandCommand=self.isVisible.save,collapseCommand=self.isVisible.save,
                                  borderStyle='etchedIn')
         cmds.frameLayout(group,e=True,collapse = self.isVisible.get())
@@ -263,13 +310,19 @@ class LayerListsUI:
         self.data.setLayerListsUI(self)
         
     def getMll(self):
+        '''
+        :rtype: MllInterface
+        '''
         return self.data.mll;
         
         
     def layerSelectionChanged(self,*args):
-        id = self.controls.layerDisplay.getSelectedID();
-        if id is not None:
-            cmds.ngSkinLayer(cl=id)
+        '''
+        even hander for changed layer selection
+        '''
+        layerId = self.controls.layerDisplay.getSelectedID();
+        if layerId is not None:
+            self.getMll().setCurrentLayer(layerId)
             #self.updateLayerList()
             self.updateInfluenceList()
 
@@ -290,44 +343,30 @@ class LayerListsUI:
         if not self.data.layerDataAvailable:
             return
         
-        layers = []
-        try:
-            layers = cmds.ngSkinLayer(q=True,listLayers=True);
-            currLayer = self.data.getCurrentLayer()
-        except:
-            pass
+        layers = self.data.mll.listLayers()
+        currLayer = self.data.getCurrentLayer()
             
         newItems = []
-        argsPerLayer = 3
-        listIndex = 1
-        for i in xrange(len(layers)/argsPerLayer):
-            layerID = int(layers[i*argsPerLayer])
-            layerName = layers[i*argsPerLayer+1]
-            indent = "  "*int(layers[i*argsPerLayer+2]) # indent, zero for base level
-            enabled = "" if self.data.getLayerEnabled(layerID) else " [OFF]"
-            newItems.append(IdToNameEntry(layerID,name=layerName,displayName=indent+layerName,suffix=enabled))
-            
-            listIndex+=1 
+        for layerId,layerName in layers:
+            entry = IdToNameEntry()
+            entry.id = layerId
+            entry.name = layerName
+            entry.displayName = layerName
+            entry.suffix = "" if self.data.getLayerEnabled(layerId) else " [OFF]"
+            newItems.append(entry)
 
         
         self.controls.layerDisplay.setItems(newItems,currLayer)
         LayerEvents.layerListUIUpdated.emit()
         
+
+        
     def updateInfluenceList(self):
         if not self.data.layerDataAvailable:
             return
 
-        args = {}
-        args['listLayerInfluences'] = True
         showAllInfluences = self.filterUi.radioAllInfluences.getValue()
-        if not showAllInfluences:
-            args['activeInfluences'] = True
-        influences = cmds.ngSkinLayer(q=True,**args);
-        
-        currInfluence = LayerUtils.PAINT_TARGET_UNDEFINED if (len(influences)==0) else int(influences[0])
-
-        # first item in influences is current influence;
-        # next is a list of pair "influence name", "influence id"
+        influences = self.data.mll.listLayerInfluences(activeInfluences=not showAllInfluences)
         
         filter = self.filterUi.createNameFilter()
         
@@ -335,11 +374,13 @@ class LayerListsUI:
 
         # append named targets
         if self.data.getCurrentLayer()>0:
-            newItems.append(IdToNameEntry(LayerUtils.PAINT_TARGET_MASK, "[Layer Mask]"))
+            newItems.append(IdToNameEntry(NamedPaintTarget.MASK, "[Layer Mask]"))
+            if self.data.isDqMode():
+                newItems.append(IdToNameEntry(NamedPaintTarget.DUAL_QUATERNION, "[Dual Quaternion Weights]"))
         
-        names = influences[1::2]
+        names = [name for name,_ in influences]
         displayNames = InfluenceNameTransform().appendingOriginalName().transform(names)
-        ids = map(int,influences[2::2])
+        ids = [inflId for _,inflId in influences]
         
         for name,displayName,influenceId in zip(names,displayNames,ids):
             if filter.isMatch(displayName):
@@ -347,25 +388,23 @@ class LayerListsUI:
                 
             
             
-        self.controls.influenceDisplay.setItems(newItems,currInfluence)
+        self.controls.influenceDisplay.setItems(newItems,self.data.mll.getCurrentPaintTarget())
             
                 
     def execInfluenceSelected(self,*args):
-        id = self.controls.influenceDisplay.getSelectedID();
+        '''
+        selection change handler for .influenceDisplay
+        '''
+        targetId = self.controls.influenceDisplay.getSelectedID();
         
-        
-        if id is None:
+        if targetId is None:
             return
         
-        if id==LayerUtils.PAINT_TARGET_MASK:
-            cmds.ngSkinLayer(cpt="mask")
-        else:
-            cmds.ngSkinLayer(ci=id)
-            
-        #self.updateInfluenceList()
+        LayerDataModel.getInstance().mll.setCurrentPaintTarget(targetId)
+
         LayerEvents.currentInfluenceChanged.emit()
         
-        log.info("selected logical influence %d" % id)
+        log.info("selected logical influence {0}".format(targetId))
         
         
     def createLayersListRMBMenu(self):
@@ -435,11 +474,7 @@ class LayerListsUI:
         cmds.setParent(parent)
         #self.outerFrame = cmds.frameLayout(label='Skinning Layers',collapsable=False,borderVisible=True,borderStyle="etchedIn",labelAlign="center")
 
-        if Utils.getMayaVersion()<Utils.MAYA2011:
-            # pane layout is ugly if it's non-QT UI; just use simple 50:50 form layout
-            paneLayout = FormLayout(numberOfDivisions=100)
-        else:
-            paneLayout = cmds.paneLayout(configuration="vertical2",width=100,height=200)
+        paneLayout = cmds.paneLayout(configuration="vertical2",width=100,height=200)
             
         
 
@@ -467,13 +502,6 @@ class LayerListsUI:
         form.attachForm(list.control,None,Constants.MARGIN_SPACING_HORIZONTAL,0,0)
         form.attachControl(list.control,label,3,None,None,None)
 
-        
-
-        if Utils.getMayaVersion()<Utils.MAYA2011:
-            paneLayout.attachForm(leftForm, 0, None, 0, 0)
-            paneLayout.attachForm(rightForm, 0, 0, 0, None)
-            cmds.formLayout(paneLayout,e=True,attachPosition=[[leftForm,'right',3,50],[rightForm,'left',3,50]])
-            
         return paneLayout
     
     
@@ -514,4 +542,4 @@ class LayerListsUI:
         '''
         returns IDs for selected layers
         '''
-        return self.controls.layerDisplay.getSelectedIDs()
+        return [int(i) for i in self.controls.layerDisplay.getSelectedIDs()]

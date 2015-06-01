@@ -20,39 +20,25 @@
 #    of this source code package.
 #    
 
-from maya import cmds
-from ngSkinTools.log import LoggerFactory
+'''
+A compatibility fix for missing OrderedDict in pre-2014 mayas (running on python 2.6).
+
+it's not a complete implementation of ordered dict, just the part needed for
+specific usage in ngSkinTools. 
+'''
 
 
-log = LoggerFactory.getLogger("LayerUtils")
-
-class NamedPaintTarget:
-    MASK = "mask"
-    DUAL_QUATERNION = "dq"
-
-class LayerUtils:
-     
-    @staticmethod
-    def iterCustomNodes():
-        for nodeType in ['ngSkinLayerData','ngSkinLayerDisplay']:
-            items = cmds.ls(type=nodeType)
-            if items is not None:
-                for i in items:
-                    yield i
+class OrderedDict(object):
     
-    @staticmethod
-    def deleteCustomNodes():
-        log.info("removing ngSkinTools nodes from current scene")
-                
-        nodes = list(LayerUtils.iterCustomNodes())
-        if len(nodes)>0:
-            cmds.delete(nodes)
+    def __init__(self,items):
+        self.lookup = dict(items)
+        self.items = items
         
-    @staticmethod
-    def hasCustomNodes():
-        for _ in LayerUtils.iterCustomNodes():
-            return True
-        
-        return False
-        
-
+    def keys(self):
+        '''
+        ordered sequence of keys
+        '''
+        return [item[0] for item in self.items]
+    
+    def __getitem__(self,index):
+        return self.lookup[index]

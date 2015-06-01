@@ -27,7 +27,7 @@ from ngSkinTools.doclink import SkinToolsDocs
 from ngSkinTools.ui.initTransferWindow import InitTransferWindow,\
     MirrorWeightsWindow
 from ngSkinTools.ui.layerDataModel import LayerDataModel
-from ngSkinTools.ui.events import LayerEvents
+from ngSkinTools.ui.events import LayerEvents, MayaEvents
 from ngSkinTools.log import LoggerFactory
 
 log = LoggerFactory.getLogger("mirror UI")
@@ -87,7 +87,7 @@ class TabMirror(BaseTab):
         self.cmdLayout = self.createCommandLayout([
                     ('Initialize', self.execInitMirror,''),
                     ('Mirror Weights', mainActions.mirrorWeights,'')
-                    ], SkinToolsDocs.MIRRORWEIGHTS_INTERFACE)
+                    ], SkinToolsDocs.UI_TAB_MIRROR)
         
         mainActions.mirrorWeights.addUpdateControl(self.cmdLayout.innerLayout)
         
@@ -108,8 +108,16 @@ class TabMirror(BaseTab):
                 annotation='Check this if mirror operation should be mirroring weights',defaultValue=1)
         self.controls.mirrorMask = CheckBoxField(self.VAR_PREFIX+'MirrorMask',label="Mirror mask",
                 annotation='Check this if mirror operation should be mirroring layer mask',defaultValue=1)
+        self.controls.mirrorDq = CheckBoxField(self.VAR_PREFIX+'MirrorDualQuaternion',label="Mirror dual quaternion weights",
+                annotation='Check this if mirror operation should be mirroring dual quaternion weights',defaultValue=1)
         
+        MayaEvents.nodeSelectionChanged.addHandler(self.updateUIEnabled, self.cmdLayout.outerLayout.layout)
         
-        
+        self.updateUIEnabled()
         return self.cmdLayout.outerLayout.layout
+    
+    def updateUIEnabled(self):
+        data = LayerDataModel.getInstance()
+        
+        self.controls.mirrorDq.setEnabled(data.layerDataAvailable and data.isDqMode())
         
