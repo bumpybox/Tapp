@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:/Users/tokejepsen/Documents/GitHub/Tapp/Maya/modelling/resources/dialog.ui'
+# Form implementation generated from reading ui file 'K:/tools/Maya/Tapp/Maya/modelling/resources/dialog.ui'
 #
-# Created: Tue Apr 08 01:12:00 2014
-#      by: pyside-uic 0.2.15 running on PySide 1.2.1
+# Created: Mon Jul 13 14:58:55 2015
+#      by: pyside-uic 0.2.14 running on PySide 1.2.0
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(256, 570)
+        MainWindow.resize(256, 616)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtGui.QVBoxLayout(self.centralwidget)
@@ -81,6 +81,18 @@ class Ui_MainWindow(object):
         self.scatterInfo_pushButton.setObjectName("scatterInfo_pushButton")
         self.gridLayout_2.addWidget(self.scatterInfo_pushButton, 0, 1, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout_2)
+        self.uvDeluxe_pushButton = QtGui.QPushButton(self.centralwidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.uvDeluxe_pushButton.sizePolicy().hasHeightForWidth())
+        self.uvDeluxe_pushButton.setSizePolicy(sizePolicy)
+        self.uvDeluxe_pushButton.setMinimumSize(QtCore.QSize(0, 40))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.uvDeluxe_pushButton.setFont(font)
+        self.uvDeluxe_pushButton.setObjectName("uvDeluxe_pushButton")
+        self.verticalLayout.addWidget(self.uvDeluxe_pushButton)
         self.horizontalLayout_9 = QtGui.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
         self.line_12 = QtGui.QFrame(self.centralwidget)
@@ -329,6 +341,7 @@ class Ui_MainWindow(object):
         self.detachSeparate_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Detach/Separate", None, QtGui.QApplication.UnicodeUTF8))
         self.scatter_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Scatter", None, QtGui.QApplication.UnicodeUTF8))
         self.scatterInfo_pushButton.setText(QtGui.QApplication.translate("MainWindow", "?", None, QtGui.QApplication.UnicodeUTF8))
+        self.uvDeluxe_pushButton.setText(QtGui.QApplication.translate("MainWindow", "UV Deluxe", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "UV-Destructive", None, QtGui.QApplication.UnicodeUTF8))
         self.symmetry_pushButton.setText(QtGui.QApplication.translate("MainWindow", "Symmetry", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "UV-Preserving", None, QtGui.QApplication.UnicodeUTF8))

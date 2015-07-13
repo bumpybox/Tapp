@@ -49,6 +49,12 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
         self.symmetry_pushButton.released.connect(self.on_symmetry_pushButton_released)
         self.detachSeparate_pushButton.released.connect(self.on_detachSeparate_pushButton_released)
         self.roadKill_pushButton.released.connect(self.on_roadKill_pushButton_released)
+        self.uvDeluxe_pushButton.released.connect(self.on_uvDeluxe_pushButton_released)
+
+    def on_uvDeluxe_pushButton_released(self):
+
+        from UVDeluxe import uvdeluxe
+        uvdeluxe.createUI()
 
     def on_mirrorBlendshape_pushButton_released(self):
 

@@ -42,3 +42,4 @@ You can find all the documentation for the Tapp tools here: https://github.com/B
 - Brenton Rayner; fgshooter
 - basicPerlinDeformer; Ken Perlin, Paulalso, Ian Waters
 - si_poseDeformer; Stanislav Ilin
+- UV Deluxe; Erik Spellerberg
