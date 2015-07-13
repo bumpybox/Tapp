@@ -27,6 +27,7 @@ from ngSkinTools.ui.constants import Constants
 from ngSkinTools.ui.uiWrappers import FormLayout
 from ngSkinTools.ui.headlessDataHost import HeadlessDataHost
 from ngSkinTools.log import LoggerFactory
+from ngSkinTools.ui import uiWrappers
 
 
 class Controls:
@@ -112,11 +113,7 @@ class BaseTab(object):
 
     @staticmethod
     def createScrollLayout(parent):
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            return  cmds.scrollLayout(parent=parent,childResizable=True)
-        
-        # scrollbar fake shamelessly stolen from Autodesk's own UI code
-        return cmds.tabLayout(parent=parent,tv=False,childResizable=True,scrollable=True)
+        return  cmds.scrollLayout(parent=parent,childResizable=True)
     
  
     def createUIGroup(self,layout,title):
@@ -125,7 +122,7 @@ class BaseTab(object):
         '''
         cmds.setParent(layout)
         
-        group = cmds.frameLayout(label=title, marginWidth=Constants.MARGIN_SPACING_HORIZONTAL,marginHeight=Constants.MARGIN_SPACING_VERTICAL, collapsable=True,
+        group = uiWrappers.frameLayout(label=title, marginWidth=Constants.MARGIN_SPACING_HORIZONTAL,marginHeight=Constants.MARGIN_SPACING_VERTICAL, collapsable=True,
                                  expandCommand=self.saveOptions,collapseCommand=self.saveOptions,
                                  borderStyle='etchedIn')
         self.lastCreatedGroup = group
@@ -152,13 +149,11 @@ class BaseTab(object):
     def createHelpButton(helpLink):
         import os.path as path
         
-        imageName = path.join(path.dirname(__file__),'images','help.xpm')
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            imageName = path.join(path.dirname(__file__),'images','help.png')
+        imageName = path.join(path.dirname(__file__),'images','help.png')
         
         return cmds.symbolButton('?',image=imageName,height=Constants.BUTTON_HEIGHT,width=Constants.BUTTON_WIDTH_SMALL,
-                                          annotation='Open manual at: '+helpLink.getTitle(),
-                                          command=lambda *args:HeadlessDataHost.get().documentation.openLink(helpLink))        
+                                          annotation='Open manual at: '+helpLink.title,
+                                          command=lambda *args:helpLink.open())        
     
 
     @staticmethod

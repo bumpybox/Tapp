@@ -30,9 +30,6 @@ log = LoggerFactory.getLogger("base dialog")
 class BaseDialog:
     currentDialog = None
     
-    # I'm so sorry, but it's late at night and I can't come up with a better idea to make this work in 2009 tests
-    stuffToRunInNextModalDialogHack = []
-    
     BUTTON_OK = "ok"
     BUTTON_CANCEL = "cancel"
     BUTTON_CLOSE = "close"
@@ -88,12 +85,6 @@ class BaseDialog:
         form.attachControl(innerUi, buttonsForm, None, None, Constants.MARGIN_SPACING_VERTICAL, None)
         
         
-        # take something from the bottom of this stack and execute it now.
-        if len(self.stuffToRunInNextModalDialogHack)!=0:
-            self.stuffToRunInNextModalDialogHack.pop(0)(self)
-        
-    
-    
     def execute(self,parentWindow=None):
         BaseDialog.currentDialog = self
         log.debug("executing a dialog")

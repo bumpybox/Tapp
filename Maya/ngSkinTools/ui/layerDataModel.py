@@ -45,6 +45,8 @@ class LayerDataModel:
     def getInstance():
         '''
         returns singleton instance of LayerDataModel
+        
+        :rtype: LayerDataModel
         '''
         if LayerDataModel.__instance is None:
             LayerDataModel.__instance = LayerDataModel()
@@ -56,7 +58,7 @@ class LayerDataModel:
         LayerDataModel.__instance = None
     
     def __init__(self):
-        self.layerListsUI = None
+        self.layerListsUI = None # :type: LayerListsUI
         self.layerDataAvailable = None
         self.mirrorCache = self.MirrorCacheStatus()
         self.mll = MllInterface()
@@ -77,7 +79,8 @@ class LayerDataModel:
     
     def updateLayerAvailability(self):
         '''
-        updates interface visibility depending on availability of layer data 
+        checks if availability of skin layers changed with the 
+        current scene selection 
         '''
         self.log.info("updating layer availability")
         
@@ -87,7 +90,7 @@ class LayerDataModel:
         if self.layerDataAvailable!=oldValue:
             LayerEvents.layerAvailabilityChanged.emit()
         self.updateMirrorCacheStatus()
-            
+        
     def updateMirrorCacheStatus(self):
         def setStatus(newStatus,message,axis=None):
             change = newStatus != self.mirrorCache.isValid or self.mirrorCache.message != message or self.mirrorCache.mirrorAxis != axis
@@ -126,19 +129,17 @@ class LayerDataModel:
         self.setCurrentLayer(layerId)
         
     def removeLayer(self,layerId):
-        cmds.ngSkinLayer(rm=True,id=layerId)
+        self.mll.deleteLayer(layerId)
         LayerEvents.layerListModified.emit()
         LayerEvents.currentLayerChanged.emit()
         
         
     def setCurrentLayer(self,layerId):
-        
-        cmds.ngSkinLayer(cl=layerId)
+        self.mll.setCurrentLayer(layerId)
         LayerEvents.currentLayerChanged.emit()
         
     def getCurrentLayer(self):
         return self.mll.getCurrentLayer()
-        return cmds.ngSkinLayer(q=True,cl=True)
         
     def attachLayerData(self):
         self.mll.initLayers()
@@ -181,12 +182,20 @@ class LayerDataModel:
         for given selection, returns mesh and skin cluster node names where skinLayer data
         is (or can be) attached. 
         '''
-        try:
-            return cmds.ngSkinLayer(q=True,ldt=True)
-        except:
-            return []
+        return self.mll.getTargetInfo()
+
     
     def getLayersAvailable(self):
         self.updateLayerAvailability()
         return self.layerDataAvailable
+    
+    def isDqMode(self):
+        '''
+        returns True if current skin cluster is operating in dual quaternion mode
+        '''
+        target = self.mll.getTargetInfo()
+        if not target:
+            return False   
+        skinCluster = target[1]     
+        return cmds.skinCluster(skinCluster,q=True,skinMethod=True)==2    
         

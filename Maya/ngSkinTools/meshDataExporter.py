@@ -21,6 +21,7 @@
 #    
 
 from maya import OpenMaya as om
+from maya import OpenMayaAnim as oma
 from maya import OpenMayaMPx
 from ngSkinTools.utils import Utils, MessageException
 
@@ -36,9 +37,12 @@ class MeshDataExporter:
         sets skincluster's input mesh as source mesh
         '''
         skinClusterObject = Utils.getMObjectForNode(skinCluster)
-        plug = om.MPlug(skinClusterObject,OpenMayaMPx.cvar.MPxDeformerNode_inputGeom)
-        plug.selectAncestorLogicalIndex(0,OpenMayaMPx.cvar.MPxDeformerNode_input)
-        self.meshMObject = plug.asMObject()
+        geomFilter = oma.MFnGeometryFilter(skinClusterObject)
+        self.meshMObject = geomFilter.inputShapeAtIndex(0)
+
+#        plug = om.MPlug(skinClusterObject,OpenMayaMPx.cvar.MPxDeformerNode_inputGeom)
+#        plug.selectAncestorLogicalIndex(0,OpenMayaMPx.cvar.MPxDeformerNode_input)
+#        self.meshMObject = plug.asMObject()
         
     def getWorldMatrix(self,nodeName):
         # get world transform matrix for given mesh transform node

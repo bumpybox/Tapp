@@ -276,6 +276,8 @@ class MainWindow(BaseToolWindow):
     def getInstance():
         '''
         returns instance of a main window; returned value is only valid while window is opened.
+        
+        :rtype: MainWindow
         '''
         
         return BaseToolWindow.getWindowInstance(MainWindow.WINDOW_NAME,MainWindow)
@@ -343,10 +345,9 @@ class MainWindow(BaseToolWindow):
         def updateSplitPosition(*args):
             size = cmds.paneLayout(horizontalSplit,q=True,paneSize=True)
             # returns (widht, height, width, height)
-            self.splitPosition.set(size[1])
+            self.splitPosition.set(int(size[1]))
         horizontalSplit = cmds.paneLayout(configuration="horizontal2",width=100,height=200,separatorMovedCommand=updateSplitPosition)
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            cmds.paneLayout(horizontalSplit,e=True,staticHeightPane=2)
+        cmds.paneLayout(horizontalSplit,e=True,staticHeightPane=2)
         cmds.paneLayout(horizontalSplit,e=True,paneSize=(1,100,self.splitPosition.get()))
         cmds.paneLayout(horizontalSplit,e=True,paneSize=(2,100,100-self.splitPosition.get()))
         

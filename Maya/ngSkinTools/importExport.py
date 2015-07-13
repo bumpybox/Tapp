@@ -55,6 +55,22 @@ from itertools import izip
 class Influence(object):
     '''
     Single influence in a layer
+    
+    .. py:attribute:: weights
+    
+        vertex weights for this influence. Set to float list, containing 
+        as many values as there are vertices in a target mesh.
+
+    .. py:attribute:: influenceName
+    
+        Full path of the influence in the scene. Required value when importing
+        data back into skin cluster, as influences are associated by name in 
+        current implementation. 
+        
+    .. py:attribute:: logicalIndex
+    
+        Logical index for this influence in a skin cluster. Not required for
+        import and only provided in export as a reference.
     '''
     
     def __init__(self):
@@ -75,6 +91,34 @@ class Influence(object):
 class Layer(object):
     '''
     Represents single layer; can contain any amount of influences.
+    
+    .. py:attribute:: name
+    
+        layer name. Default value: None; set/use as any python string.
+        
+    .. py:attribute:: opacity
+    
+        layer opacity. Defaults to 0.0. Set to float value between 0.0 and 1.0
+        
+    .. py:attribute:: enabled
+    
+        layer on/off flag. Default value is False. Set to True or False.
+        
+    .. py:attribute:: influences
+    
+        list of :class:`Influence` objects.
+        
+    .. py:attribute:: mask
+    
+        layer mask: list of floats. Set to None for uninitialized mask,
+        or to float list, containing as many values as there are vertices
+        in a target mesh.    
+        
+    .. py:attribute:: dqWeights
+
+        dual quaternion blend weights. None if not defined for this layer,
+        or float list, one value per vertex in the target mesh.
+        
     '''
     
     def __init__(self):
@@ -93,9 +137,13 @@ class Layer(object):
         # layer mask (could be None or list of double)
         self.mask = None
         
+        self.dqWeights = None
+        
     def addInfluence(self, influence):
         '''
-        Register :class:`Influence` for given layer
+        Add an influence in this layer.
+        
+        :param Influence influence: influence to be added 
         '''
         
         assert isinstance(influence, Influence)
@@ -116,6 +164,22 @@ class MeshInfo(object):
         
 
 class InfluenceInfo(object):
+    '''
+    Metadata about an influence in a skin cluster
+    
+    .. py:attribute:: pivot
+        
+        influence pivot in world-space coordinates
+
+    .. py:attribute:: path
+        
+        influence node path
+
+    .. py:attribute:: logicalIndex
+        
+        influence logical index in the skin cluster.
+    '''
+    
     def __init__(self,pivot=None,path=None,logicalIndex=None):
         self.pivot = pivot
         self.path = path
@@ -128,11 +192,20 @@ class InfluenceInfo(object):
 class LayerData(object):
     '''
     Intermediate data object between ngSkinTools core and importers/exporters,
-    representing all layers info in one skin cluster. 
+    representing all layers info in one skin cluster.
+    
+    .. py:attribute:: layers
+        
+        a list of :py:class:`Layer` objects.
+        
+    .. py:attribute:: influences
+        
+        a list of :py:class:`InfluenceInfo` objects. Provides information about influences
+        that were found on exported skin data, and used for influence matching when importing.
+
     '''
     
     def __init__(self):
-        #: layers list
         self.layers = []
         self.mll = MllInterface()
 
@@ -171,6 +244,8 @@ class LayerData(object):
     def addLayer(self, layer):
         '''
         register new layer into this data object
+        
+        :param Layer layer: layer object to add.
         '''
         assert isinstance(layer, Layer)
         self.layers.append(layer)
@@ -221,6 +296,7 @@ class LayerData(object):
             layer.enabled = self.mll.isLayerEnabled(layerID)
             
             layer.mask = self.mll.getLayerMask(layerID)
+            layer.dqWeights = self.mll.getDualQuaternionWeights(layerID)
             
             for inflName, logicalIndex in self.mll.listLayerInfluences(layerID,activeInfluences=True):
                 if inflName=='':
@@ -256,6 +332,8 @@ class LayerData(object):
     @Utils.undoable        
     def saveTo(self, mesh):
         '''
+        saveTo(self,mesh)
+        
         saves data to actual skin cluster
         '''
         
@@ -297,6 +375,7 @@ class LayerData(object):
                 self.mll.setLayerOpacity(layerId, layer.opacity)
                 self.mll.setLayerEnabled(layerId, layer.enabled)
                 self.mll.setLayerMask(layerId, layer.mask)
+                self.mll.setDualQuaternionWeights(layerId, layer.dqWeights)
                 
                 for influence in layer.influences:
                     self.mll.setInfluenceWeights(layerId, influence.logicalIndex, influence.weights)
@@ -459,11 +538,15 @@ class JsonExporter:
         return result
     
     def __layerToDictionary(self, layer):
+        '''
+        :type layer: Layer
+        '''
         result = {}
         result['name'] = layer.name
         result['opacity'] = layer.opacity
         result['enabled'] = layer.enabled
         result['mask'] = layer.mask
+        result['dqWeights'] = layer.dqWeights
         result['influences'] = []
         for infl in layer.influences:
             result['influences'].append(self.__influenceToDictionary(infl))
@@ -499,6 +582,9 @@ class JsonExporter:
     def process(self, layerDataModel):
         '''
         transforms LayerDataModel to JSON
+        
+        :param LayerData layerDataModel: layers information as object;
+        :return: string containing a json document
         '''
         modelDictionary = self.__modelToDictionary(layerDataModel);
         import json    
@@ -513,7 +599,10 @@ class JsonImporter:
     
     def process(self, jsonDocument):
         '''
-        transform JSON document (provided as valid json string) into layerDataModel
+        transform JSON document () into layerDataModel
+        
+        :param str jsonDocument: layers info, previously serialized as json string
+        :rtype: LayerData
         '''
         import json
         self.document = json.loads(jsonDocument)
@@ -538,6 +627,7 @@ class JsonImporter:
             model.addLayer(layer)        
             layer.enabled = layerData['enabled']
             layer.mask = layerData.get('mask')
+            layer.dqWeights = layerData.get('dqWeights')
             layer.name = layerData['name']
             layer.opacity = layerData['opacity']
             layer.influences = []

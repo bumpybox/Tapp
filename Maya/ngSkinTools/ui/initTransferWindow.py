@@ -37,6 +37,7 @@ from ngSkinTools.ui.options import ValueModel
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.influenceMapping import InfluenceMapping
 from ngSkinTools.mllInterface import MllInterface
+from ngSkinTools.orderedDict import OrderedDict
 
 
 log = LoggerFactory.getLogger("initTransferWindow")
@@ -180,13 +181,21 @@ class TransferWeightsTab(BaseTab):
 
     def createTransferOptionsGroup(self):
         group = self.createUIGroup(self.cmdLayout.innerLayout, 'Transfer Options')
+        self.createTitledRow(parent=group, title="Vertex Transfer Mode")
+        self.controls.transferMode = DropDownField(self.VAR_PREFIX+'vertexTransferMode')
+        
+        for opt in CopyWeightsModel.vertexTransferModes.keys():
+            self.controls.transferMode.addOption(opt)
+        
+        self.createTitledRow(parent=group, title="Influence namespaces")
+        self.controls.ignoreNamespaces = CheckBoxField(self.VAR_PREFIX+'IgnoreNamespaces',label="Ignore when matching by name",
+                annotation='ignore when matching by name',defaultValue=1)
+        self.controls.ignoreNamespaces.changeCommand.addHandler(self.previewInfluenceMapping,ownerUI=group)
+
         self.createTitledRow(parent=group, title=None)
         self.controls.keepExistingLayers = CheckBoxField(self.VAR_PREFIX+'KeepExistingLayers',label="Keep existing layers",
                 annotation='when unselected, will delete existing layers in destination',defaultValue=1)
-        self.createTitledRow(parent=group, title=None)
-        self.controls.ignoreNamespaces = CheckBoxField(self.VAR_PREFIX+'IgnoreNamespaces',label="Ignore namespaces when matching by name",
-                annotation='ignore namespaces when matching by name',defaultValue=1)
-        self.controls.ignoreNamespaces.changeCommand.addHandler(self.previewInfluenceMapping,ownerUI=group)
+        
         
 
     def ignoreModeChanged(self):
@@ -213,7 +222,7 @@ class TransferWeightsTab(BaseTab):
             cmds.radioCollection()
             for index,i in enumerate(['Prefixes','Suffixes']):
                 ctrl = self.controls.__dict__['ignore'+i] = RadioButtonField(self.VAR_PREFIX+'ignoreMode'+i,defaultValue=1 if index==0 else 0,label=i)
-                ctrl.changeCommand.addHandler(self.ignoreModeChanged)        
+                ctrl.changeCommand.addHandler(self.ignoreModeChanged,group)        
 
 
             self.controls.prefixesGroup = self.createTitledRow(group, 'Influence Prefixes')
@@ -570,6 +579,11 @@ class MirrorWeightsWindow(InitTransferWindow):
     
 
 class CopyWeightsModel(TransferDataModel):
+    vertexTransferModes = OrderedDict((
+                    ("Closest point on surface","closestPoint"),
+                    ("UV space","uvSpace"),
+                    ("By Vertex ID","vertexId"),
+                    ))    
     
     def __init__(self):
         TransferDataModel.__init__(self)
@@ -604,20 +618,19 @@ class CopyWeightsModel(TransferDataModel):
     def execute(self):
         targetMll = MllInterface(mesh=self.targetMesh)
 
-        if not targetMll.getLayersAvailable():
-            targetMll.initLayers()
-
+        self.ensureTargetMeshLayers()
+        
         previousLayerIds = [layerId for layerId, _  in targetMll.listLayers()]
-
 
         sourceMesh = self.sourceMesh        
         if self.sourceModel is not None:
             self.sourceModel.saveTo(MllInterface.TARGET_REFERENCE_MESH)
             sourceMesh = MllInterface.TARGET_REFERENCE_MESH
         
-        
+        vertexTransferMode = self.vertexTransferModes[self.parent.controls.transferMode.getSelectedText()]
+
         sourceMll = MllInterface(mesh=sourceMesh)
-        sourceMll.transferWeights(self.targetMesh,influencesMapping=self.mapper.mapping)
+        sourceMll.transferWeights(self.targetMesh,influencesMapping=self.mapper.mapping,vertexTransferMode=vertexTransferMode)
 
         if self.parent.controls.keepExistingLayers.getValue()!=1:
             for layerId in previousLayerIds:
@@ -642,11 +655,15 @@ class CopyWeightsModel(TransferDataModel):
         self.sourceMesh = mesh
         self.inputValuesChanged()
         
-    def setDestinationMesh(self,mesh):
-        self.targetMesh = mesh
+    def ensureTargetMeshLayers(self):
         targetMll = MllInterface(mesh=self.targetMesh)
         if not targetMll.getLayersAvailable():
             targetMll.initLayers()
+            #targetMll.createLayer("weights before import")
+        
+    def setDestinationMesh(self,mesh):
+        self.targetMesh = mesh
+        self.ensureTargetMeshLayers()
         
         self.inputValuesChanged()
         

@@ -100,10 +100,7 @@ class UpdateCheckWindow(BaseToolWindow):
         cmds.text(self.topLabel,e=True, label=message)
         
     def addMessage(self,message):
-        if Utils.getMayaVersion()>=Utils.MAYA2011:
-            cmds.text(label=message,parent=self.customUIContainer,wordWrap=True,width=300,align='left')
-        else:
-            cmds.scrollField(text=message,editable=False,parent=self.customUIContainer,wordWrap=True,font='plainLabelFont')
+        cmds.text(label=message,parent=self.customUIContainer,wordWrap=True,width=300,align='left')
         
     def addButton(self,title,command):
         cmds.button(label=title,parent=self.customUIContainer,command=lambda *args:command())
