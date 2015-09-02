@@ -32,6 +32,16 @@ class MirrorDirection:
     DIRECTION_NEGATIVETOPOSITIVE = 0;
     DIRECTION_POSITIVETONEGATIVE = 1;
     DIRECTION_GUESS = 2;   
+    DIRECTION_FLIP = 3;   
+    
+class PaintMode:
+    '''
+    Constants for paint mode
+    '''
+    PAINTMODE_REPLACE = 1
+    PAINTMODE_ADD = 2
+    PAINTMODE_SCALE = 3
+    PAINTMODE_SMOOTH = 4    
 
 class MllInterface(object):
     '''
@@ -558,6 +568,9 @@ class MllInterface(object):
     def getLayerIndex(self,layerId):
         return self.ngSkinLayerCmdMel("-id %d -q -layerIndex" % layerId)
     
+    def setLayerIndex(self,layerId,layerIndex):
+        self.ngSkinLayerCmd(id=layerId,layerIndex=layerIndex)
+    
     def pruneWeights(self,layerId=None,threshold=0.01):
         '''
         Remove weights in influence weights lower than provided threshold;
@@ -580,6 +593,18 @@ class MllInterface(object):
 
     def getPruneWeightsFilter(self):
         return self.ngSkinLayerCmd(q=True,pruneWeightsFilterThreshold=True)
+    
+    def floodPaint(self):
+        self.ngSkinLayerCmd(paintFlood=True)
+        
+    def setPaintMode(self,mode,intensity):
+        '''
+        Sets paint mode (replace,add,..) and it's intensity
+        
+        :param mode: use :py:class:`PaintMode` constants for that 
+        '''
+        
+        cmds.ngSkinLayer(paintOperation=mode,paintIntensity=intensity)        
         
         
 class BatchUpdateContext:

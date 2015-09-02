@@ -77,6 +77,16 @@ class LayerDataModel:
             return None
         return self.layerListsUI.getLayersList().getSelectedID()
     
+    def getSelectedLayers(self):
+        if self.layerListsUI is None:
+            return []
+        return self.layerListsUI.getSelectedLayers()
+    
+    def getSelectedInfluenceIds(self):
+        if self.layerListsUI is None:
+            return []
+        return self.layerListsUI.getSelectedInfluenceIds()
+    
     def updateLayerAvailability(self):
         '''
         checks if availability of skin layers changed with the 

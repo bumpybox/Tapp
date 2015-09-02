@@ -39,6 +39,9 @@ class WeightsClipboard:
     
 
     def withCurrentLayerAndInfluence(self):
+        '''
+        :rtype: WeightsClipboard
+        '''
         self.layer = self.mll.getCurrentLayer()
         log.debug("weights clipboard setting current layer to %r" % self.layer)
         self.influence = self.mll.getCurrentPaintTarget()
@@ -66,18 +69,16 @@ class WeightsClipboard:
         self.mll.setInfluenceWeights(self.layer, self.influence, [0.0]*len(self.copiedWeights))
         
     
-    def paste(self,replace):
+    def __paste__(self,weightsCalculator):
         if self.copiedWeights == None:
             raise MessageException("Nothing to paste")
         
         if self.mll.getVertCount()!=len(self.copiedWeights):
             raise MessageException("Could not paste weights - vertex count does not match")
         
-        newWeights =self.copiedWeights
-        if not replace: 
-            prevWeights = self.getPaintTargetWeights(self.influence)
-            if prevWeights: # only sum if previous weights existed
-                newWeights = [a+b for a,b in zip(newWeights,prevWeights)]
+        newWeights = weightsCalculator()
+        if newWeights is None:
+            return 
         
         if self.influence==NamedPaintTarget.MASK:
             self.mll.setLayerMask(self.layer, newWeights)
@@ -85,4 +86,26 @@ class WeightsClipboard:
             self.mll.setDualQuaternionWeights(self.layer, newWeights)
         else:
             self.mll.setInfluenceWeights(self.layer, self.influence, newWeights)
+        
+    def pasteReplace(self):
+        self.__paste__(lambda:self.copiedWeights)
+
+    def pasteAdd(self):
+        def calc():
+            prevWeights = self.getPaintTargetWeights(self.influence)
+            if not prevWeights: # only sum if previous weights existed
+                return self.copiedWeights
+            return [a+b for a,b in zip(self.copiedWeights,prevWeights)]
+            
+        self.__paste__(calc)
+
+    def pasteSubstract(self):
+        def calc():
+            prevWeights = self.getPaintTargetWeights(self.influence)
+            if not prevWeights:
+                return None
+            return [max(0,b-a) for a,b in zip(self.copiedWeights,prevWeights)]
+            
+        self.__paste__(calc)
+
         

@@ -38,7 +38,7 @@ from ngSkinTools.ui.actions import InfluenceFilterAction, NewLayerAction,\
     ConvertMaskToTransparencyAction, ConvertTransparencyToMaskAction,\
     MirrorLayerWeightsAction, BaseAction, RemovePreferencesAction,\
     EnableDisableLayerAction, ExportAction, ImportAction, TransferWeightsAction,\
-    MergeLayerDownAction
+    MergeLayerDownAction, InvertPaintTargetAction
 from ngSkinTools.ui.basetoolwindow import BaseToolWindow
 from ngSkinTools.log import LoggerFactory
 from ngSkinTools.importExport import Formats
@@ -47,7 +47,7 @@ from ngSkinTools.ui.utilities.duplicateLayerAction import DuplicateLayersAction
 from ngSkinTools.ui.headlessDataHost import HeadlessDataHost
 from ngSkinTools.doclink import SkinToolsDocs
 from ngSkinTools.ui.utilities.weightsClipboardActions import CopyWeights,\
-    CutWeights, PasteWeightsAdd, PasteWeightsReplace
+    CutWeights, PasteWeightsAdd, PasteWeightsReplace, PasteWeightsSubstract
 from ngSkinTools.layerUtils import LayerUtils
 from ngSkinTools.ui.tabSettings import TabSettings
 from ngSkinTools.ui.options import PersistentValueModel
@@ -118,10 +118,13 @@ class MainMenu:
         actions.copyWeights.newMenuItem('Copy Influence Weights')
         actions.cutWeights.newMenuItem('Cut Influence Weights')
         actions.pasteWeightsAdd.newMenuItem('Paste Weights (Add)')
+        actions.pasteWeightsSubstract.newMenuItem('Paste Weights (Substract)')
         actions.pasteWeightsReplace.newMenuItem('Paste Weights (Replace)')
         self.createDivider()
         actions.convertMaskToTransparency.newMenuItem('Convert Mask to Transparency')
         actions.convertTransparencyToMask.newMenuItem('Convert Transparency to Mask')
+        self.createDivider()
+        actions.invertPaintTarget.newMenuItem('Invert')
         self.createDivider()
         cmds.menuItem( label='Delete Custom Nodes',command=self.execCleanNodes)
         actions.removePreferences.newMenuItem('Reset to Default Preferences')
@@ -178,6 +181,8 @@ class MainUiActions:
         self.convertMaskToTransparency = ConvertMaskToTransparencyAction(ownerUI)
         self.convertTransparencyToMask = ConvertTransparencyToMaskAction(ownerUI)
         
+        self.invertPaintTarget = InvertPaintTargetAction(ownerUI)
+        
         self.mirrorWeights = MirrorLayerWeightsAction(ownerUI)
         self.enableDisableLayer = EnableDisableLayerAction(ownerUI)
         
@@ -192,6 +197,7 @@ class MainUiActions:
         self.cutWeights = CutWeights(ownerUI)
         self.pasteWeightsAdd = PasteWeightsAdd(ownerUI)
         self.pasteWeightsReplace = PasteWeightsReplace(ownerUI)
+        self.pasteWeightsSubstract = PasteWeightsSubstract(ownerUI)
         
 
                 

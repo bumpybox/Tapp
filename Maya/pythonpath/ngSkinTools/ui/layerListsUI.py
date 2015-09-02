@@ -20,6 +20,7 @@
 #    of this source code package.
 #    
 
+from __future__ import with_statement
 from maya import cmds
 from ngSkinTools.ui.uiWrappers import FormLayout, TextEdit, RadioButtonField
 from ngSkinTools.ui.constants import Constants
@@ -71,7 +72,7 @@ class TreeViewIDList(object):
             selectCommand = Utils.createMelProcedure(self.selectionChanged, [('int','item'),('int','state')],returnType="int")
             editCommand = Utils.createMelProcedure(self.editLabelCommand, [('string','item'),('string','newName')])
             
-        self.control = cmds.treeView(numberOfButtons=0, height=100, selectCommand=selectCommand, editLabelCommand=editCommand)
+        self.control = cmds.treeView(numberOfButtons=0, height=100, selectCommand=selectCommand, editLabelCommand=editCommand,dragAndDropCommand=self.handleDragDropCommand)
         
         cmds.treeView(self.control,e=True,enableKeys=True)
         
@@ -81,6 +82,9 @@ class TreeViewIDList(object):
         
         self.__selectionChanging = False
         self.__itemNameChanging = False
+    
+    def handleDragDropCommand(self,itemList,prevParents,prevIndexes,newParent,newIndexes,itemBefore,itemAfter):
+        pass
 
     def setItems(self,newItems,selectedID):
         '''
@@ -115,6 +119,8 @@ class TreeViewIDList(object):
         '''
         given item ID (internal UI label), return actual item ID from the item.
         '''
+        if internalId is None:
+            return None
         
         for i in self.items:
             if i.internalId==internalId:
@@ -133,7 +139,7 @@ class TreeViewIDList(object):
         self.__selectionChanging = True
         try:
             if selected:
-                if item not in self.selectedItems:
+                if item is not None and item not in self.selectedItems:
                     self.selectedItems.append(item)
                     self.onSelectionChanged.emit()
             else:
@@ -193,19 +199,25 @@ class TreeViewIDList(object):
         
 
     
-    def selectByID(self,id):
+    def selectByID(self,itemId):
+        self.setSelectedIDs([itemId])
+        
+    def setSelectedIDs(self,ids):
         log.debug("selecting by ID: {0}".format(id))
         if self.__selectionChanging:
             return
         
-        if self.selectedItems == [id]:
+        # remove any null items
+        ids = [i for i in ids if i is not None]
+        
+        if self.selectedItems == ids:
             return
 
-        self.selectedItems = [id]
-        
+        self.selectedItems = ids
         
         for i in self.items:
-            cmds.treeView(self.control,e=True,si=(i.internalId,int(i.id==id)))
+            cmds.treeView(self.control,e=True,si=(i.internalId,int(i.id in ids)))
+        
         
         
 class LayersTreeView(TreeViewIDList):
@@ -221,8 +233,27 @@ class LayersTreeView(TreeViewIDList):
         #cmds.treeView(self.control,e=True,displayLabel=(item,newName))
         return True
 
+    def handleDragDropCommand(self, itemList, prevParents, prevIndexes, newParent, newIndexes, itemBefore, itemAfter):
+        
+        def asId(internalId):
+            if internalId=='' or internalId is None:
+                return None
+            return self.getIdByInternalId(internalId)
+        
+        self.itemDropped([asId(internalId) for internalId in itemList], 
+                         asId(newParent),
+                         asId(itemBefore),
+                         asId(itemAfter))
+        LayerEvents.layerListModified.emit()
 
-    
+class InfluencesTreeView(TreeViewIDList):
+    def internalEditLabelCommand(self, layerId, newName):
+        return False # no rename for infl tree view
+
+    def handleDragDropCommand(self, itemList, prevParents, prevIndexes, newParent, newIndexes, itemBefore, itemAfter):
+        # force reload on influences list
+        LayerEvents.influenceListChanged.emit()
+
 class InfluenceFilterUi:
     VAR_PREFIX = 'ngSkinToolsInfluenceFilter_'
 
@@ -337,6 +368,8 @@ class LayerListsUI:
         self.updateLayerList()
         self.updateInfluenceList()
         self.updateInfluenceMenuValues()
+        
+    
             
     def updateLayerList(self):
         
@@ -449,6 +482,7 @@ class LayerListsUI:
         actions.copyWeights.newMenuItem('Copy Influence Weights')
         actions.cutWeights.newMenuItem('Cut Influence Weights')
         actions.pasteWeightsAdd.newMenuItem('Paste Weights (Add)')
+        actions.pasteWeightsSubstract.newMenuItem('Paste Weights (Substract)')
         actions.pasteWeightsReplace.newMenuItem('Paste Weights (Replace)')
         cmds.menuItem( divider=True)
         
@@ -466,9 +500,47 @@ class LayerListsUI:
         actions.convertTransparencyToMask.newMenuItem('Convert Transparency to Mask')
 
         cmds.menuItem( divider=True)
+        actions.invertPaintTarget.newMenuItem('Invert')
+        cmds.menuItem( divider=True)
+        
         
         actions.influenceFilter.newMenuItem('Show/Hide Influence Filter')
         
+    def layerDropped(self,layers,newParent,itemBefore,itemAfter):
+        '''
+        final handler of drag-drop action in layers list
+        '''
+        
+        mll = LayerDataModel.getInstance().mll
+        
+        with mll.batchUpdateContext():
+            # first, order layers by index, and start the "drop" with lowest index
+            layers = sorted(layers,key=lambda layer:mll.getLayerIndex(layer),reverse=True)
+            
+            if newParent:
+                itemAfter = None
+                itemBefore = newParent
+    
+            for layer in layers:
+                # as layers are shifted, indexes change for target layers
+                currentIndex = mll.getLayerIndex(layer)
+                
+                targetIndex = 0
+                if itemAfter:
+                    targetIndex = mll.getLayerIndex(itemAfter)+1
+                elif itemBefore:
+                    targetIndex = mll.getLayerIndex(itemBefore)
+    
+                # fix index when moving up            
+                if targetIndex>currentIndex:
+                    targetIndex -= 1
+                    
+                mll.setLayerIndex(layer,targetIndex)
+                
+                # for subsequent layers, drop after this layer
+                itemBefore = layer
+                itemAfter = None
+
 
     def createLayerListsUI(self,parent):
         cmds.setParent(parent)
@@ -482,6 +554,7 @@ class LayerListsUI:
         label = cmds.text("Layers:",align="left",font='boldLabelFont')
         list = self.controls.layerDisplay = LayersTreeView()
         list.onSelectionChanged.addHandler(self.layerSelectionChanged)
+        list.itemDropped = self.layerDropped
         
         form.attachForm(label,10,0,None,Constants.MARGIN_SPACING_HORIZONTAL)
         form.attachForm(list.control,None,0,0,Constants.MARGIN_SPACING_HORIZONTAL)
@@ -492,7 +565,7 @@ class LayerListsUI:
         label = cmds.text("Influences:",align="left",font='boldLabelFont')
         
 
-        list = self.controls.influenceDisplay = TreeViewIDList(allowMultiSelection=True)
+        list = self.controls.influenceDisplay = InfluencesTreeView(allowMultiSelection=True)
         list.onSelectionChanged.addHandler(self.execInfluenceSelected)
         
         self.createLayersListRMBMenu()
@@ -537,6 +610,9 @@ class LayerListsUI:
     
     def getSelectedInfluences(self):
         return self.controls.influenceDisplay.getSelectedNames()
+
+    def getSelectedInfluenceIds(self):
+        return self.controls.influenceDisplay.getSelectedIDs()
     
     def getSelectedLayers(self):
         '''

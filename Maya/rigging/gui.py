@@ -107,7 +107,7 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def ngSkinTools_pushButton_released(self):
 
-        from Tapp.Maya.ngSkinTools.ui.mainwindow import MainWindow
+        from ngSkinTools.ui.mainwindow import MainWindow
         MainWindow.open()
 
     def on_cylinderPreviewCreate_pushButton_released(self):

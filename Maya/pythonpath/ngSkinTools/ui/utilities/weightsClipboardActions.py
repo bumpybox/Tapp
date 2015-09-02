@@ -49,7 +49,15 @@ class PasteWeightsAdd(BaseLayerAction):
     @Utils.undoable
     @Utils.preserveSelection
     def execute(self):
-        LayerDataModel.getInstance().clipboard.withCurrentLayerAndInfluence().paste(replace=False)
+        LayerDataModel.getInstance().clipboard.withCurrentLayerAndInfluence().pasteAdd()
+
+class PasteWeightsSubstract(BaseLayerAction):
+    
+    @Utils.visualErrorHandling
+    @Utils.undoable
+    @Utils.preserveSelection
+    def execute(self):
+        LayerDataModel.getInstance().clipboard.withCurrentLayerAndInfluence().pasteSubstract()
 
 class PasteWeightsReplace(BaseLayerAction):
     
@@ -57,4 +65,4 @@ class PasteWeightsReplace(BaseLayerAction):
     @Utils.undoable
     @Utils.preserveSelection
     def execute(self):
-        LayerDataModel.getInstance().clipboard.withCurrentLayerAndInfluence().paste(replace=True)
+        LayerDataModel.getInstance().clipboard.withCurrentLayerAndInfluence().pasteReplace()

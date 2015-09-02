@@ -30,17 +30,12 @@ from ngSkinTools.doclink import SkinToolsDocs
 from ngSkinTools.ui.options import PersistentValueModel
 from ngSkinTools.ui.uiCompounds import FloatSliderField
 from ngSkinTools.ui.SelectHelper import SelectHelper
+from ngSkinTools.mllInterface import PaintMode
 
 class TabPaint(BaseTab):
     TOOL_PAINT = 'ngSkinToolsLayerPaintCtx'
 
     VAR_PREFIX = 'ngSkinToolsPaintTab_'
-    
-    
-    PAINTMODE_REPLACE = 1
-    PAINTMODE_ADD = 2
-    PAINTMODE_SCALE = 3
-    PAINTMODE_SMOOTH = 4
     
     
     def __init__(self):
@@ -142,12 +137,12 @@ class TabPaint(BaseTab):
         returns artUserPaintCtx value for selectedattroper option
         '''
         if self.controls.paintModeAdd.getValue():
-            return self.PAINTMODE_ADD,self.intensityAdd
+            return PaintMode.PAINTMODE_ADD,self.intensityAdd
         if self.controls.paintModeScale.getValue():
-            return self.PAINTMODE_SCALE,self.intensityScale
+            return PaintMode.PAINTMODE_SCALE,self.intensityScale
         if self.controls.paintModeSmooth.getValue():
-            return self.PAINTMODE_SMOOTH,self.intensitySmooth
-        return self.PAINTMODE_REPLACE,self.intensityReplace
+            return PaintMode.PAINTMODE_SMOOTH,self.intensitySmooth
+        return PaintMode.PAINTMODE_REPLACE,self.intensityReplace
         
     
     def configurePaintValues(self):
@@ -174,10 +169,10 @@ class TabPaint(BaseTab):
         stores intensity settings plugin-side
         '''
         
-        cmds.ngSkinLayer(paintOperation=self.PAINTMODE_REPLACE,paintIntensity=self.intensityReplace.get())
-        cmds.ngSkinLayer(paintOperation=self.PAINTMODE_ADD,paintIntensity=self.intensityAdd.get())
-        cmds.ngSkinLayer(paintOperation=self.PAINTMODE_SCALE,paintIntensity=self.intensityScale.get())
-        cmds.ngSkinLayer(paintOperation=self.PAINTMODE_SMOOTH,paintIntensity=self.intensitySmooth.get())
+        cmds.ngSkinLayer(paintOperation=PaintMode.PAINTMODE_REPLACE,paintIntensity=self.intensityReplace.get())
+        cmds.ngSkinLayer(paintOperation=PaintMode.PAINTMODE_ADD,paintIntensity=self.intensityAdd.get())
+        cmds.ngSkinLayer(paintOperation=PaintMode.PAINTMODE_SCALE,paintIntensity=self.intensityScale.get())
+        cmds.ngSkinLayer(paintOperation=PaintMode.PAINTMODE_SMOOTH,paintIntensity=self.intensitySmooth.get())
 
 
     def changeBrushRadius(self):            
@@ -253,6 +248,7 @@ class TabPaint(BaseTab):
             
         
         self.controls.intensitySlider = FloatSliderField()
+        self.controls.intensitySlider.flexibleRange = True
         self.createTitledRow(group, 'Intensity',self.controls.intensitySlider.create)
         self.controls.intensitySlider.onChange.addHandler(self.paintValuesChanged)
 

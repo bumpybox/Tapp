@@ -222,6 +222,31 @@ class ConvertMaskToTransparencyAction(BaseLayerAction):
     def execute(self):
         cmds.ngSkinLayer(mtt=True)
         
+class InvertPaintTargetAction(BaseLayerAction):
+    @Utils.undoable
+    def execute(self):
+        layerData = LayerDataModel.getInstance()
+        layerId = layerData.getCurrentLayer()
+        influences = layerData.getSelectedInfluenceIds()
+        
+        zeroWeights = [0]*layerData.mll.getVertCount()
+        prevWeights = {}
+        
+        if None in influences:
+            raise Exception("fail")
+        
+        with layerData.mll.batchUpdateContext():
+            for paintTarget in influences:
+                prevWeights[paintTarget] = layerData.mll.getInfluenceWeights(layerId, paintTarget)
+                if (prevWeights[paintTarget]):
+                    layerData.mll.setInfluenceWeights(layerId, paintTarget, zeroWeights)
+                    
+            for paintTarget in influences:
+                if not prevWeights[paintTarget]:
+                    continue
+                weights = [1-i for i in prevWeights[paintTarget]]
+                layerData.mll.setInfluenceWeights(layerId, paintTarget, weights)
+        
 class MirrorLayerWeightsAction(BaseLayerAction):
 
     
@@ -242,6 +267,8 @@ class MirrorLayerWeightsAction(BaseLayerAction):
         button handler for "Mirror Skin Weights"
         '''
         from ngSkinTools.ui.mainwindow import MainWindow
+        from ngSkinTools.ui.tabMirror import TabMirror
+        
 
         # any problems? maybe cache is not initialized/outdated?
         layerData = LayerDataModel.getInstance() 
@@ -258,6 +285,8 @@ class MirrorLayerWeightsAction(BaseLayerAction):
                 mirrorDirection = MirrorDirection.DIRECTION_GUESS;
             if mirrorTab.controls.mirrorDirection.getValue()==2: # negative to positive
                 mirrorDirection = MirrorDirection.DIRECTION_NEGATIVETOPOSITIVE;
+            if mirrorTab.controls.mirrorDirection.getSelectedText()==TabMirror.MIRROR_FLIP: 
+                mirrorDirection = MirrorDirection.DIRECTION_FLIP;
             
             with LayerDataModel.getInstance().mll.batchUpdateContext():
                 for layerId in LayerDataModel.getInstance().layerListsUI.getSelectedLayers():

@@ -45,6 +45,7 @@ class TabMirror(BaseTab):
                     }
     
     MIRROR_GUESS = 'Guess from stroke'
+    MIRROR_FLIP = 'Flip'
     
     def __init__(self):
         BaseTab.__init__(self)
@@ -73,6 +74,7 @@ class TabMirror(BaseTab):
         self.controls.mirrorDirection.addOption(self.MIRROR_GUESS)
         for mirrorText in self.getMirrorSideTexts():
             self.controls.mirrorDirection.addOption(mirrorText)
+        self.controls.mirrorDirection.addOption(self.MIRROR_FLIP)
         
         self.controls.mirrorDirection.endRebuildItems()
         
