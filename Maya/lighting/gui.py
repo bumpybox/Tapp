@@ -3,6 +3,7 @@ import os
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as omui
+import pymel.core
 
 from PySide import QtGui
 from shiboken import wrapInstance
@@ -65,7 +66,8 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
     def on_connectAlembic_pushButton_released(self):
 
-        utils.Connect()
+        sel = pymel.core.ls(selection=True)
+        utils.Connect(sel[0], sel[1])
 
     def on_addRimLight_pushButton_released(self):
 
