@@ -1,4 +1,12 @@
-import maya.cmds as cmds
+try:
+    __import__("tapp")
 
-# importing Tapp
-cmds.evalDeferred('import tapp.maya')
+except ImportError as e:
+    print("tapp: Could not load integration: %s " % e)
+
+else:
+
+    import tapp
+
+    # Setup integration
+    tapp.setup()
