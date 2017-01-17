@@ -39,61 +39,65 @@ class Window(QtGui.QMainWindow, dialog.Ui_MainWindow):
 
         self.resetSelection(translation, rotation, scale, userAttrs)
 
-    def resetAttribute(self, node, attr):
 
-        #reset attributes to default if keyable
-        if cmds.attributeQuery(attr, node=node, keyable=True):
-            values = cmds.attributeQuery(attr, node=node, listDefault=True)
+def resetAttribute(self, node, attr):
 
-            try:
-                cmds.setAttr(node + '.' + attr, *values)
-            except:
-                pass
+    # Reset attributes to default if keyable
+    if cmds.attributeQuery(attr, node=node, keyable=True):
+        values = cmds.attributeQuery(attr, node=node, listDefault=True)
 
-    def resetAttributes(self, node, translation=True, rotation=True,
-                       scale=True, userAttrs=True):
+        try:
+            cmds.setAttr(node + '.' + attr, *values)
+        except:
+            pass
 
-        if translation:
-            self.resetAttribute(node, 'tx')
-            self.resetAttribute(node, 'ty')
-            self.resetAttribute(node, 'tz')
 
-        if rotation:
-            self.resetAttribute(node, 'rx')
-            self.resetAttribute(node, 'ry')
-            self.resetAttribute(node, 'rz')
+def resetAttributes(self, node, translation=True, rotation=True,
+                    scale=True, userAttrs=True):
 
-        if scale:
-            self.resetAttribute(node, 'sx')
-            self.resetAttribute(node, 'sy')
-            self.resetAttribute(node, 'sz')
+    if translation:
+        self.resetAttribute(node, 'tx')
+        self.resetAttribute(node, 'ty')
+        self.resetAttribute(node, 'tz')
 
-        if userAttrs:
-            if cmds.listAttr(node, userDefined=True):
-                for attr in cmds.listAttr(node, userDefined=True):
-                    self.resetAttribute(node, attr)
+    if rotation:
+        self.resetAttribute(node, 'rx')
+        self.resetAttribute(node, 'ry')
+        self.resetAttribute(node, 'rz')
 
-    def resetSelection(self, translation=True, rotation=True,
-                      scale=True, userAttrs=True):
+    if scale:
+        self.resetAttribute(node, 'sx')
+        self.resetAttribute(node, 'sy')
+        self.resetAttribute(node, 'sz')
 
-        #undo enable
-        cmds.undoInfo(openChunk=True)
+    if userAttrs:
+        if cmds.listAttr(node, userDefined=True):
+            for attr in cmds.listAttr(node, userDefined=True):
+                self.resetAttribute(node, attr)
 
-        #getting selection
-        sel = cmds.ls(sl=True)
 
-        #zero nodes
-        if len(sel) >= 1:
-            for node in cmds.ls(sl=True):
-                self.resetAttributes(node, translation, rotation,
-                               scale, userAttrs)
+def resetSelection(self, translation=True, rotation=True,
+                   scale=True, userAttrs=True):
 
-            #revert selection
-            cmds.select(sel)
-        else:
-            cmds.warning('No nodes select!')
+    # Undo enable
+    cmds.undoInfo(openChunk=True)
 
-        cmds.undoInfo(closeChunk=True)
+    # Getting selection
+    sel = cmds.ls(sl=True)
+
+    # Zero nodes
+    if len(sel) >= 1:
+        for node in cmds.ls(sl=True):
+            self.resetAttributes(
+                node, translation, rotation, scale, userAttrs
+            )
+
+        # Revert selection
+        cmds.select(sel)
+    else:
+        cmds.warning('No nodes select!')
+
+    cmds.undoInfo(closeChunk=True)
 
 
 def show():
