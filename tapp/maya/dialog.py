@@ -1,6 +1,10 @@
 from Qt import QtWidgets
 
 import animation.dialog as animation
+import Red9
+
+# Initialize Red9
+Red9.start()
 
 
 class Dialog(QtWidgets.QDialog):
